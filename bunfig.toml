@@ -1,3 +1,6 @@
-# Instalacion compartida para evitar enlaces internos incompletos en Windows.
+# Instalacion compartida y cache local reproducible para el monorepo.
 [install]
 linker = "hoisted"
+
+[install.cache]
+dir = "node_modules/.cache/bun"
