@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<title>Verificación T-06</title>
+<style>body{font:20px system-ui;max-width:650px;margin:50px auto;padding:20px}input,button{font:inherit}output{display:block;margin-top:30px;font-size:34px}</style>
+<h1>Verificación manual de T-06</h1>
+<p>Inicia <code>bun run dev</code> y abre este archivo en tres pestañas. Usa la IP del servidor si pruebas en otra laptop.</p>
+<form><label>Servidor <input id="host" value="127.0.0.1:3000" required></label> <button>Conectar</button></form>
+<output id="estado">Desconectado</output>
+<script>
+let socket;
+const estado = document.querySelector("#estado");
+document.querySelector("form").addEventListener("submit", (evento) => {
+  evento.preventDefault();
+  if (socket) socket.close();
+  socket = new WebSocket("ws://" + document.querySelector("#host").value + "/ws");
+  const actual = socket;
+  estado.textContent = "Conectando…";
+  socket.addEventListener("message", (evento) => {
+    if (socket !== actual) return;
+    const mensaje = JSON.parse(evento.data);
+    if (mensaje.type === "bienvenida") estado.textContent = "Conectados: " + mensaje.conectados;
+  });
+  socket.addEventListener("close", () => { if (socket === actual) estado.textContent = "Desconectado"; });
+  socket.addEventListener("error", () => { if (socket === actual) estado.textContent = "Error de conexión"; });
+});
+</script>
+</html>
