@@ -1,5 +1,5 @@
-/** Entrada provisional del servidor; Bun.serve se implementa en T-06. */
-import "@blackjack/shared";
+/** Punto de entrada de Bun.serve; T-06 habilita el lobby por WebSocket. */
+import { iniciarServidor } from "./ws/servidor";
 
-console.info("Servidor: estructura lista. Pendiente T-06 (WebSocket).");
-
+const servidor = iniciarServidor();
+console.info(`Servidor escuchando en ${servidor.url}`);

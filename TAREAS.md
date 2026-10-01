@@ -18,6 +18,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** un `git push` directo a `main` es rechazado y un PR no se puede fusionar sin aprobación.
 - [ ] T-06 · 🔓 `Bun.serve` en `0.0.0.0:3000` con upgrade a `/ws`, suscripción a topic `lobby` y mensaje de bienvenida con número de conectados · Hector · depende de: T-01
   - **Hecho cuando:** con 3 pestañas (o 3 laptops) abiertas, las 3 muestran "conectados: 3" y se actualiza en < 1 s al cerrar una. *Desbloquea a Nahum (T-11).*
+  - **Preparacion local (2026-10-01):** implementada en `t-06-servidor-websocket`; tipos y 3 pruebas con sockets reales correctos. Bienvenida confirmada por Hector y documentada en PLAN.md. Pendiente verificacion visual con tres pestañas, PR y revision.
 - [ ] T-07 · 🔓 Enrutador: `JSON.parse` + `safeParse` de Zod + `switch` por `type` + `try/catch` global + respuesta `error` con `reqId` + límite de 16 KB · Hector · depende de: T-03, T-06
   - **Hecho cuando:** enviar `no-json`, `{"type":"x"}`, `{"type":"apostar","cantidad":-5}` y un mensaje de 1 MB devuelve `error` con el código correcto y el servidor sigue atendiendo a las otras pestañas.
 - [ ] T-08 · Auth: `registro`, `login`, `reanudar`, `logout` con `Bun.password` y tabla `sesiones`; al registrarse da $10,000, 500 fichas y los 3 artículos gratuitos equipados (en una transacción) · Hector · depende de: T-05, T-07

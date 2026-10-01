@@ -111,7 +111,7 @@ Principios (también en `CLAUDE.md`):
 
 | Topic | Quién se suscribe | Qué se publica |
 |---|---|---|
-| `lobby` | Conexiones autenticadas en el lobby | `lobby` (ocupación de mesas) |
+| `lobby` | Conexiones del lobby (sin autenticacion en T-06; T-08 incorpora sesiones) | `bienvenida` (conteo de conexiones, T-06) y `lobby` (ocupación de mesas) |
 | `mesa:<id>` | Jugadores y espectadores de esa mesa | `mesa.estado`, `ronda.resultado` |
 | `usuario:<id>` | Todas las pestañas de ese usuario | `billetera`, `inventario` (ambas pestañas ven el mismo saldo) |
 
@@ -195,6 +195,7 @@ Mensaje que requiere sesión y llega sin ella → `NO_AUTENTICADO`. JSON inváli
 
 | `type` | Campos | Cuándo |
 |---|---|---|
+| `bienvenida` | `conectados` (entero >= 0) | Al abrir o cerrar una conexion /ws; conteo de sockets, no de usuarios, en topic `lobby` (T-06) |
 | `sesion` | `token`, `usuario: {id, usuario}`, `billetera`, `equipado: {avatar, reverso, tema}`, `mesaId: string \| null` | Tras `registro`, `login`, `reanudar` |
 | `lobby` | `mesas: [{id, nombre, ocupados, capacidad, fase}]` | Al pedirlo y cuando cambia la ocupación (topic `lobby`) |
 | `mesa.estado` | `MesaEstado` (ver §3.3) | Tras cada cambio de la mesa (topic `mesa:<id>`) |
