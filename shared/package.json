@@ -1,0 +1,12 @@
+{
+  "name": "@blackjack/shared",
+  "private": true,
+  "type": "module",
+  "exports": "./index.ts",
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json"
+  },
+  "dependencies": {
+    "zod": "4.1.12"
+  }
+}

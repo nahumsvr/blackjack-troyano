@@ -1,0 +1,19 @@
+{
+  "name": "blackjack-troyano",
+  "private": true,
+  "packageManager": "bun@1.3.13",
+  "workspaces": [
+    "server",
+    "client",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "bun scripts/dev.ts",
+    "test": "bun test --pass-with-no-tests",
+    "typecheck": "bun run --filter @blackjack/shared typecheck && bun run --filter @blackjack/server typecheck && bun run --filter @blackjack/client typecheck && tsc --project scripts/tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.13",
+    "typescript": "5.9.3"
+  }
+}
