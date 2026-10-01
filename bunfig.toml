@@ -1,0 +1,3 @@
+# Instalacion compartida para evitar enlaces internos incompletos en Windows.
+[install]
+linker = "hoisted"
