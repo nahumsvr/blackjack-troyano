@@ -24,7 +24,7 @@ Avance por hito: H1 0/14 · H2 0/19 · H3 0/10 · H4 0/8 · H5 0/5 · Entrega 0/
 
 ## Bloqueos activos
 
-- T-01 pendiente de publicacion y revision; aun no fusionada en main.
+- T-01 publicada en PR #1; pendiente revision y fusion en main.
 - T-02: la proteccion de main la configurara Nahum con permisos administrativos.
 - T-07 y T-15 dependen de T-03; T-08 tambien de T-05; ambas son entregas de Massimo. T-06 depende solo de T-01.
 
@@ -40,5 +40,5 @@ Avance por hito: H1 0/14 · H2 0/19 · H3 0/10 · H4 0/8 · H5 0/5 · Entrega 0/
 |---|---|
 | 2026-09-29 | Plan aprobado: `PLAN.md`, `TAREAS.md`, `ESTADO.md`, `CHECKLIST_ENTREGA.md`, `CLAUDE.md` creados. 57 tareas, 0 % completado. |
 
-| 2026-10-01 | Hector: T-01 preparada localmente en t-01-monorepo-bun. bun install en clon limpio y typecheck correctos. Sin tests aun. Pendiente PR; no se contabiliza como fusionada. |
-| 2026-10-01 | Hector: plantilla T-02 preparada en t-02-plantilla-proteccion. Nahum aplicara la proteccion de main; pendiente comprobar rechazos y registrar PR. |
+| 2026-10-01 | Hector: T-01 preparada localmente en t-01-monorepo-bun. bun install en clon limpio y typecheck correctos. Sin tests aun. PR #1 abierto; no se contabiliza como fusionada. |
+| 2026-10-01 | Hector: plantilla T-02 publicada en PR #2 (borrador). Nahum aplicara la proteccion de main; pendiente comprobar rechazos. |
