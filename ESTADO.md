@@ -1,12 +1,12 @@
 # ESTADO — ¿Dónde vamos?
 
-_Última actualización: mar 29 sep 2026_
+_Última actualización: jue 1 oct 2026_
 
 ## Hito actual
 
 **Hito 1 — mié 30 sep:** monorepo, Docker, esquema de BD, tipos compartidos, login y 3 pestañas conectadas al lobby.
 
-Estado: 🟢 **A tiempo** (plan aprobado, sin código aún)
+Estado: 🔴 **Atrasados** (Hito 1 no completado en main al 30 sep; T-01 verificada localmente, pendiente PR).
 
 > Semáforo: 🟢 a tiempo · 🟡 en riesgo (una tarea del camino crítico con > medio día de atraso) · 🔴 atrasados (el hito no se cumple en su fecha)
 
@@ -24,7 +24,9 @@ Avance por hito: H1 0/14 · H2 0/19 · H3 0/10 · H4 0/8 · H5 0/5 · Entrega 0/
 
 ## Bloqueos activos
 
-- Ninguno.
+- T-01 pendiente de publicacion y revision; aun no fusionada en main.
+- T-02: la proteccion de main la configurara Nahum con permisos administrativos.
+- T-07 y T-15 dependen de T-03; T-08 tambien de T-05; ambas son entregas de Massimo. T-06 depende solo de T-01.
 
 ## Hoy le toca a…
 
@@ -37,3 +39,5 @@ Avance por hito: H1 0/14 · H2 0/19 · H3 0/10 · H4 0/8 · H5 0/5 · Entrega 0/
 | Fecha | Nota |
 |---|---|
 | 2026-09-29 | Plan aprobado: `PLAN.md`, `TAREAS.md`, `ESTADO.md`, `CHECKLIST_ENTREGA.md`, `CLAUDE.md` creados. 57 tareas, 0 % completado. |
+
+| 2026-10-01 | Hector: T-01 preparada localmente en t-01-monorepo-bun. bun install en clon limpio y typecheck correctos. Sin tests aun. Pendiente PR; no se contabiliza como fusionada. |
