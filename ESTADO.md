@@ -41,3 +41,4 @@ Avance por hito: H1 0/14 · H2 0/19 · H3 0/10 · H4 0/8 · H5 0/5 · Entrega 0/
 | 2026-09-29 | Plan aprobado: `PLAN.md`, `TAREAS.md`, `ESTADO.md`, `CHECKLIST_ENTREGA.md`, `CLAUDE.md` creados. 57 tareas, 0 % completado. |
 
 | 2026-10-01 | Hector: T-01 preparada localmente en t-01-monorepo-bun. bun install en clon limpio y typecheck correctos. Sin tests aun. Pendiente PR; no se contabiliza como fusionada. |
+| 2026-10-01 | Hector: plantilla T-02 preparada en t-02-plantilla-proteccion. Nahum aplicara la proteccion de main; pendiente comprobar rechazos y registrar PR. |
