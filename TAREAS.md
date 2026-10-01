@@ -13,7 +13,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 ### Hector
 - [ ] T-01 · 🔓 Monorepo con Bun workspaces (`server`, `client`, `shared`), `tsconfig` estricto base, scripts raíz (`dev`, `test`, `typecheck`), `.gitignore` · Hector · depende de: —
   - **Hecho cuando:** `bun install` en un clon limpio termina sin errores y `bun run typecheck` pasa en los 3 paquetes. *Desbloquea a todos.*
-  - **Preparacion local (2026-10-01):** implementada en `t-01-monorepo-bun`; instalacion limpia y tipos verificados. Pendiente abrir PR, registrar su numero y revision de Nahum/Massimo por el scaffolding minimo.
+  - **Preparacion local (2026-10-01):** implementada en `t-01-monorepo-bun`; instalacion limpia y tipos verificados. PR #1 abierto; pendiente revision de Nahum/Massimo por el scaffolding minimo y fusion en main.
 - [ ] T-02 · 🔓 Repo en GitHub, `main` protegida (1 aprobación obligatoria), plantilla de PR con casilla "¿marcaste TAREAS.md?" · Hector · depende de: T-01
   - **Hecho cuando:** un `git push` directo a `main` es rechazado y un PR no se puede fusionar sin aprobación.
 - [ ] T-06 · 🔓 `Bun.serve` en `0.0.0.0:3000` con upgrade a `/ws`, suscripción a topic `lobby` y mensaje de bienvenida con número de conectados · Hector · depende de: T-01
