@@ -6,6 +6,7 @@
  */
 import type { Asiento, CartaVista } from "@blackjack/shared";
 import { useState, type ReactNode } from "react";
+import { colorDeAsiento } from "../components/colorJugador";
 import { PanelBilletera } from "../components/PanelBilletera";
 import { Reloj } from "../components/Reloj";
 import { useJuego } from "../state/store";
@@ -37,15 +38,21 @@ function textoCarta(carta: CartaVista): string {
 }
 
 /**
- * Fila de un asiento de la mesa.
+ * Fila de un asiento de la mesa. El color del asiento (borde, punto y nombre) identifica al
+ * jugador; el color nunca es la única pista: el nombre y "(tú)" siempre se muestran.
  * @param props - Asiento y si es el turno o el jugador propio.
  * @returns Elemento del asiento.
  */
 function FilaAsiento({ asiento, enTurno, propio }: { asiento: Asiento; enTurno: boolean; propio: boolean }): ReactNode {
+  const color = colorDeAsiento(asiento.indice);
   return (
-    <li className={`rounded p-3 ${enTurno ? "ring-2 ring-amber-400" : ""} ${propio ? "bg-emerald-800" : "bg-emerald-900/60"}`}>
+    <li
+      data-color={color.nombre}
+      className={`rounded border-l-8 p-3 ${color.borde} ${enTurno ? "ring-2 ring-amber-400" : ""} ${propio ? "bg-emerald-800" : "bg-emerald-900/60"}`}
+    >
       <div className="flex justify-between">
-        <span className="font-semibold">
+        <span className={`flex items-center gap-2 font-semibold ${color.texto}`}>
+          <span className={`inline-block h-3 w-3 rounded-full ${color.punto}`} aria-hidden="true" />
           {asiento.usuario} {propio && "(tú)"}
         </span>
         {!asiento.conectado && <span className="text-sm text-red-300">desconectado</span>}
@@ -77,6 +84,7 @@ export function PantallaMesa(): ReactNode {
   const validacionApuesta = validarApuesta(textoApuesta, estado.billetera?.fichas ?? 0);
   const puedeApostar = puedeActuar && mesa.fase === "APUESTAS" && propio?.estado === "SIN_APUESTA" && validacionApuesta.ok;
   const esMiTurno = puedeActuar && mesa.fase === "TURNOS" && mesa.turnoDe === miId;
+  const jugadorEnTurno = mesa.asientos.find((asiento) => asiento !== null && asiento.usuarioId === mesa.turnoDe) ?? null;
   const miResultado = estado.resultado?.resultados.find((resultado) => resultado.usuarioId === miId) ?? null;
 
   return (
@@ -84,7 +92,17 @@ export function PantallaMesa(): ReactNode {
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold">{mesa.nombre}</h1>
-          <p>{TEXTO_FASE[mesa.fase]}</p>
+          <p>
+            {TEXTO_FASE[mesa.fase]}
+            {jugadorEnTurno !== null && (
+              <>
+                {" · "}
+                <span className={`font-semibold ${colorDeAsiento(jugadorEnTurno.indice).texto}`}>
+                  {jugadorEnTurno.usuarioId === miId ? "te toca" : `turno de ${jugadorEnTurno.usuario}`}
+                </span>
+              </>
+            )}
+          </p>
         </div>
         <Reloj finEn={mesa.finEn} desfaseMs={estado.desfaseMs} />
         <button
