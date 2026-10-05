@@ -11,15 +11,18 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 ## Hito 1 — mié 30 sep: monorepo, BD, contrato, login y 3 pestañas en el lobby
 
 ### Hector
-- [ ] T-01 · 🔓 Monorepo con Bun workspaces (`server`, `client`, `shared`), `tsconfig` estricto base, scripts raíz (`dev`, `test`, `typecheck`), `.gitignore` · Hector · depende de: —
+- [x] T-01 · 🔓 Monorepo con Bun workspaces (`server`, `client`, `shared`), `tsconfig` estricto base, scripts raíz (`dev`, `test`, `typecheck`), `.gitignore` · Hector · depende de: —
   - **Hecho cuando:** `bun install` en un clon limpio termina sin errores y `bun run typecheck` pasa en los 3 paquetes. *Desbloquea a todos.*
   - **Preparacion local (2026-10-01):** implementada en `t-01-monorepo-bun`; instalacion limpia y tipos verificados. PR #1 abierto; pendiente revision de Nahum/Massimo por el scaffolding minimo y fusion en main.
+  - **Hecha — PR #1 (2026-10-04):** PR #1 fusionado en main. Auditoría de Massimo: clon limpio de `main` (3eeb079) → `bun install` y `bun run typecheck` correctos en los 3 paquetes, con Bun 1.4.2.
 - [ ] T-02 · 🔓 Repo en GitHub, `main` protegida (1 aprobación obligatoria), plantilla de PR con casilla "¿marcaste TAREAS.md?" · Hector · depende de: T-01
   - **Hecho cuando:** un `git push` directo a `main` es rechazado y un PR no se puede fusionar sin aprobación.
   - **Preparacion local (2026-10-01):** plantilla de PR en `t-02-plantilla-proteccion`. Hector confirmo que Nahum configurara main; PR #2 abierto como borrador; pendiente aplicar y verificar proteccion y fusion.
+  - **Auditoría (2026-10-04):** PR #2 fusionado (plantilla), pero `gh api repos/nahumsvr/blackjack-troyano/branches/main` devuelve `protected:false` y no hay rulesets; tres commits de documentación entraron a main sin PR. La protección sigue sin aplicarse.
 - [ ] T-06 · 🔓 `Bun.serve` en `0.0.0.0:3000` con upgrade a `/ws`, suscripción a topic `lobby` y mensaje de bienvenida con número de conectados · Hector · depende de: T-01
   - **Hecho cuando:** con 3 pestañas (o 3 laptops) abiertas, las 3 muestran "conectados: 3" y se actualiza en < 1 s al cerrar una. *Desbloquea a Nahum (T-11).*
   - **Preparacion local (2026-10-01):** implementada en `t-06-servidor-websocket`; tipos y 3 pruebas con sockets reales correctos. Bienvenida confirmada por Hector y documentada en PLAN.md. PR #3 abierto como borrador; pendiente verificacion visual con tres pestañas, revision y fusion.
+  - **Auditoría (2026-10-04):** PR #3 fusionado; las 3 pruebas con sockets reales pasan en clon limpio de main. Falta la verificación visual con tres pestañas para cerrar la casilla.
 - [ ] T-07 · 🔓 Enrutador: `JSON.parse` + `safeParse` de Zod + `switch` por `type` + `try/catch` global + respuesta `error` con `reqId` + límite de 16 KB · Hector · depende de: T-03, T-06
   - **Hecho cuando:** enviar `no-json`, `{"type":"x"}`, `{"type":"apostar","cantidad":-5}` y un mensaje de 1 MB devuelve `error` con el código correcto y el servidor sigue atendiendo a las otras pestañas.
 - [ ] T-08 · Auth: `registro`, `login`, `reanudar`, `logout` con `Bun.password` y tabla `sesiones`; al registrarse da $10,000, 500 fichas y los 3 artículos gratuitos equipados (en una transacción) · Hector · depende de: T-05, T-07
@@ -39,16 +42,16 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 
 ### Massimo
 - [ ] T-03 · 🔓 Contrato en `shared/`: esquemas Zod de todos los mensajes de `PLAN.md` §3 (uniones discriminadas por `type`), tipos con `z.infer`, `MesaEstado`, `CartaVista`, catálogo de códigos de error con mensajes en español · Massimo · depende de: T-01
-  - **Preparación local (2026-10-04):** Contrato implementado y verificado localmente: 18 mensajes entrantes, 12 salientes, tipos inferidos, errores españoles y 40 pruebas del contrato. Importaciones verificadas desde server y client. Sin PR nuevo ni fusión; detalles en Avance-M-01.md.
+  - **Preparación local (2026-10-04):** Contrato implementado y verificado localmente: 18 mensajes entrantes, 12 salientes, tipos inferidos, errores españoles y 40 pruebas del contrato. Importaciones verificadas desde server y client. Publicado en PR #4 (abierto, sin revisión); detalles en Avance-M-01.md.
   - **Hecho cuando:** `server` y `client` importan `@blackjack/shared` sin errores de tipos y hay un test con 1 ejemplo válido y 1 inválido por cada mensaje (todos pasan). *Desbloquea a Hector y Nahum.*
 - [ ] T-04 · 🔓 `docker-compose.yml` con Postgres 16 + volumen, `.env.example` con `DATABASE_URL` · Massimo · depende de: T-01
-  - **Preparación local (2026-10-04):** Compose PostgreSQL 16, volumen y .env.example preparados; docker compose config --quiet correcto. Arranque Docker pendiente por permisos del daemon. Esquema comprobado aparte en PostgreSQL 18.6; no acredita el gate de PostgreSQL 16.
+  - **Preparación local (2026-10-04):** Compose PostgreSQL 16, volumen y .env.example preparados; docker compose config --quiet correcto. Arranque Docker pendiente por permisos del daemon. Esquema comprobado aparte en PostgreSQL 18.6; no acredita el gate de PostgreSQL 16. Incluido en PR #4 (abierto).
   - **Hecho cuando:** `docker compose up -d` levanta la BD y `psql $DATABASE_URL -c 'select 1'` responde.
 - [ ] T-05 · 🔓 `server/db/schema.sql` (7 tablas con PK, FK, `CHECK` e índices de `PLAN.md` §4), `seed.sql` (14 artículos) y script `bun run db:reset` · Massimo · depende de: T-04
-  - **Preparación local (2026-10-04):** Siete tablas, índices, 14 artículos y db:reset atómico implementados. Reinicio, restricciones y conservación de datos ante fallo comprobados en PostgreSQL 18.6; pendiente entorno objetivo y PR.
+  - **Preparación local (2026-10-04):** Siete tablas, índices, 14 artículos y db:reset atómico implementados. Reinicio, restricciones y conservación de datos ante fallo comprobados en PostgreSQL 18.6; pendiente entorno objetivo y PR. Incluido en PR #4 (abierto).
   - **Hecho cuando:** `bun run db:reset` en limpio crea 7 tablas y 14 artículos; `UPDATE usuarios SET fichas = -1` falla por `CHECK`; insertar dos veces el mismo artículo en `inventario` falla por PK. *Desbloquea a Hector (T-08).*
 - [ ] T-14 · README con requisitos (Bun, Docker) y los 4 comandos para arrancar (borrador del manual de instalación) · Massimo · depende de: T-05
-  - **Preparación local (2026-10-04):** README y docs/manual-instalacion.md actualizados con los comandos existentes y límites actuales. Pendiente que Nahum arranque independientemente siguiendo el README.
+  - **Preparación local (2026-10-04):** README y docs/manual-instalacion.md actualizados con los comandos existentes y límites actuales. Pendiente que Nahum arranque independientemente siguiendo el README. Incluido en PR #4 (abierto).
   - **Hecho cuando:** Nahum levanta el proyecto en su máquina solo con el README, sin preguntar.
 
 ---
@@ -87,21 +90,21 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 
 ### Massimo
 - [ ] T-22 · 🔓 `server/src/db` (conexión `sql` de Bun, helper `enTransaccion`) + **interfaz `Billetera`** con JSDoc y firmas definitivas · Massimo · depende de: T-05
-  - **Preparación local (2026-10-04):** crearConexion, enTransaccion e interfaz Billetera con firmas async implementados y verificados. Pendiente PR/fusión e importación por Hector en T-20.
+  - **Preparación local (2026-10-04):** crearConexion, enTransaccion e interfaz Billetera con firmas async implementados y verificados. Pendiente PR/fusión e importación por Hector en T-20. Incluido en PR #4 (abierto).
   - **Hecho cuando:** la interfaz está fusionada en `main` y Hector la importa para T-20 con una implementación falsa en memoria. *Desbloquea a Hector.*
 - [ ] T-23 · `BilleteraSQL.debitarApuesta` / `acreditarPago` con `FOR UPDATE` + `movimientos` · Massimo · depende de: T-22
-  - **Preparación local (2026-10-04):** Débito y pago transaccionales implementados; tests PostgreSQL real verifican rollback, concurrencia, saldo y ledger. Pago cero no crea movimiento. Pendiente integración con Mesa y PR.
+  - **Preparación local (2026-10-04):** Débito y pago transaccionales implementados; tests PostgreSQL real verifican rollback, concurrencia, saldo y ledger. Pago cero no crea movimiento. Pendiente integración con Mesa y PR. Incluido en PR #4 (abierto).
   - **Hecho cuando:** test: debitar más fichas de las que hay → `FICHAS_INSUFICIENTES` y ni `usuarios` ni `movimientos` cambian.
 - [ ] T-24 · `fichas.comprar` con límite diario en CDMX, idempotencia por `clave` y mensaje `billetera` con `compradoHoy`, `disponibleHoy`, `reinicioEn` · Massimo · depende de: T-22
-  - **Preparación local (2026-10-04):** Compra idempotente con límite del día CDMX implementada y probada en PostgreSQL real, incluido reloj capturado después del bloqueo. Pendiente handler WebSocket y PR.
+  - **Preparación local (2026-10-04):** Compra idempotente con límite del día CDMX implementada y probada en PostgreSQL real, incluido reloj capturado después del bloqueo. Pendiente handler WebSocket y PR. Incluido en PR #4 (abierto).
   - **Hecho cuando:** comprar 5,000 funciona; comprar 10 más → `LIMITE_DIARIO`; cambiar la fecha de los movimientos a "ayer" en SQL → se puede comprar otra vez; repetir la misma `clave` no cobra dos veces.
 - [ ] T-25 · Tests de economía contra Postgres real: 10 compras de 1,000 en paralelo con límite 5,000 → exactamente 5 exitosas; doble `clave`; dinero insuficiente; cantidades 0, -10, 10.5, 15, 1e9 · Massimo · depende de: T-24
-  - **Preparación local (2026-10-04):** Suite de economía/tienda ejecutada contra PostgreSQL 18.6 con TEST_DATABASE_URL: concurrencia, límites, idempotencia, rechazo, paginación y reconciliación contable. Suite conjunta: 70 pruebas correctas; pendiente repetir entorno objetivo.
+  - **Preparación local (2026-10-04):** Suite de economía/tienda ejecutada contra PostgreSQL 18.6 con TEST_DATABASE_URL: concurrencia, límites, idempotencia, rechazo, paginación y reconciliación contable. Suite conjunta: 70 pruebas correctas; pendiente repetir entorno objetivo. Incluido en PR #4 (abierto).
   - **Hecho cuando:** `bun test` en verde y la suma de `movimientos` de cada usuario de prueba coincide con su saldo final.
 - [ ] T-31 · Integración Hito 2 en 3 laptops (coordina, los 3 participan); abrir issues por cada fallo · Massimo · depende de: T-20, T-21, T-28, T-24
   - **Hecho cuando:** **checkpoint Hito 2** — 3 personas en 3 laptops juegan 5 rondas seguidas sin errores, y cada una compra fichas respetando el límite.
 - [ ] T-32 · `docs/arquitectura.md` v1: arquitectura, diagrama de clases, máquina de estados y ER (desde `PLAN.md`, actualizados a lo que realmente se construyó) · Massimo · depende de: T-18
-  - **Preparación local (2026-10-04):** Borrador docs/arquitectura.md con módulos/clases existentes, ER y máquina de estados prevista. T-18 y revisión/renderizado de GitHub pendientes; no se considera terminada.
+  - **Preparación local (2026-10-04):** Borrador docs/arquitectura.md con módulos/clases existentes, ER y máquina de estados prevista. T-18 y revisión/renderizado de GitHub pendientes; no se considera terminada. Incluido en PR #4 (abierto).
   - **Hecho cuando:** los diagramas se ven renderizados en GitHub y coinciden con los nombres de las clases reales.
 
 ---
@@ -128,7 +131,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 
 ### Massimo
 - [ ] T-34 · Backend de tienda: `tienda.catalogo`, `tienda.comprar` (`FOR UPDATE`, `YA_POSEIDO`, `FICHAS_INSUFICIENTES`), `inventario.listar`, `movimientos.listar` paginado · Massimo · depende de: T-23
-  - **Preparación local (2026-10-04):** Tienda.catalogo/comprar/inventario/listarMovimientos implementados y probados directamente contra PostgreSQL; doble compra cobra una vez. Pendiente handlers/publicaciones WebSocket y PR.
+  - **Preparación local (2026-10-04):** Tienda.catalogo/comprar/inventario/listarMovimientos implementados y probados directamente contra PostgreSQL; doble compra cobra una vez. Pendiente handlers/publicaciones WebSocket y PR. Incluido en PR #4 (abierto).
   - **Hecho cuando:** test: dos compras simultáneas del mismo artículo → una exitosa y una `YA_POSEIDO`, cobrada una sola vez.
 - [ ] T-35 · `inventario.equipar` con `BLOQUEADO_EN_MANO` (consulta a `GestorMesas`) y republicación del snapshot de la mesa · Massimo · depende de: T-34, T-18
   - **Preparación local (2026-10-04):** Bloqueada por GestorMesas (T-18). No se implementa equipamiento sin validación autoritativa de fase ni publicación del snapshot.
@@ -156,10 +159,10 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 - [ ] T-44 · Pasar **completa** la sección de Funcionamiento de `CHECKLIST_ENTREGA.md`; cada fallo → issue asignado · Massimo · depende de: T-43
   - **Hecho cuando:** todas las casillas de Funcionamiento están en `[x]` o tienen issue abierto con dueño y fecha.
 - [ ] T-46 · JSDoc completo en `server/src/store`, `server/src/db` y `shared/` · Massimo · depende de: T-43
-  - **Preparación local (2026-10-04):** Los nuevos archivos shared/db/store incluyen comentarios de propósito y documentación de APIs. Revisión final de Hector y gate T-43 pendientes.
+  - **Preparación local (2026-10-04):** Los nuevos archivos shared/db/store incluyen comentarios de propósito y documentación de APIs. Revisión final de Hector y gate T-43 pendientes. Incluido en PR #4 (abierto).
   - **Hecho cuando:** ninguna función exportada queda sin JSDoc (revisado por Hector).
 - [ ] T-48 · `docs/manual-instalacion.md`: requisitos con versiones, clonar/descomprimir, `.env`, Docker, `db:reset`, `build`, `start`, cómo conectarse desde otra laptop, problemas comunes (puerto ocupado, firewall) · Massimo · depende de: T-38
-  - **Preparación local (2026-10-04):** Borrador docs/manual-instalacion.md disponible; build/start, PostgreSQL 16 y prueba independiente de Nahum pendientes.
+  - **Preparación local (2026-10-04):** Borrador docs/manual-instalacion.md disponible; build/start, PostgreSQL 16 y prueba independiente de Nahum pendientes. Incluido en PR #4 (abierto).
   - **Hecho cuando:** Nahum instala desde cero en su laptop siguiendo solo el manual.
 - [ ] T-50 · `docs/arquitectura.md` final: descripción de cada tabla + `schema.sql`/`seed.sql` referenciados, diagrama de clases, diagrama de dependencias, protocolo, máquina de estados, decisiones de diseño · Massimo · depende de: T-32, T-45
   - **Preparación local (2026-10-04):** Borrador de arquitectura referencia schema/seed y distingue implementación de diseño pendiente. Motor/auth/router/cliente y revisión de Hector pendientes.
@@ -174,7 +177,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 - [ ] T-53 · Video de respaldo de la demo (≈3 min, 3 jugadores, ronda completa, compra de fichas, tienda) · Nahum · depende de: T-44
   - **Hecho cuando:** el video se reproduce desde USB y desde la nube sin internet de la escuela (descargado).
 - [ ] T-54 · Script `bun run empaquetar` → `blackjack-equipo.zip` sin `node_modules`, `.env`, `dist` ni `.git`, con `docs/` y `README` · Massimo · depende de: T-48
-  - **Preparación local (2026-10-04):** Script empaquetar preparado para generar/validar ZIP de fuentes. Fixture ZIP del script verificada; archivo de sesión y validación de fuentes extraídas pendientes, además de instalación limpia del proyecto completo; no es el paquete final de entrega.
+  - **Preparación local (2026-10-04):** Script empaquetar preparado para generar/validar ZIP de fuentes. Fixture ZIP del script verificada; archivo de sesión y validación de fuentes extraídas pendientes, además de instalación limpia del proyecto completo; no es el paquete final de entrega. Incluido en PR #4 (abierto).
   - **Hecho cuando:** el `.zip` pesa < 20 MB, abre con el descompresor del sistema y **no** es `.rar`.
 - [ ] T-55 · Probar el `.zip` en una máquina limpia (o usuario nuevo del SO) siguiendo solo el manual de instalación · Hector · depende de: T-54
   - **Hecho cuando:** desde descomprimir hasta jugar con 3 pestañas en ≤ 15 min, sin ayuda; problemas encontrados corregidos en el manual.

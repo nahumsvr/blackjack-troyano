@@ -81,7 +81,7 @@ Los comandos previstos `bun run build` y `bun run start` todavía no existen. T-
 
 | Problema | Acción |
 | --- | --- |
-| Docker no puede conectarse a `/var/run/docker.sock` | Comprueba que Docker esté iniciado y que tu usuario tenga acceso al daemon según la instalación de tu sistema. |
+| Docker no puede conectarse a `/var/run/docker.sock` (`permission denied`) | Comprueba que Docker esté iniciado (`sudo systemctl start docker` en Linux). Si el error es de permisos, agrega tu usuario al grupo con `sudo usermod -aG docker $USER` y cierra e inicia sesión, o antepone `sudo` a los comandos `docker compose`. En Windows/macOS, abre Docker Desktop. |
 | PostgreSQL no inicia por puerto ocupado | Cambia `POSTGRES_PORT` en `.env` y el puerto de `DATABASE_URL`, y vuelve a levantar Compose. |
 | `db:reset` indica que falta `DATABASE_URL` | Comprueba que `.env` esté en la raíz y ejecuta el comando desde esa carpeta. |
 | PostgreSQL rechaza la contraseña tras editar `.env` | El volumen retiene sus credenciales originales; usa esas credenciales o cambia la contraseña dentro de PostgreSQL. |

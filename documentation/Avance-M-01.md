@@ -2,6 +2,8 @@
 
 Trabajo local autorizado por Massimo; código delegado a Sol 6.1 con razonamiento alto. Se solicitó Astra low para coordinación, pero el coordinador no pudo cambiar el modelo de la conversación. No se cambiaron alcance ni fechas por decisión del equipo. Los archivos nuevos aún requieren revisión y PR; no se han creado commits, publicaciones o fusiones en esta sesión.
 
+> **Actualización (4 oct, 23:30):** los cambios se publicaron después en el commit `8bca1b9` de la rama `develop/mass/1-inicio-de-responsabilidades` y en el **PR #4** (abierto, sin revisión). Las menciones a cambios "locales en `main`" quedan superadas. La continuación está en [Avance-M-02.md](Avance-M-02.md).
+
 ## Preparado y verificado
 
 | Tarea | Resultado local | Gate que falta |
@@ -31,7 +33,7 @@ El contrato rechazó cartas ocultas con palo/rango, total filtrado, cantidades/e
 
 ### Retomar la siguiente sesión
 
-- Leer este informe y ejecutar `git status`: los cambios siguen locales en `main`. Preservar la reubicación previa del README a la raíz; organizar ramas/PRs por tarea antes de publicar.
+- ~~Leer este informe y ejecutar `git status`: los cambios siguen locales en `main`.~~ Resuelto: publicados en PR #4 desde `develop/mass/1-inicio-de-responsabilidades`. El README permanece en la raíz.
 - La instancia temporal PostgreSQL quedó detenida limpiamente; sus archivos permanecen en `/tmp/blackjack-pg-check.7yKzJJ`. La URL temporal del puerto 44133 ya no está activa. Preferir levantar PostgreSQL 16 según el manual y configurar `TEST_DATABASE_URL` para las pruebas.
 - Repetir `bun run typecheck` y `TEST_DATABASE_URL=<URL_DE_PRUEBAS> bun test` en el entorno objetivo Bun 1.3.13/PostgreSQL 16.
 - Ejecutar `bun run empaquetar`, extraer el ZIP en otra carpeta y verificar instalación, tipos y tests. **No se generó un ZIP final en esta sesión.** La prueba de juego completa y la instalación independiente siguen pendientes.
