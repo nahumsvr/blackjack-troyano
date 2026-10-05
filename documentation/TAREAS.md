@@ -2,6 +2,7 @@
 
 Formato: `- [ ] T-XX · descripción · dueño · depende de: T-YY` y debajo **Hecho cuando:** (criterio comprobable).
 🔓 = **desbloquea a otro dev** → hacerla primero.
+⏸ = **pospuesta** (no eliminada; ver su nota).
 Al terminar una tarea: marcar `[x]`, poner el número de PR y agregar una línea al registro de `ESTADO.md`.
 
 Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
@@ -15,10 +16,11 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** `bun install` en un clon limpio termina sin errores y `bun run typecheck` pasa en los 3 paquetes. *Desbloquea a todos.*
   - **Preparacion local (2026-10-01):** implementada en `t-01-monorepo-bun`; instalacion limpia y tipos verificados. PR #1 abierto; pendiente revision de Nahum/Massimo por el scaffolding minimo y fusion en main.
   - **Hecha — PR #1 (2026-10-04):** PR #1 fusionado en main. Auditoría de Massimo: clon limpio de `main` (3eeb079) → `bun install` y `bun run typecheck` correctos en los 3 paquetes, con Bun 1.4.2.
-- [x] T-02 · 🔓 Repo en GitHub, `main` protegida (1 aprobación obligatoria), plantilla de PR con casilla "¿marcaste TAREAS.md?" · Hector · depende de: T-01 · proteccion aplicada y verificada el 5 oct (push directo rechazado, 1 aprobacion, historial lineal)
+- [x] T-02 · 🔓 Repo en GitHub, `main` protegida (1 aprobación obligatoria), plantilla de PR con casilla "¿marcaste TAREAS.md?" · Hector · depende de: T-01 · PR #2
   - **Hecho cuando:** un `git push` directo a `main` es rechazado y un PR no se puede fusionar sin aprobación.
   - **Preparacion local (2026-10-01):** plantilla de PR en `t-02-plantilla-proteccion`. Hector confirmo que Nahum configurara main; PR #2 abierto como borrador; pendiente aplicar y verificar proteccion y fusion.
   - **Auditoría (2026-10-04):** PR #2 fusionado (plantilla), pero `gh api repos/nahumsvr/blackjack-troyano/branches/main` devuelve `protected:false` y no hay rulesets; tres commits de documentación entraron a main sin PR. La protección sigue sin aplicarse.
+  - **Hecha — protección aplicada (2026-10-05):** Nahum aplicó `.github/proteccion-main.json` más historial lineal: 1 aprobación de otro dev también para administradores, sin force-push ni borrado. El repositorio solo permite fusionar con squash y borra la rama al fusionar. Un push directo de prueba a `main` fue rechazado (`GH006: Protected branch update failed … Changes must be made through a pull request`).
 - [ ] T-06 · 🔓 `Bun.serve` en `0.0.0.0:3000` con upgrade a `/ws`, suscripción a topic `lobby` y mensaje de bienvenida con número de conectados · Hector · depende de: T-01
   - **Hecho cuando:** con 3 pestañas (o 3 laptops) abiertas, las 3 muestran "conectados: 3" y se actualiza en < 1 s al cerrar una. *Desbloquea a Nahum (T-11).*
   - **Preparacion local (2026-10-01):** implementada en `t-06-servidor-websocket`; tipos y 3 pruebas con sockets reales correctos. Bienvenida confirmada por Hector y documentada en PLAN.md. PR #3 abierto como borrador; pendiente verificacion visual con tres pestañas, revision y fusion.
@@ -31,27 +33,33 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** 3 usuarios distintos ven las 3 mesas; cuando uno se sienta, las otras 2 pestañas ven "1/5" en < 1 s; una sexta persona recibe `MESA_LLENA`.
 
 ### Nahum
-- [ ] T-10 · Cliente Vite + React + TS + Tailwind, proxy de `/ws` a `:3000`, `vite --host` · Nahum · depende de: T-01 · PR #6 (fusionado; falta abrirlo desde otra laptop por IP)
+- [ ] T-10 · Cliente Vite + React + TS + Tailwind, proxy de `/ws` a `:3000`, `vite --host` · Nahum · depende de: T-01 · PR #6
   - **Hecho cuando:** `bun run dev` abre la app en otra laptop de la misma red usando la IP de la máquina.
+  - **Fusionada — PR #6 (2026-10-05), gate pendiente:** Vite 7 + React 19 + Tailwind 4, proxy de `/ws`, `vite --host`, `config.ts` y `LimiteErrores`. Verificados typecheck, build y la `bienvenida` de T-06 a través del proxy. Falta abrirla desde otra laptop por IP; se marca al comprobarlo. Desbloquea T-38.
 - [x] T-11 · Capa de red: hook `useSocket` con reconexión (1 s, 2 s, 4 s… máx 10 s), envío con `reqId`, `reanudar` automático con token de `localStorage`, store global de estado · Nahum · depende de: T-03, T-10 · PR #7
   - **Hecho cuando:** reiniciar el servidor con la app abierta → el cliente muestra "reconectando" y vuelve solo, con la misma sesión, sin recargar.
-- [x] T-12 · 🔓 Mock del servidor (`?mock=1`) con snapshots `MesaEstado` de las 6 fases, billetera, catálogo e inventario de ejemplo · Nahum · depende de: T-03 · PR #8
+  - **En revisión — PR #7 (2026-10-05):** `Transporte`, `Conexion` (reconexión 1/2/4/8/10 s, `reqId` con timeout de 8 s, sin cola offline, validación Zod de entrada y salida), desfase de reloj por `ping`, token con respaldo en memoria, reductor puro, controlador y store; 45 pruebas. Reconexión verificada reiniciando el servidor de T-06 y con la caída simulada del mock (vuelve con la misma sesión). Cuenta al fusionarse.
+- [ ] T-12 · 🔓 Mock del servidor (`?mock=1`) con snapshots `MesaEstado` de las 6 fases, billetera, catálogo e inventario de ejemplo · Nahum · depende de: T-03 · PR #8
   - **Hecho cuando:** sin backend, se pueden ver las pantallas de mesa en cada fase y la tienda. *Permite que el cliente avance sin esperar al servidor.*
+  - **En revisión — PR #8 (2026-10-05):** `ServidorFalso` con las validaciones del contrato, fixtures de las 6 fases comprobados contra `shared`, validación de formularios, pantallas base y barra del modo `?mock=1`. Recorrido acceso → lobby → 6 fases → billetera → historial verificado sin backend; 70 pruebas. El mock ya responde `tienda.catalogo` con datos de ejemplo, pero falta la pantalla de tienda (T-39, pospuesta), que el criterio pide; por eso no se marca.
 - [ ] T-13 · Pantallas de login/registro y lobby conectadas al servidor real (errores del servidor visibles como aviso) · Nahum · depende de: T-08, T-09, T-11
   - **Hecho cuando:** **checkpoint Hito 1** — 3 pestañas con 3 usuarios distintos logueadas ven el lobby y la ocupación en vivo.
+  - **Lado del cliente listo (2026-10-05):** pantallas de acceso (con validación previa del contrato) y lobby funcionando contra el mock en PR #8. Bloqueada por T-08 y T-09 para la prueba con el servidor real.
 
 ### Massimo
 - [ ] T-03 · 🔓 Contrato en `shared/`: esquemas Zod de todos los mensajes de `PLAN.md` §3 (uniones discriminadas por `type`), tipos con `z.infer`, `MesaEstado`, `CartaVista`, catálogo de códigos de error con mensajes en español · Massimo · depende de: T-01
   - **Preparación local (2026-10-04):** Contrato implementado y verificado localmente: 18 mensajes entrantes, 12 salientes, tipos inferidos, errores españoles y 40 pruebas del contrato. Importaciones verificadas desde server y client. Publicado en PR #4 (abierto, sin revisión); detalles en Avance-M-01.md.
   - **Hecho cuando:** `server` y `client` importan `@blackjack/shared` sin errores de tipos y hay un test con 1 ejemplo válido y 1 inválido por cada mensaje (todos pasan). *Desbloquea a Hector y Nahum.*
-- [x] T-04 · 🔓 `docker-compose.yml` con Postgres 16 + volumen, `.env.example` con `DATABASE_URL` · Massimo · depende de: T-01 · PR #4 (gate verificado en la auditoria de Massimo)
+- [x] T-04 · 🔓 `docker-compose.yml` con Postgres 16 + volumen, `.env.example` con `DATABASE_URL` · Massimo · depende de: T-01 · PR #4
   - **Preparación local (2026-10-04):** Compose PostgreSQL 16, volumen y .env.example preparados; docker compose config --quiet correcto. Arranque Docker pendiente por permisos del daemon. Esquema comprobado aparte en PostgreSQL 18.6; no acredita el gate de PostgreSQL 16. Incluido en PR #4 (abierto).
   - **Gate verificado (2026-10-04, 23:45):** `docker compose up -d --wait` → postgres:16.15 sano; `psql $DATABASE_URL -c 'select 1'` → 1 (puerto 5433 por conflicto local). Pendiente fusión del PR #4.
   - **Hecho cuando:** `docker compose up -d` levanta la BD y `psql $DATABASE_URL -c 'select 1'` responde.
-- [x] T-05 · 🔓 `server/db/schema.sql` (7 tablas con PK, FK, `CHECK` e índices de `PLAN.md` §4), `seed.sql` (14 artículos) y script `bun run db:reset` · Massimo · depende de: T-04 · PR #4 (gate verificado en la auditoria de Massimo)
+  - **Hecha — PR #4 (2026-10-05):** PR #4 fusionado. Criterio verificado con PostgreSQL 16.15 y Bun 1.3.13 en [Avance-M-02](Avance-M-02.md); se marca según esa auditoría.
+- [x] T-05 · 🔓 `server/db/schema.sql` (7 tablas con PK, FK, `CHECK` e índices de `PLAN.md` §4), `seed.sql` (14 artículos) y script `bun run db:reset` · Massimo · depende de: T-04 · PR #4
   - **Preparación local (2026-10-04):** Siete tablas, índices, 14 artículos y db:reset atómico implementados. Reinicio, restricciones y conservación de datos ante fallo comprobados en PostgreSQL 18.6; pendiente entorno objetivo y PR. Incluido en PR #4 (abierto).
   - **Gate verificado (2026-10-04, 23:45):** en PostgreSQL 16.15 con Bun 1.3.13, `db:reset` → 7 tablas y 14 artículos; `UPDATE usuarios SET fichas = -1` falla por `usuarios_fichas_check`; artículo repetido en `inventario` falla por `inventario_pkey`. Pendiente fusión del PR #4.
   - **Hecho cuando:** `bun run db:reset` en limpio crea 7 tablas y 14 artículos; `UPDATE usuarios SET fichas = -1` falla por `CHECK`; insertar dos veces el mismo artículo en `inventario` falla por PK. *Desbloquea a Hector (T-08).*
+  - **Hecha — PR #4 (2026-10-05):** PR #4 fusionado. Criterio verificado en [Avance-M-02](Avance-M-02.md) (7 tablas, 14 artículos, restricciones comprobadas en SQL); se marca según esa auditoría.
 - [ ] T-14 · README con requisitos (Bun, Docker) y los 4 comandos para arrancar (borrador del manual de instalación) · Massimo · depende de: T-05
   - **Preparación local (2026-10-04):** README y docs/manual-instalacion.md actualizados con los comandos existentes y límites actuales. Pendiente que Nahum arranque independientemente siguiendo el README. Incluido en PR #4 (abierto).
   - **Hecho cuando:** Nahum levanta el proyecto en su máquina solo con el README, sin preguntar.
@@ -79,14 +87,18 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** `bun run bots 4 --mesa mesa-1` juega 10 rondas seguidas sin errores en la consola del servidor (sirve también de jugadores extra en la demo).
 
 ### Nahum
-- [ ] T-27 · Componentes `Carta` (frente y reverso por CSS/SVG, sin imágenes externas), `Asiento` (avatar, nombre, apuesta, total, estado, desconectado) y `ManoDealer` · Nahum · depende de: T-12 · avance en PR #9 (falta la pagina de las 52 cartas)
+- [ ] T-27 · Componentes `Carta` (frente y reverso por CSS/SVG, sin imágenes externas), `Asiento` (avatar, nombre, apuesta, total, estado, desconectado) y `ManoDealer` · Nahum · depende de: T-12 · PR #9 (avance)
   - **Hecho cuando:** en el mock se ven las 52 cartas y los 5 reversos del catálogo correctamente.
-- [ ] T-28 · Pantalla de mesa: fase, cuenta regresiva a partir de `finEn`, fichas para apostar, botones Pedir/Plantarse habilitados **solo** en tu turno · Nahum · depende de: T-27, T-11 (mock) y T-18 (real) · avance en PR #11 (falta probar con 3 pestanas reales, requiere T-18)
+  - **Avance — PR #9 (2026-10-05):** `Carta` en CSS (reverso para `{oculta:true}`), `Ficha` en SVG, `Asiento`, `ManoDealer`, `MesaVisual` con el dealer al centro y un color por asiento. La animación de reparto y el volteo llegan con T-28 (PR #11). Falta la página de prueba con las 52 cartas; los 5 reversos del catálogo dependen de T-40 (pospuesta), hoy hay un reverso único.
+- [ ] T-28 · Pantalla de mesa: fase, cuenta regresiva a partir de `finEn`, fichas para apostar, botones Pedir/Plantarse habilitados **solo** en tu turno · Nahum · depende de: T-27, T-11 (mock) y T-18 (real) · PR #11 (avance)
   - **Hecho cuando:** con 3 pestañas reales, solo la pestaña con el turno tiene los botones activos y las 3 ven la carta repartida en < 1 s.
-- [ ] T-29 · Resultado de ronda (overlay con ganó/perdió/empate y fichas) + avisos de error legibles a partir de `error.mensaje` · Nahum · depende de: T-28 · avance en PR #12 (falta probar con el servidor real, requiere T-18 y T-20)
+  - **Avance — PR #11 (2026-10-05):** temporizador circular desde `finEn` (verde → ámbar → rojo) y barra del turno; cartas que vuelan del zapato del dealer y se descubren en orden de casino; total sobre la última carta; jugador propio abajo al centro; selector de fichas 10/50/100/500; Pedir y Plantarse solo en tu turno; panel de acciones centrado. 101 pruebas, verificado en el mock. Falta la prueba con 3 pestañas reales (requiere T-18).
+- [ ] T-29 · Resultado de ronda (overlay con ganó/perdió/empate y fichas) + avisos de error legibles a partir de `error.mensaje` · Nahum · depende de: T-28 · PR #12 (avance)
   - **Hecho cuando:** al terminar la ronda cada jugador ve su resultado; forzar `pedir` fuera de turno desde consola muestra el aviso "No es tu turno".
-- [ ] T-30 · Panel de billetera: dinero, fichas, "te quedan X fichas por comprar hoy, se reinicia a las 00:00", compra con botón deshabilitado mientras espera respuesta y `clave` nueva por clic · Nahum · depende de: T-24 (mock mientras tanto) · avance en PR #10 (falta probar con T-24 real)
+  - **Avance — PR #12 (2026-10-05):** pantalla de resultado animada por tono (victoria con rayos, confeti y fichas volando; empate; derrota), píldora para reabrirla, avisos y saldo animados; los avisos de `error.mensaje` y el límite de errores vienen de T-11/T-12. 116 pruebas, verificado en el mock. Falta probar con el servidor real (requiere T-18 y T-20).
+- [ ] T-30 · Panel de billetera: dinero, fichas, "te quedan X fichas por comprar hoy, se reinicia a las 00:00", compra con botón deshabilitado mientras espera respuesta y `clave` nueva por clic · Nahum · depende de: T-24 (mock mientras tanto) · PR #10 (avance)
   - **Hecho cuando:** comprar 1,000 actualiza saldo y disponible; con el límite agotado, el botón muestra el motivo y la hora de reinicio.
+  - **Avance — PR #10 (2026-10-05):** billetera en un menú lateral accesible desde lobby y mesa; compra con validación previa (contrato y `disponibleHoy`), `clave` nueva por clic y botón deshabilitado mientras espera. En el mock: 1,000 actualiza saldo y disponible, el doble clic cobra una vez y 0, -10, 10.5, 15 y 1e9 no se envían. Falta probar contra T-24 por WebSocket (requiere T-07).
 - [ ] T-33 · Guion de exposición v1 (`docs/exposicion.md`): estructura, quién dice qué y tiempos (≈3 min cada uno), guion de la demo en vivo · Nahum · depende de: —
   - **Hecho cuando:** los 3 aprobaron el guion en el grupo y suma ≤ 9 min en papel.
 
@@ -94,16 +106,19 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 - [ ] T-22 · 🔓 `server/src/db` (conexión `sql` de Bun, helper `enTransaccion`) + **interfaz `Billetera`** con JSDoc y firmas definitivas · Massimo · depende de: T-05
   - **Preparación local (2026-10-04):** crearConexion, enTransaccion e interfaz Billetera con firmas async implementados y verificados. Pendiente PR/fusión e importación por Hector en T-20. Incluido en PR #4 (abierto).
   - **Hecho cuando:** la interfaz está fusionada en `main` y Hector la importa para T-20 con una implementación falsa en memoria. *Desbloquea a Hector.*
-- [ ] T-23 · `BilleteraSQL.debitarApuesta` / `acreditarPago` con `FOR UPDATE` + `movimientos` · Massimo · depende de: T-22
+- [x] T-23 · `BilleteraSQL.debitarApuesta` / `acreditarPago` con `FOR UPDATE` + `movimientos` · Massimo · depende de: T-22 · PR #4
   - **Preparación local (2026-10-04):** Débito y pago transaccionales implementados; tests PostgreSQL real verifican rollback, concurrencia, saldo y ledger. Pago cero no crea movimiento. Pendiente integración con Mesa y PR. Incluido en PR #4 (abierto).
   - **Hecho cuando:** test: debitar más fichas de las que hay → `FICHAS_INSUFICIENTES` y ni `usuarios` ni `movimientos` cambian.
-- [ ] T-24 · `fichas.comprar` con límite diario en CDMX, idempotencia por `clave` y mensaje `billetera` con `compradoHoy`, `disponibleHoy`, `reinicioEn` · Massimo · depende de: T-22
+  - **Hecha — PR #4 (2026-10-05):** PR #4 fusionado. Criterio técnico verificado con PostgreSQL real en [Avance-M-02](Avance-M-02.md); se marca según esa auditoría. La conexión al enrutador depende de T-07.
+- [x] T-24 · `fichas.comprar` con límite diario en CDMX, idempotencia por `clave` y mensaje `billetera` con `compradoHoy`, `disponibleHoy`, `reinicioEn` · Massimo · depende de: T-22 · PR #4
   - **Preparación local (2026-10-04):** Compra idempotente con límite del día CDMX implementada y probada en PostgreSQL real, incluido reloj capturado después del bloqueo. Pendiente handler WebSocket y PR. Incluido en PR #4 (abierto).
   - **Hecho cuando:** comprar 5,000 funciona; comprar 10 más → `LIMITE_DIARIO`; cambiar la fecha de los movimientos a "ayer" en SQL → se puede comprar otra vez; repetir la misma `clave` no cobra dos veces.
-- [ ] T-25 · Tests de economía contra Postgres real: 10 compras de 1,000 en paralelo con límite 5,000 → exactamente 5 exitosas; doble `clave`; dinero insuficiente; cantidades 0, -10, 10.5, 15, 1e9 · Massimo · depende de: T-24
+  - **Hecha — PR #4 (2026-10-05):** PR #4 fusionado. Criterio técnico verificado con PostgreSQL real en [Avance-M-02](Avance-M-02.md); se marca según esa auditoría. El mensaje por WebSocket depende del enrutador (T-07); el cliente ya lo consume en T-30.
+- [x] T-25 · Tests de economía contra Postgres real: 10 compras de 1,000 en paralelo con límite 5,000 → exactamente 5 exitosas; doble `clave`; dinero insuficiente; cantidades 0, -10, 10.5, 15, 1e9 · Massimo · depende de: T-24 · PR #4
   - **Preparación local (2026-10-04):** Suite de economía/tienda ejecutada contra PostgreSQL 18.6 con TEST_DATABASE_URL: concurrencia, límites, idempotencia, rechazo, paginación y reconciliación contable. Suite conjunta: 70 pruebas correctas; pendiente repetir entorno objetivo. Incluido en PR #4 (abierto).
   - **Entorno objetivo (2026-10-04, 23:45):** clon limpio con Bun 1.3.13 + PostgreSQL 16.15: 70 pruebas, 381 aserciones y 0 fallos (cubre también T-23, T-24 y T-34). Pendiente fusión del PR #4.
   - **Hecho cuando:** `bun test` en verde y la suma de `movimientos` de cada usuario de prueba coincide con su saldo final.
+  - **Hecha — PR #4 (2026-10-05):** PR #4 fusionado. Suite de economía con PostgreSQL real: 70 pruebas, 0 fallos ([Avance-M-02](Avance-M-02.md)); se marca según esa auditoría.
 - [ ] T-31 · Integración Hito 2 en 3 laptops (coordina, los 3 participan); abrir issues por cada fallo · Massimo · depende de: T-20, T-21, T-28, T-24
   - **Hecho cuando:** **checkpoint Hito 2** — 3 personas en 3 laptops juegan 5 rondas seguidas sin errores, y cada una compra fichas respetando el límite.
 - [ ] T-32 · `docs/arquitectura.md` v1: arquitectura, diagrama de clases, máquina de estados y ER (desde `PLAN.md`, actualizados a lo que realmente se construyó) · Massimo · depende de: T-18
@@ -121,21 +136,27 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** un script que manda 1,000 mensajes basura en 1 s recibe errores y las otras pestañas siguen jugando sin retraso notable.
 - [ ] T-38 · En producción el servidor sirve `client/dist` (un solo puerto 3000) y el cliente usa el mismo host para `/ws` · Hector · depende de: T-10
   - **Hecho cuando:** `bun run build && bun run start` y otra laptop abre `http://<ip>:3000` y juega.
+  - **Desbloqueada (2026-10-05):** T-10 ya está en `main` (PR #6). El cliente construye la URL de `/ws` con el mismo host, así que funciona servido por Bun sin cambios.
 
 ### Nahum
 - [ ] T-39 · Tienda: catálogo por tipo con precio, "poseído" y compra con confirmación · Nahum · depende de: T-34
   - **Hecho cuando:** comprar un artículo descuenta fichas, aparece como poseído y el botón ya no deja comprarlo otra vez.
+  - **⏸ Pospuesta (2026-10-05):** Nahum la pospone (no se elimina) según el criterio de corte de PLAN §10, pendiente de confirmar en la decisión de corte del equipo. Se retoma solo si las tareas P0 del cliente están fusionadas, T-31 pasó y T-34 está conectada al enrutador.
 - [ ] T-40 · Inventario y equipar; avatar y reverso de los demás visibles en la mesa; tema de mesa aplicado localmente · Nahum · depende de: T-35
   - **Hecho cuando:** A equipa `avatar_robot` en el lobby, entra a la mesa y B y C ven el robot en el asiento de A.
-- [ ] T-41 · Historial de movimientos (tabla con tipo, cambio en fichas/dinero, saldo resultante, fecha en hora local; "ver más") · Nahum · depende de: T-34 · avance en PR #10 (falta movimientos.listar real)
+  - **⏸ Pospuesta (2026-10-05):** igual que T-39; además requiere T-35.
+- [ ] T-41 · Historial de movimientos (tabla con tipo, cambio en fichas/dinero, saldo resultante, fecha en hora local; "ver más") · Nahum · depende de: T-34 · PR #10 (avance)
   - **Hecho cuando:** tras comprar fichas, apostar y comprar un artículo, aparecen las 3 filas en orden con los saldos correctos.
+  - **Avance — PR #10 (2026-10-05):** historial compacto en el menú lateral con tipo, Δ fichas, Δ dinero, saldo y hora local; "Ver más" con `antesDe` y `hayMas`. Verificado en el mock. Falta `movimientos.listar` por WebSocket (T-34 + T-07).
 - [ ] T-42 · Indicador de conexión propia (conectado / reconectando) y de jugadores desconectados en su asiento · Nahum · depende de: T-36
   - **Hecho cuando:** al apagar el Wi-Fi de una laptop, las otras dos ven a ese jugador como "desconectado" en < 2 s.
+  - **Avance — PRs #8 a #11 (2026-10-05):** indicador propio (conectado / reconectando / sin conexión) en el encabezado y marca "Desconectado" en el asiento de los demás según `conectado` del snapshot. Falta la prueba de apagar el Wi-Fi con 3 laptops (requiere T-36).
 
 ### Massimo
-- [ ] T-34 · Backend de tienda: `tienda.catalogo`, `tienda.comprar` (`FOR UPDATE`, `YA_POSEIDO`, `FICHAS_INSUFICIENTES`), `inventario.listar`, `movimientos.listar` paginado · Massimo · depende de: T-23
+- [x] T-34 · Backend de tienda: `tienda.catalogo`, `tienda.comprar` (`FOR UPDATE`, `YA_POSEIDO`, `FICHAS_INSUFICIENTES`), `inventario.listar`, `movimientos.listar` paginado · Massimo · depende de: T-23 · PR #4
   - **Preparación local (2026-10-04):** Tienda.catalogo/comprar/inventario/listarMovimientos implementados y probados directamente contra PostgreSQL; doble compra cobra una vez. Pendiente handlers/publicaciones WebSocket y PR. Incluido en PR #4 (abierto).
   - **Hecho cuando:** test: dos compras simultáneas del mismo artículo → una exitosa y una `YA_POSEIDO`, cobrada una sola vez.
+  - **Hecha — PR #4 (2026-10-05):** PR #4 fusionado. Servicios verificados con PostgreSQL real en [Avance-M-02](Avance-M-02.md); se marca según esa auditoría. `movimientos.listar` por WebSocket depende del enrutador (T-07); el cliente ya lo consume en T-41.
 - [ ] T-35 · `inventario.equipar` con `BLOQUEADO_EN_MANO` (consulta a `GestorMesas`) y republicación del snapshot de la mesa · Massimo · depende de: T-34, T-18
   - **Preparación local (2026-10-04):** Bloqueada por GestorMesas (T-18). No se implementa equipamiento sin validación autoritativa de fase ni publicación del snapshot.
   - **Hecho cuando:** equipar en fase `TURNOS` → `BLOQUEADO_EN_MANO`; en `APUESTAS` → los demás ven el cambio en < 1 s; equipar algo no poseído → `NO_POSEIDO`.
@@ -153,6 +174,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 ### Nahum
 - [ ] T-47 · JSDoc/comentarios en hooks de red, store y componentes principales del cliente · Nahum · depende de: T-43
   - **Hecho cuando:** `useSocket`, el store y las 5 pantallas tienen comentario de propósito; revisado por Hector.
+  - **Avance (2026-10-05):** todo el código del cliente en los PRs #6 a #12 tiene comentario de cabecera y JSDoc en clases, funciones exportadas y componentes. Falta la revisión final de Hector tras el congelamiento.
 - [ ] T-49 · `docs/manual-usuario.md` con capturas: registro, lobby, cómo jugar una ronda, comprar fichas, tienda, inventario, historial, qué pasa si te desconectas · Nahum · depende de: T-43
   - **Hecho cuando:** Hector (que no lo escribió) juega una ronda y compra un artículo siguiendo solo el manual.
 - [ ] T-51 · Diapositivas (≤ 8, más imágenes que texto): problema, arquitectura, protocolo, juego, economía/transacciones, demo, cierre · Nahum · depende de: T-33
