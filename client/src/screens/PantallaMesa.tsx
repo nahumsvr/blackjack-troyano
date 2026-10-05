@@ -96,7 +96,7 @@ export function PantallaMesa({ alAbrirMenu }: PropsPantallaMesa): ReactNode {
       )}
       {propio?.estado === "ESPERANDO_RONDA" && <p className="rounded bg-sky-800 p-2 text-sm">Entraste a media ronda: juegas desde la siguiente.</p>}
 
-      <MesaVisual mesa={mesa} miId={miId}>
+      <MesaVisual mesa={mesa} miId={miId} desfaseMs={estado.desfaseMs}>
         {miResultado !== null && (
           <p className="rounded-lg bg-amber-400 px-4 py-2 text-center text-lg font-bold text-emerald-950 shadow-xl">
             {TEXTO_RESULTADO[miResultado.resultado]} · apostaste {miResultado.apuesta}, recibes {miResultado.pago}
