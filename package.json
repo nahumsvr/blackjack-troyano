@@ -9,8 +9,10 @@
   ],
   "scripts": {
     "dev": "bun scripts/dev.ts",
+    "db:reset": "bun scripts/db-reset.ts",
     "test": "bun test --pass-with-no-tests",
-    "typecheck": "bun run --filter @blackjack/shared typecheck && bun run --filter @blackjack/server typecheck && bun run --filter @blackjack/client typecheck && tsc --project scripts/tsconfig.json"
+    "typecheck": "bun run --filter @blackjack/shared typecheck && bun run --filter @blackjack/server typecheck && bun run --filter @blackjack/client typecheck && tsc --project scripts/tsconfig.json",
+    "empaquetar": "bun scripts/empaquetar.ts"
   },
   "devDependencies": {
     "@types/bun": "1.3.13",

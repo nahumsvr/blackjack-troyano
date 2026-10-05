@@ -1,3 +1,4 @@
-/** Entrada compartida; Massimo exporta el contrato Zod en T-03. */
-export {};
-
+/** Entrada pública del contrato único que comparten cliente, servidor y bots. */
+export * from "./tipos";
+export * from "./errores";
+export * from "./protocolo";
