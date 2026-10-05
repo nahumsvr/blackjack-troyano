@@ -31,7 +31,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** 3 usuarios distintos ven las 3 mesas; cuando uno se sienta, las otras 2 pestañas ven "1/5" en < 1 s; una sexta persona recibe `MESA_LLENA`.
 
 ### Nahum
-- [ ] T-10 · Cliente Vite + React + TS + Tailwind, proxy de `/ws` a `:3000`, `vite --host` · Nahum · depende de: T-01
+- [x] T-10 · Cliente Vite + React + TS + Tailwind, proxy de `/ws` a `:3000`, `vite --host` · Nahum · depende de: T-01 · PR #6
   - **Hecho cuando:** `bun run dev` abre la app en otra laptop de la misma red usando la IP de la máquina.
 - [ ] T-11 · Capa de red: hook `useSocket` con reconexión (1 s, 2 s, 4 s… máx 10 s), envío con `reqId`, `reanudar` automático con token de `localStorage`, store global de estado · Nahum · depende de: T-03, T-10
   - **Hecho cuando:** reiniciar el servidor con la app abierta → el cliente muestra "reconectando" y vuelve solo, con la misma sesión, sin recargar.
