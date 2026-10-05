@@ -79,7 +79,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** `bun run bots 4 --mesa mesa-1` juega 10 rondas seguidas sin errores en la consola del servidor (sirve también de jugadores extra en la demo).
 
 ### Nahum
-- [ ] T-27 · Componentes `Carta` (frente y reverso por CSS/SVG, sin imágenes externas), `Asiento` (avatar, nombre, apuesta, total, estado, desconectado) y `ManoDealer` · Nahum · depende de: T-12
+- [ ] T-27 · Componentes `Carta` (frente y reverso por CSS/SVG, sin imágenes externas), `Asiento` (avatar, nombre, apuesta, total, estado, desconectado) y `ManoDealer` · Nahum · depende de: T-12 · avance en PR #9 (falta la pagina de las 52 cartas)
   - **Hecho cuando:** en el mock se ven las 52 cartas y los 5 reversos del catálogo correctamente.
 - [ ] T-28 · Pantalla de mesa: fase, cuenta regresiva a partir de `finEn`, fichas para apostar, botones Pedir/Plantarse habilitados **solo** en tu turno · Nahum · depende de: T-27, T-11 (mock) y T-18 (real)
   - **Hecho cuando:** con 3 pestañas reales, solo la pestaña con el turno tiene los botones activos y las 3 ven la carta repartida en < 1 s.
