@@ -30,17 +30,19 @@ Solo se cuentan tareas con PR fusionado en `main` y criterio de "hecho" comproba
 |---|---|---|---|
 | Hector | 2 | 19 | 11 % |
 | Nahum | 0 | 17 | 0 % |
-| Massimo | 2 | 19 | 11 % |
+| Massimo | 6 | 19 | 32 % |
 | Equipo | 0 | 2 | 0 % |
-| **Total** | **4** | **57** | **7 %** |
+| **Total** | **8** | **57** | **14 %** |
 
-Avance por hito: H1 4/14 (29 %) · H2 0/19 · H3 0/10 · H4 0/8 · H5 0/5 · Entrega 0/1
+Avance por hito: H1 4/14 (29 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 · H5 0/5 · Entrega 0/1
 
-- **Hechas:** T-01 y T-02 (Hector; la protección se aplicó y verificó hoy) y T-04 y T-05 (Massimo; gates verificados en su auditoría, fusionadas en el PR #4).
+- **Hechas:**
+  - T-01 y T-02 (Hector); la protección de `main` se aplicó y verificó hoy.
+  - T-04, T-05, T-23, T-24, T-25 y T-34 (Massimo). Su criterio está verificado con PostgreSQL 16 en Avance-M-02, que indicaba marcarlas al fusionarse el PR #4.
 - **Fusionadas con un gate pendiente** (no cuentan):
   - T-06: prueba visual.
   - T-10: abrirlo desde otra laptop por IP.
-- **En `main` por el PR #4, pendientes de que Massimo confirme su criterio:** T-03, T-14, T-22, T-23, T-24, T-25 y T-34.
+- **En `main` por el PR #4, pendientes de que Massimo confirme su criterio:** T-03, T-14 y T-22.
 - **En PR abierto** (no cuentan): T-11 (#7), T-12 (#8), T-27 (#9), T-30/T-41 (#10), T-28 (#11) y T-29 (#12).
 
 ## Bloqueos activos
@@ -64,7 +66,7 @@ Avance por hito: H1 4/14 (29 %) · H2 0/19 · H3 0/10 · H4 0/8 · H5 0/5 · Ent
   - T-27: página de prueba con las 52 cartas → T-33 guion → borradores de T-49 (manual) y T-51 (diapositivas) con capturas del mock.
   - En cuanto existan T-08 y T-09, verificar T-13 contra el servidor real.
 - **Massimo:**
-  - Confirmar y marcar T-03, T-14, T-22–T-25 y T-34.
+  - Confirmar y marcar T-03, T-14 y T-22.
   - Revisar #7 (uso de `shared/` en el cliente) y #10 (formato de `movimientos.listar`).
   - Handlers de economía para el enrutador de T-07.
   - Coordinar la decisión de corte.
@@ -88,4 +90,5 @@ Avance por hito: H1 4/14 (29 %) · H2 0/19 · H3 0/10 · H4 0/8 · H5 0/5 · Ent
 | 2026-10-05 | Nahum: T-30 y T-41 (avance) en PR #10 (sobre #9). Billetera e historial en un menu lateral accesible desde lobby y mesa; compra con validacion previa y clave por clic verificada en el mock. Falta probar contra T-24 y movimientos.listar reales. |
 | 2026-10-05 | Nahum: T-28 (avance) en PR #11 (sobre #10). Temporizador circular y barra de turno, cartas que vuelan del zapato y se descubren en orden de casino, total sobre la ultima carta, jugador propio al centro, selector de fichas y panel de acciones centrado; 101 pruebas. Falta la prueba con 3 pestanas reales (T-18). |
 | 2026-10-05 | Nahum: T-29 (avance) en PR #12 (sobre #11). Pantalla de resultado animada por tono (victoria con rayos, confeti y fichas volando; empate; derrota), pildora para reabrirla, avisos y saldo animados y resultados forzables en el mock; 116 pruebas. Falta probar con el servidor real (T-18/T-20). |
-| 2026-10-05 | Seguimiento de Nahum: main protegida y verificada (push directo rechazado, 1 aprobacion, historial lineal, solo squash); T-02 hecha. PR #4 y PR #6 (T-10) fusionados; T-04 y T-05 cuentan segun la auditoria de Massimo; T-10 con gate pendiente (otra laptop por IP). Avance 4/57 (7 %). Cliente publicado en PRs apilados #7 a #12. |
+| 2026-10-05 | Seguimiento de Nahum: main protegida y verificada (push directo rechazado, 1 aprobacion, historial lineal, solo squash); T-02 hecha. PR #4 y PR #6 (T-10) fusionados; T-04, T-05, T-23, T-24, T-25 y T-34 cuentan segun Avance-M-02; T-10 con gate pendiente (otra laptop por IP). Avance 8/57 (14 %). Cliente publicado en PRs apilados #7 a #12. |
+| 2026-10-05 | Seguimiento de Nahum (2): T-23, T-24, T-25 y T-34 marcadas segun Avance-M-02 (avance 8/57, 14 %); T-12 desmarcada porque su criterio pide la tienda (T-39, pospuesta); notas con fecha en las tareas del cliente; README, manual de instalacion y arquitectura actualizados con el cliente; Avance-N-01 con el detalle. |
