@@ -1,23 +1,26 @@
 /**
- * Lobby: mesas disponibles con su ocupación en vivo (topic `lobby`), billetera y cierre de sesión.
+ * Lobby: mesas disponibles con su ocupación en vivo (topic `lobby`), acceso al menú lateral
+ * (billetera e historial) y cierre de sesión.
  * Base de T-13.
  */
 import { useEffect, type ReactNode } from "react";
-import { PanelBilletera } from "../components/PanelBilletera";
+import { BotonBilletera } from "../components/BotonBilletera";
+import { IndicadorConexion } from "../components/IndicadorConexion";
+import type { PestanaMenu } from "../components/MenuLateral";
 import { useJuego } from "../state/store";
 
 /** Props del lobby. */
 interface PropsPantallaLobby {
-  /** Abre el historial de movimientos. */
-  alVerHistorial: () => void;
+  /** Abre el menú lateral en una pestaña. */
+  alAbrirMenu: (pestana: PestanaMenu) => void;
 }
 
 /**
- * Lista de mesas y panel de billetera.
- * @param props - Navegación al historial.
+ * Lista de mesas.
+ * @param props - Apertura del menú lateral.
  * @returns Pantalla del lobby.
  */
-export function PantallaLobby({ alVerHistorial }: PropsPantallaLobby): ReactNode {
+export function PantallaLobby({ alAbrirMenu }: PropsPantallaLobby): ReactNode {
   const { estado, acciones } = useJuego();
   const conectado = estado.conexion === "conectado";
 
@@ -32,8 +35,10 @@ export function PantallaLobby({ alVerHistorial }: PropsPantallaLobby): ReactNode
     <main className="mx-auto flex max-w-3xl flex-col gap-6 p-6">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">Hola, {estado.sesion?.usuario.usuario}</h1>
-        <div className="flex gap-2">
-          <button type="button" onClick={alVerHistorial} className="rounded border border-emerald-600 px-3 py-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <IndicadorConexion />
+          <BotonBilletera alAbrir={() => alAbrirMenu("billetera")} />
+          <button type="button" onClick={() => alAbrirMenu("historial")} className="rounded border border-emerald-600 px-3 py-1">
             Historial
           </button>
           <button
@@ -71,7 +76,6 @@ export function PantallaLobby({ alVerHistorial }: PropsPantallaLobby): ReactNode
           })}
         </ul>
       </section>
-      <PanelBilletera />
     </main>
   );
 }
