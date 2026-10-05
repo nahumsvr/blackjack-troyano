@@ -12,7 +12,7 @@ Documento de implementación local, 4 de octubre de 2026. El diseño completo es
 | `server/src/store/` | Interfaz `Billetera`, `BilleteraSQL`, `Tienda` y consultas de saldo/historial | Handlers WebSocket, publicación de respuestas y equipamiento |
 | `server/db/` | Siete tablas e índices, catálogo de 14 artículos | Uso por autenticación y persistencia de rondas |
 | `scripts/db-reset.ts` | Recreación atómica de tablas del proyecto con confirmación de destino | Instalación independiente según manual |
-| `client/` | Workspace TypeScript mínimo | Vite/React/Tailwind, pantallas, mocks y reconexión |
+| `client/` | Vite/React/Tailwind; capa de red con reconexión, `reqId` y validación Zod; store; pantallas de acceso, lobby y mesa; resultado de la ronda; billetera e historial; servidor falso `?mock=1` (PRs #6 a #12) | Conexión con el servidor real (T-13, T-28–T-30, T-41) y tienda/inventario (T-39/T-40, pospuestas) |
 | `server/src/auth/`, `server/src/game/` | Diseño documentado | Sesiones, clases del juego y máquina de estados |
 
 Los servicios de economía se pueden invocar y probar directamente contra PostgreSQL. La implementación del transporte actual solo publica `bienvenida`: todavía no permite comprar ni jugar desde un navegador. Las instrucciones disponibles están en [manual-instalacion.md](manual-instalacion.md).
