@@ -4,7 +4,7 @@ Este manual describe el código disponible. La interfaz React, el registro/login
 
 ## Requisitos
 
-- Bun 1.3.13, indicado en `package.json`; las verificaciones locales también se ejecutaron con Bun 1.4.2.
+- Bun 1.3.13, indicado en `package.json` y verificado con este manual; Bun 1.4.2 también funciona.
 - Docker Engine y Docker Compose v2 o compatible (`docker compose version`). El servicio usa la imagen `postgres:16`.
 - Git para clonar, o un descompresor ZIP si recibiste `blackjack-equipo.zip`.
 - Opcional: `psql` para consultas SQL desde el anfitrión. También puedes usar el cliente incluido en el contenedor.
@@ -81,7 +81,7 @@ Los comandos previstos `bun run build` y `bun run start` todavía no existen. T-
 
 | Problema | Acción |
 | --- | --- |
-| Docker no puede conectarse a `/var/run/docker.sock` | Comprueba que Docker esté iniciado y que tu usuario tenga acceso al daemon según la instalación de tu sistema. |
+| Docker no puede conectarse a `/var/run/docker.sock` (`permission denied`) | Comprueba que Docker esté iniciado (`sudo systemctl start docker` en Linux). Si el error es de permisos, agrega tu usuario al grupo con `sudo usermod -aG docker $USER` y cierra e inicia sesión, o antepone `sudo` a los comandos `docker compose`. Si no quieres cerrar sesión, `newgrp docker` abre una terminal con el grupo aplicado. En Windows/macOS, abre Docker Desktop. |
 | PostgreSQL no inicia por puerto ocupado | Cambia `POSTGRES_PORT` en `.env` y el puerto de `DATABASE_URL`, y vuelve a levantar Compose. |
 | `db:reset` indica que falta `DATABASE_URL` | Comprueba que `.env` esté en la raíz y ejecuta el comando desde esa carpeta. |
 | PostgreSQL rechaza la contraseña tras editar `.env` | El volumen retiene sus credenciales originales; usa esas credenciales o cambia la contraseña dentro de PostgreSQL. |
@@ -93,4 +93,6 @@ Los comandos previstos `bun run build` y `bun run start` todavía no existen. T-
 
 El esquema, el catálogo y el reinicio se verificaron en una instancia temporal de PostgreSQL **18.6**, con Bun 1.4.2. Se comprobaron las siete tablas, los 14 artículos, las restricciones de saldo y duplicados, la clave de idempotencia, la confirmación obligatoria y la conservación de datos ante fallos.
 
-La configuración de Compose pasó `docker compose config --quiet`. El inicio real con PostgreSQL **16** queda pendiente: la sesión de verificación no tiene acceso al socket de Docker. Este manual todavía no acredita instalación independiente ni juego con tres usuarios.
+**Entorno objetivo (4 oct):** `docker compose up -d --wait` levantó PostgreSQL **16.15** sano y `psql $DATABASE_URL -c 'select 1'` respondió. Con **Bun 1.3.13** en un clon limpio, `db:reset` creó siete tablas y 14 artículos, y `typecheck` y la suite completa con `TEST_DATABASE_URL` (70 pruebas, 381 aserciones) pasaron sin fallos. El puerto 5432 estaba ocupado por otro PostgreSQL, así que se usó `POSTGRES_PORT=5433` como se indica en *Problemas habituales*.
+
+Este manual todavía no acredita instalación independiente en otra laptop ni juego con tres usuarios.
