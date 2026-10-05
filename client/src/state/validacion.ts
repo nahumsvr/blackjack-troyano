@@ -68,3 +68,25 @@ export function validarCompra(texto: string, billetera: BilleteraEstado): Valida
   }
   return { ok: true, cantidad };
 }
+
+/** Denominaciones de las fichas del selector de apuesta (se descartan las que el contrato no admite). */
+export const VALORES_FICHA_APUESTA: readonly number[] = [10, 50, 100, 500].filter(
+  (valor) => valor % LIMITES_CANTIDAD.multiplo === 0 && valor <= LIMITES_CANTIDAD.apuestaMax,
+);
+
+/**
+ * Suma una ficha a la apuesta escrita, sin pasarse del máximo del contrato ni de las fichas del
+ * jugador (redondeadas al múltiplo permitido). Si el texto no es una cantidad válida, empieza de 0.
+ * @param texto - Apuesta escrita hasta ahora.
+ * @param valor - Denominación de la ficha tocada.
+ * @param fichas - Fichas del usuario según la última `billetera`.
+ * @returns Nueva apuesta, o `null` si ya no se puede subir (tope alcanzado o fichas insuficientes).
+ */
+export function sumarFicha(texto: string, valor: number, fichas: number): number | null {
+  const { apuestaMin, apuestaMax, multiplo } = LIMITES_CANTIDAD;
+  const leida = leerEntero(texto);
+  const actual = leida !== null && Number.isInteger(leida) && leida > 0 && leida % multiplo === 0 ? leida : 0;
+  const tope = Math.min(apuestaMax, Math.floor(fichas / multiplo) * multiplo);
+  if (tope < apuestaMin || actual >= tope) return null;
+  return Math.min(actual + valor, tope);
+}

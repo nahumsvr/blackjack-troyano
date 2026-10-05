@@ -1,7 +1,8 @@
 /** Pruebas de las validaciones de formularios (apuesta, compra y credenciales). */
 import { describe, expect, test } from "bun:test";
 import { validarCredenciales } from "../src/screens/PantallaAcceso";
-import { leerEntero, validarApuesta, validarCompra } from "../src/state/validacion";
+import { LIMITES_CANTIDAD } from "@blackjack/shared";
+import { VALORES_FICHA_APUESTA, leerEntero, sumarFicha, validarApuesta, validarCompra } from "../src/state/validacion";
 import { BILLETERA } from "./apoyo";
 
 describe("leerEntero", () => {
@@ -58,5 +59,33 @@ describe("validarCredenciales", () => {
     expect(validarCredenciales("registro", "con espacio", "secreta").usuario).toBeDefined();
     expect(validarCredenciales("registro", "gato🐱", "secreta").usuario).toBeDefined();
     expect(validarCredenciales("login", "nahum", "12345").contrasena).toBeDefined();
+  });
+});
+
+describe("sumarFicha", () => {
+  test("suma la ficha a la apuesta escrita", () => {
+    expect(sumarFicha("10", 50, 1000)).toBe(60);
+    expect(sumarFicha("100", 100, 1000)).toBe(200);
+  });
+
+  test("un texto vacío o inválido empieza de 0", () => {
+    expect(sumarFicha("", 50, 1000)).toBe(50);
+    expect(sumarFicha("abc", 10, 1000)).toBe(10);
+    expect(sumarFicha("15", 10, 1000)).toBe(10);
+    expect(sumarFicha("-10", 10, 1000)).toBe(10);
+  });
+
+  test("no pasa del máximo del contrato ni de las fichas disponibles", () => {
+    expect(sumarFicha("400", 500, 10_000)).toBe(LIMITES_CANTIDAD.apuestaMax);
+    expect(sumarFicha("100", 500, 255)).toBe(250);
+    expect(sumarFicha(String(LIMITES_CANTIDAD.apuestaMax), 10, 10_000)).toBeNull();
+  });
+
+  test("sin fichas suficientes para la apuesta mínima no suma", () => {
+    expect(sumarFicha("", 10, 5)).toBeNull();
+  });
+
+  test("las fichas del selector son todas apuestas válidas", () => {
+    for (const valor of VALORES_FICHA_APUESTA) expect(validarApuesta(String(valor), 10_000).ok).toBe(true);
   });
 });
