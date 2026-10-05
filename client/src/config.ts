@@ -23,3 +23,9 @@ export function urlWebSocket(ubicacion: Pick<Location, "protocol" | "host">): st
   const esquema = ubicacion.protocol === "https:" ? "wss" : "ws";
   return `${esquema}://${ubicacion.host}/ws`;
 }
+
+/** Máximo de avisos visibles a la vez; al llegar uno nuevo se descarta el más antiguo. */
+export const MAX_AVISOS = 4;
+
+/** Tiempo que un aviso permanece visible antes de ocultarse solo, en ms. */
+export const DURACION_AVISO_MS = 5000;

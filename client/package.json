@@ -6,7 +6,7 @@
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview --host",
-    "typecheck": "tsc --project tsconfig.json"
+    "typecheck": "tsc --project tsconfig.json && tsc --project tsconfig.test.json"
   },
   "dependencies": {
     "@blackjack/shared": "workspace:*",
