@@ -83,7 +83,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** en el mock se ven las 52 cartas y los 5 reversos del catálogo correctamente.
 - [ ] T-28 · Pantalla de mesa: fase, cuenta regresiva a partir de `finEn`, fichas para apostar, botones Pedir/Plantarse habilitados **solo** en tu turno · Nahum · depende de: T-27, T-11 (mock) y T-18 (real) · avance en PR #11 (falta probar con 3 pestanas reales, requiere T-18)
   - **Hecho cuando:** con 3 pestañas reales, solo la pestaña con el turno tiene los botones activos y las 3 ven la carta repartida en < 1 s.
-- [ ] T-29 · Resultado de ronda (overlay con ganó/perdió/empate y fichas) + avisos de error legibles a partir de `error.mensaje` · Nahum · depende de: T-28
+- [ ] T-29 · Resultado de ronda (overlay con ganó/perdió/empate y fichas) + avisos de error legibles a partir de `error.mensaje` · Nahum · depende de: T-28 · avance en PR #12 (falta probar con el servidor real, requiere T-18 y T-20)
   - **Hecho cuando:** al terminar la ronda cada jugador ve su resultado; forzar `pedir` fuera de turno desde consola muestra el aviso "No es tu turno".
 - [ ] T-30 · Panel de billetera: dinero, fichas, "te quedan X fichas por comprar hoy, se reinicia a las 00:00", compra con botón deshabilitado mientras espera respuesta y `clave` nueva por clic · Nahum · depende de: T-24 (mock mientras tanto) · avance en PR #10 (falta probar con T-24 real)
   - **Hecho cuando:** comprar 1,000 actualiza saldo y disponible; con el límite agotado, el botón muestra el motivo y la hora de reinicio.
