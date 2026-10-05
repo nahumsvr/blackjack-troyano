@@ -1,39 +1,43 @@
 /**
- * Componente raíz de la interfaz. Elige qué mostrar a partir del estado global.
- * Provisional (T-11): solo muestra el estado de la conexión y de la sesión;
- * las pantallas de acceso, lobby y mesa llegan en T-12, T-13 y T-28.
+ * Componente raíz: decide qué pantalla mostrar a partir del estado global.
+ * - Sin sesión → acceso.
+ * - Con mesa (el servidor nos sentó) → mesa.
+ * - Si no, la vista elegida por el usuario en el lobby (lobby o historial).
+ * Las vistas del lobby son una lista para agregar Tienda e Inventario (T-39/T-40) sin reestructurar.
  */
-import type { ReactNode } from "react";
-import type { EstadoConexion } from "./net/transporte";
+import { useState, type ReactNode } from "react";
+import { Avisos } from "./components/Avisos";
+import { IndicadorConexion } from "./components/IndicadorConexion";
+import { PantallaAcceso } from "./screens/PantallaAcceso";
+import { PantallaHistorial } from "./screens/PantallaHistorial";
+import { PantallaLobby } from "./screens/PantallaLobby";
+import { PantallaMesa } from "./screens/PantallaMesa";
 import { useJuego } from "./state/store";
 
-/** Texto visible de cada estado de conexión. */
-const TEXTO_CONEXION: Record<EstadoConexion, string> = {
-  conectando: "Conectando…",
-  conectado: "Conectado",
-  reconectando: "Reconectando…",
-  cerrado: "Sin conexión",
-};
+/** Vistas a las que se navega desde el lobby. */
+type Vista = "lobby" | "historial";
 
 /**
- * Pantalla provisional con el estado de la conexión.
- * @returns Elemento raíz de la app.
+ * Pantalla activa más los elementos globales (indicador de conexión y avisos).
+ * @returns Árbol de la app.
  */
 export function App(): ReactNode {
   const { estado } = useJuego();
+  const [vista, setVista] = useState<Vista>("lobby");
+
+  let pantalla: ReactNode;
+  if (estado.sesion === null) pantalla = <PantallaAcceso />;
+  else if (estado.mesa !== null) pantalla = <PantallaMesa />;
+  else if (vista === "historial") pantalla = <PantallaHistorial alVolver={() => setVista("lobby")} />;
+  else pantalla = <PantallaLobby alVerHistorial={() => setVista("historial")} />;
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-2">
-      <h1 className="text-3xl font-bold">Blackjack</h1>
-      <p data-prueba="conexion">{TEXTO_CONEXION[estado.conexion]}</p>
-      {estado.conectados !== null && <p>Conectados: {estado.conectados}</p>}
-      <p>{estado.sesion === null ? "Sin sesión" : `Sesión de ${estado.sesion.usuario.usuario}`}</p>
-      <ul className="fixed right-4 bottom-4 flex flex-col gap-2">
-        {estado.avisos.map((aviso) => (
-          <li key={aviso.id} className="rounded bg-red-700 px-3 py-2 text-sm">
-            {aviso.texto}
-          </li>
-        ))}
-      </ul>
-    </main>
+    <>
+      <div className="fixed bottom-4 left-4 z-40 rounded bg-emerald-950/80 px-2 py-1">
+        <IndicadorConexion />
+      </div>
+      {pantalla}
+      <Avisos />
+    </>
   );
 }
