@@ -2,16 +2,18 @@
  * Pantalla de mesa. Dibuja el snapshot `mesa.estado` tal cual y habilita las acciones solo
  * cuando el servidor las aceptaría (fase y turno); el servidor sigue siendo quien decide.
  * La mesa se dibuja con `MesaVisual` (dealer al centro, jugadores alrededor). Al centro del paño
- * aparecen pistas de qué hacer ("Haz tu apuesta", "¡Te toca!") y el resultado propio de la ronda;
- * bajo la mesa, un panel centrado muestra solo las acciones posibles en cada fase.
+ * aparecen pistas de qué hacer ("Haz tu apuesta", "¡Te toca!") y, tras cerrar el resultado de la
+ * ronda, una píldora para volver a verlo. El resultado se muestra con `OverlayResultado` (T-29).
  */
-import { useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { colorDeAsiento } from "../components/colorJugador";
 import { MesaVisual } from "../components/MesaVisual";
 import { BotonBilletera } from "../components/BotonBilletera";
 import { BotonJuego } from "../components/BotonJuego";
+import { PRESENTACION_RESULTADO, netoResultado } from "../components/efectosResultado";
 import { IndicadorConexion } from "../components/IndicadorConexion";
 import type { PestanaMenu } from "../components/MenuLateral";
+import { OverlayResultado, type DatosResultado } from "../components/OverlayResultado";
 import { Ficha } from "../components/Ficha";
 import { Reloj } from "../components/Reloj";
 import { SelectorApuesta } from "../components/SelectorApuesta";
@@ -35,9 +37,6 @@ const TEXTO_ESPERA: Record<"ESPERANDO" | "DEALER" | "PAGOS", string> = {
   PAGOS: "Pagando la ronda…",
 };
 
-/** Texto del resultado propio. */
-const TEXTO_RESULTADO = { blackjack: "¡Blackjack!", gana: "Ganaste", empate: "Empate", pierde: "Perdiste", pasado: "Te pasaste" } as const;
-
 /** Apuesta sugerida al abrir la mesa. */
 const APUESTA_SUGERIDA = "10";
 
@@ -55,10 +54,19 @@ interface PropsPantallaMesa {
 export function PantallaMesa({ alAbrirMenu }: PropsPantallaMesa): ReactNode {
   const { estado, acciones } = useJuego();
   const [textoApuesta, setTextoApuesta] = useState(APUESTA_SUGERIDA);
+  // Ronda cuyo resultado el usuario ya cerró (la píldora central permite reabrirlo).
+  const [rondaCerrada, setRondaCerrada] = useState<string | null>(null);
+  const miId = estado.sesion?.usuario.id ?? null;
+  const ronda = estado.resultado;
+  const datosResultado = useMemo<DatosResultado | null>(() => {
+    const propio = ronda?.resultados.find((resultado) => resultado.usuarioId === miId);
+    return ronda === null || propio === undefined ? null : { rondaId: ronda.rondaId, propio, dealer: ronda.dealer };
+  }, [ronda, miId]);
+  const cerrarResultado = useCallback(() => setRondaCerrada(ronda?.rondaId ?? null), [ronda]);
+
   const mesa = estado.mesa;
   if (mesa === null) return null;
 
-  const miId = estado.sesion?.usuario.id ?? null;
   const propio = mesa.asientos.find((asiento) => asiento !== null && asiento.usuarioId === miId) ?? null;
   const conectado = estado.conexion === "conectado";
   const ocupado = estado.pendientes.some((accion) => accion === "apostar" || accion === "pedir" || accion === "plantarse");
@@ -67,7 +75,7 @@ export function PantallaMesa({ alAbrirMenu }: PropsPantallaMesa): ReactNode {
   const validacionApuesta = validarApuesta(textoApuesta, estado.billetera?.fichas ?? 0);
   const esMiTurno = puedeActuar && mesa.fase === "TURNOS" && mesa.turnoDe === miId;
   const jugadorEnTurno = mesa.asientos.find((asiento) => asiento !== null && asiento.usuarioId === mesa.turnoDe) ?? null;
-  const miResultado = estado.resultado?.resultados.find((resultado) => resultado.usuarioId === miId) ?? null;
+  const resultadoVisible = datosResultado !== null && rondaCerrada !== datosResultado.rondaId;
   // Pistas para el jugador propio; no dependen de peticiones pendientes para no parpadear al hacer clic.
   const turnoPropio = !estado.espectador && mesa.fase === "TURNOS" && mesa.turnoDe === miId;
   const debeApostar = !estado.espectador && mesa.fase === "APUESTAS" && propio?.estado === "SIN_APUESTA";
@@ -111,10 +119,14 @@ export function PantallaMesa({ alAbrirMenu }: PropsPantallaMesa): ReactNode {
       )}
 
       <MesaVisual mesa={mesa} miId={miId} desfaseMs={estado.desfaseMs}>
-        {miResultado !== null ? (
-          <p key="resultado" className="animate-aparecer rounded-lg bg-amber-400 px-4 py-2 text-center text-lg font-bold text-emerald-950 shadow-xl">
-            {TEXTO_RESULTADO[miResultado.resultado]} · apostaste {miResultado.apuesta}, recibes {miResultado.pago}
-          </p>
+        {datosResultado !== null && !resultadoVisible ? (
+          <button
+            type="button"
+            onClick={() => setRondaCerrada(null)}
+            className="animate-aparecer rounded-full bg-emerald-950/90 px-4 py-1.5 text-sm font-semibold shadow-lg ring-1 ring-amber-300/60 transition-transform hover:scale-105 active:scale-95"
+          >
+            {PRESENTACION_RESULTADO[datosResultado.propio.resultado].titulo} · {textoNeto(datosResultado)} · ver resultado
+          </button>
         ) : turnoPropio ? (
           <p key="turno" className="animate-aparecer rounded-full bg-amber-400 px-4 py-1.5 font-bold text-emerald-950 shadow-lg">
             ¡Te toca! Pide carta o plántate
@@ -166,8 +178,21 @@ export function PantallaMesa({ alAbrirMenu }: PropsPantallaMesa): ReactNode {
           <p className="text-emerald-200">{TEXTO_ESPERA[mesa.fase]}</p>
         )}
       </section>
+
+      <OverlayResultado datos={datosResultado} visible={resultadoVisible} alCerrar={cerrarResultado} />
     </main>
   );
+}
+
+/**
+ * Ganancia o pérdida en texto corto para la píldora del resultado.
+ * @param datos - Resultado propio.
+ * @returns "+100 fichas", "−50 fichas" o "sin cambios".
+ */
+function textoNeto(datos: DatosResultado): string {
+  const neto = netoResultado(datos.propio.apuesta, datos.propio.pago);
+  if (neto === 0) return "sin cambios";
+  return `${neto > 0 ? "+" : "−"}${Math.abs(neto).toLocaleString("es-MX")} fichas`;
 }
 
 /**

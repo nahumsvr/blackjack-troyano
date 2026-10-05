@@ -15,7 +15,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** `bun install` en un clon limpio termina sin errores y `bun run typecheck` pasa en los 3 paquetes. *Desbloquea a todos.*
   - **Preparacion local (2026-10-01):** implementada en `t-01-monorepo-bun`; instalacion limpia y tipos verificados. PR #1 abierto; pendiente revision de Nahum/Massimo por el scaffolding minimo y fusion en main.
   - **Hecha — PR #1 (2026-10-04):** PR #1 fusionado en main. Auditoría de Massimo: clon limpio de `main` (3eeb079) → `bun install` y `bun run typecheck` correctos en los 3 paquetes, con Bun 1.4.2.
-- [ ] T-02 · 🔓 Repo en GitHub, `main` protegida (1 aprobación obligatoria), plantilla de PR con casilla "¿marcaste TAREAS.md?" · Hector · depende de: T-01
+- [x] T-02 · 🔓 Repo en GitHub, `main` protegida (1 aprobación obligatoria), plantilla de PR con casilla "¿marcaste TAREAS.md?" · Hector · depende de: T-01 · proteccion aplicada y verificada el 5 oct (push directo rechazado, 1 aprobacion, historial lineal)
   - **Hecho cuando:** un `git push` directo a `main` es rechazado y un PR no se puede fusionar sin aprobación.
   - **Preparacion local (2026-10-01):** plantilla de PR en `t-02-plantilla-proteccion`. Hector confirmo que Nahum configurara main; PR #2 abierto como borrador; pendiente aplicar y verificar proteccion y fusion.
   - **Auditoría (2026-10-04):** PR #2 fusionado (plantilla), pero `gh api repos/nahumsvr/blackjack-troyano/branches/main` devuelve `protected:false` y no hay rulesets; tres commits de documentación entraron a main sin PR. La protección sigue sin aplicarse.
@@ -31,7 +31,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** 3 usuarios distintos ven las 3 mesas; cuando uno se sienta, las otras 2 pestañas ven "1/5" en < 1 s; una sexta persona recibe `MESA_LLENA`.
 
 ### Nahum
-- [x] T-10 · Cliente Vite + React + TS + Tailwind, proxy de `/ws` a `:3000`, `vite --host` · Nahum · depende de: T-01 · PR #6
+- [ ] T-10 · Cliente Vite + React + TS + Tailwind, proxy de `/ws` a `:3000`, `vite --host` · Nahum · depende de: T-01 · PR #6 (fusionado; falta abrirlo desde otra laptop por IP)
   - **Hecho cuando:** `bun run dev` abre la app en otra laptop de la misma red usando la IP de la máquina.
 - [x] T-11 · Capa de red: hook `useSocket` con reconexión (1 s, 2 s, 4 s… máx 10 s), envío con `reqId`, `reanudar` automático con token de `localStorage`, store global de estado · Nahum · depende de: T-03, T-10 · PR #7
   - **Hecho cuando:** reiniciar el servidor con la app abierta → el cliente muestra "reconectando" y vuelve solo, con la misma sesión, sin recargar.
@@ -44,11 +44,11 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 - [ ] T-03 · 🔓 Contrato en `shared/`: esquemas Zod de todos los mensajes de `PLAN.md` §3 (uniones discriminadas por `type`), tipos con `z.infer`, `MesaEstado`, `CartaVista`, catálogo de códigos de error con mensajes en español · Massimo · depende de: T-01
   - **Preparación local (2026-10-04):** Contrato implementado y verificado localmente: 18 mensajes entrantes, 12 salientes, tipos inferidos, errores españoles y 40 pruebas del contrato. Importaciones verificadas desde server y client. Publicado en PR #4 (abierto, sin revisión); detalles en Avance-M-01.md.
   - **Hecho cuando:** `server` y `client` importan `@blackjack/shared` sin errores de tipos y hay un test con 1 ejemplo válido y 1 inválido por cada mensaje (todos pasan). *Desbloquea a Hector y Nahum.*
-- [ ] T-04 · 🔓 `docker-compose.yml` con Postgres 16 + volumen, `.env.example` con `DATABASE_URL` · Massimo · depende de: T-01
+- [x] T-04 · 🔓 `docker-compose.yml` con Postgres 16 + volumen, `.env.example` con `DATABASE_URL` · Massimo · depende de: T-01 · PR #4 (gate verificado en la auditoria de Massimo)
   - **Preparación local (2026-10-04):** Compose PostgreSQL 16, volumen y .env.example preparados; docker compose config --quiet correcto. Arranque Docker pendiente por permisos del daemon. Esquema comprobado aparte en PostgreSQL 18.6; no acredita el gate de PostgreSQL 16. Incluido en PR #4 (abierto).
   - **Gate verificado (2026-10-04, 23:45):** `docker compose up -d --wait` → postgres:16.15 sano; `psql $DATABASE_URL -c 'select 1'` → 1 (puerto 5433 por conflicto local). Pendiente fusión del PR #4.
   - **Hecho cuando:** `docker compose up -d` levanta la BD y `psql $DATABASE_URL -c 'select 1'` responde.
-- [ ] T-05 · 🔓 `server/db/schema.sql` (7 tablas con PK, FK, `CHECK` e índices de `PLAN.md` §4), `seed.sql` (14 artículos) y script `bun run db:reset` · Massimo · depende de: T-04
+- [x] T-05 · 🔓 `server/db/schema.sql` (7 tablas con PK, FK, `CHECK` e índices de `PLAN.md` §4), `seed.sql` (14 artículos) y script `bun run db:reset` · Massimo · depende de: T-04 · PR #4 (gate verificado en la auditoria de Massimo)
   - **Preparación local (2026-10-04):** Siete tablas, índices, 14 artículos y db:reset atómico implementados. Reinicio, restricciones y conservación de datos ante fallo comprobados en PostgreSQL 18.6; pendiente entorno objetivo y PR. Incluido en PR #4 (abierto).
   - **Gate verificado (2026-10-04, 23:45):** en PostgreSQL 16.15 con Bun 1.3.13, `db:reset` → 7 tablas y 14 artículos; `UPDATE usuarios SET fichas = -1` falla por `usuarios_fichas_check`; artículo repetido en `inventario` falla por `inventario_pkey`. Pendiente fusión del PR #4.
   - **Hecho cuando:** `bun run db:reset` en limpio crea 7 tablas y 14 artículos; `UPDATE usuarios SET fichas = -1` falla por `CHECK`; insertar dos veces el mismo artículo en `inventario` falla por PK. *Desbloquea a Hector (T-08).*
@@ -83,7 +83,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** en el mock se ven las 52 cartas y los 5 reversos del catálogo correctamente.
 - [ ] T-28 · Pantalla de mesa: fase, cuenta regresiva a partir de `finEn`, fichas para apostar, botones Pedir/Plantarse habilitados **solo** en tu turno · Nahum · depende de: T-27, T-11 (mock) y T-18 (real) · avance en PR #11 (falta probar con 3 pestanas reales, requiere T-18)
   - **Hecho cuando:** con 3 pestañas reales, solo la pestaña con el turno tiene los botones activos y las 3 ven la carta repartida en < 1 s.
-- [ ] T-29 · Resultado de ronda (overlay con ganó/perdió/empate y fichas) + avisos de error legibles a partir de `error.mensaje` · Nahum · depende de: T-28
+- [ ] T-29 · Resultado de ronda (overlay con ganó/perdió/empate y fichas) + avisos de error legibles a partir de `error.mensaje` · Nahum · depende de: T-28 · avance en PR #12 (falta probar con el servidor real, requiere T-18 y T-20)
   - **Hecho cuando:** al terminar la ronda cada jugador ve su resultado; forzar `pedir` fuera de turno desde consola muestra el aviso "No es tu turno".
 - [ ] T-30 · Panel de billetera: dinero, fichas, "te quedan X fichas por comprar hoy, se reinicia a las 00:00", compra con botón deshabilitado mientras espera respuesta y `clave` nueva por clic · Nahum · depende de: T-24 (mock mientras tanto) · avance en PR #10 (falta probar con T-24 real)
   - **Hecho cuando:** comprar 1,000 actualiza saldo y disponible; con el límite agotado, el botón muestra el motivo y la hora de reinicio.

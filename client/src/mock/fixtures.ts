@@ -14,6 +14,7 @@ import type {
   MesaEstado,
   MesaResumen,
   Movimiento,
+  Resultado,
   ResultadoJugador,
 } from "@blackjack/shared";
 
@@ -170,16 +171,35 @@ export function mesaEnFase(fase: FaseMesa, ahora: number = Date.now()): MesaEsta
   }
 }
 
+/** Apuesta del usuario demo en la ronda de ejemplo. */
+const APUESTA_DEMO = 100;
+/** Pago (apuesta incluida) que recibiría el usuario demo con cada resultado: 3:2, 1:1, devolución o nada. */
+const PAGO_DEMO: Record<Resultado, number> = { blackjack: 250, gana: 200, empate: 100, pierde: 0, pasado: 0 };
+
+/**
+ * Resultado de una ronda de ejemplo con el resultado elegido para el usuario demo
+ * (el panel del mock permite ver así cada variante de la pantalla de resultado).
+ * @param resultado - Resultado del usuario demo.
+ * @param rondaId - UUID de la ronda (uno nuevo por ronda, como haría el servidor).
+ * @returns Datos de `ronda.resultado` sin `type`.
+ */
+export function resultadoDemo(
+  resultado: Resultado,
+  rondaId: string,
+): { rondaId: string; dealer: { cartas: CartaVisible[]; total: number }; resultados: ResultadoJugador[] } {
+  return {
+    rondaId,
+    dealer: { cartas: [c("10", "♠"), c("7", "♦")], total: 17 },
+    resultados: [
+      { usuarioId: ID_DEMO, resultado, apuesta: APUESTA_DEMO, pago: PAGO_DEMO[resultado] },
+      { usuarioId: 2, resultado: "blackjack", apuesta: 50, pago: 125 },
+      { usuarioId: 3, resultado: "pasado", apuesta: 100, pago: 0 },
+    ] satisfies ResultadoJugador[],
+  };
+}
+
 /** Resultado de la ronda de ejemplo (coincide con el snapshot de `PAGOS`). */
-export const RESULTADO_DEMO = {
-  rondaId: "6f1c2b7e-0d4a-4c8e-9b1a-2e3f4a5b6c7d",
-  dealer: { cartas: [c("10", "♠"), c("7", "♦")], total: 17 },
-  resultados: [
-    { usuarioId: ID_DEMO, resultado: "empate", apuesta: 100, pago: 100 },
-    { usuarioId: 2, resultado: "blackjack", apuesta: 50, pago: 125 },
-    { usuarioId: 3, resultado: "pasado", apuesta: 100, pago: 0 },
-  ] satisfies ResultadoJugador[],
-};
+export const RESULTADO_DEMO = resultadoDemo("empate", "6f1c2b7e-0d4a-4c8e-9b1a-2e3f4a5b6c7d");
 
 /**
  * Historial de ejemplo, del más reciente al más antiguo, con saldos coherentes.

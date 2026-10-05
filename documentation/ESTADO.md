@@ -1,22 +1,26 @@
 # ESTADO — ¿Dónde vamos?
 
-_Última actualización: dom 4 oct 2026, 23:30 CDMX (auditoría de Massimo; detalle en [Avance-M-02.md](Avance-M-02.md))_
+_Última actualización: lun 5 oct 2026 CDMX (seguimiento de Nahum sobre la auditoría de Massimo del 4 oct; detalle del cliente en [Avance-N-01.md](Avance-N-01.md))_
 
 ## Resumen
 
-El congelamiento de features (dom 4 oct, 22:00) pasó sin que el Hito 1 esté completo en `main`. Solo T-01 cumple su criterio con PR fusionado. El camino crítico **T-01 → T-03 → T-07 → T-18 → T-20 → T-31** está detenido en T-03: el contrato, la BD y la economía están en el **PR #4**, que sigue abierto y sin revisión. Hasta que se fusione, no se desbloquean T-07, T-15, T-11 ni T-12.
+Hoy entraron a `main` el PR #4 de Massimo (contrato, BD y economía) y el PR #6 (esqueleto del cliente, T-10). `main` ya está protegida: un push directo es rechazado, cada PR necesita 1 aprobación de otro dev, el historial es lineal y solo se permite fusionar con squash (la rama se borra al fusionar).
 
-Fuera de `main` hay trabajo verificado (T-03, T-04/T-05, T-22–T-25 y T-34; ver [Avance-M-01.md](Avance-M-01.md)). En GitHub no hay avances publicados de enrutador, autenticación, juego ni cliente. Si existen avances locales sin publicar, conviene subirlos para auditarlos.
+El cliente está publicado como **PRs apilados #7 → #8 → #9 → #10 → #11 → #12**: T-11, T-12, T-27, T-30/T-41, T-28 y T-29. Cada uno se fusiona con squash y el siguiente se rebasa sobre `main`. Todo está verificado contra el mock (116 pruebas del cliente).
+
+El camino crítico **T-01 → T-03 → T-07 → T-18 → T-20 → T-31** ya no está detenido en T-03 (el contrato está en `main`). Ahora espera a **T-07** (enrutador), y con él a T-08, T-09 y T-18, que son los que permiten probar el cliente contra el servidor real.
 
 ## Hito actual
 
-**Por calendario: Hito 3 — dom 4 oct** (tienda, inventario, desconexiones, validaciones y congelamiento). Mañana inicia el Hito 4 (lun 5 oct: solo pruebas, bugs y documentación).
+**Por calendario: Hito 4 — lun 5 oct** (solo pruebas, bugs y documentación). Siguen el Hito 5 (mar 6) y la entrega (mié 7, 13:00).
 
-Estado: 🔴 **Atrasados**. No se cumplieron el Hito 1 (30 sep), el Hito 2 (3 oct) ni el Hito 3/congelamiento (4 oct 22:00).
+Estado: 🔴 **Atrasados**. No se cumplieron el Hito 1 (30 sep), el Hito 2 (3 oct) ni el Hito 3/congelamiento (4 oct 22:00); no existe el tag `v0.9-congelado`.
 
 > Semáforo: 🟢 a tiempo · 🟡 en riesgo (una tarea del camino crítico con > medio día de atraso) · 🔴 atrasados (el hito no se cumple en su fecha)
 
-**Decisión pendiente del líder:** el cronograma restante (Hito 4 lun 5, Hito 5 mar 6 y entrega mié 7 a las 13:00) ya no deja margen. PLAN §10 indica aplicar el **criterio de corte** en este orden: extras → temas de mesa → cosméticos visibles para otros → tienda completa. Sugerencia: el equipo debe decidir antes de seguir si mueve el congelamiento, aplica los cortes 1–4 desde ahora y si reasigna tareas del camino crítico (PLAN §9: "se reasigna en la revisión diaria"). Esta auditoría no toma esa decisión.
+**Decisiones pendientes del equipo:**
+- Aplicar el criterio de corte de PLAN §10 y decidir si se mueve el congelamiento.
+- Aceptar o no fusionar el trabajo visual del cliente hecho después del 4 oct 22:00 (animaciones, temporizador, selector de fichas en #11 y #12). Es parte de T-27–T-29 y no de los extras prohibidos.
 
 ## Avance
 
@@ -24,29 +28,46 @@ Solo se cuentan tareas con PR fusionado en `main` y criterio de "hecho" comproba
 
 | Dev | Completadas | Total | % |
 |---|---|---|---|
-| Hector | 1 | 19 | 5 % |
+| Hector | 2 | 19 | 11 % |
 | Nahum | 0 | 17 | 0 % |
-| Massimo | 0 | 19 | 0 % |
+| Massimo | 2 | 19 | 11 % |
 | Equipo | 0 | 2 | 0 % |
-| **Total** | **1** | **57** | **2 %** |
+| **Total** | **4** | **57** | **7 %** |
 
-Avance por hito: H1 1/14 (7 %) · H2 0/19 · H3 0/10 · H4 0/8 · H5 0/5 · Entrega 0/1
+Avance por hito: H1 4/14 (29 %) · H2 0/19 · H3 0/10 · H4 0/8 · H5 0/5 · Entrega 0/1
 
-Preparadas fuera de `main` (no cuentan): T-03, T-04, T-05, T-14, T-22, T-23, T-24, T-25, T-34 (PR #4); borradores de T-32, T-46, T-48, T-50 y T-54 (PR #4). Fusionadas con un gate pendiente: T-02 (protección) y T-06 (prueba visual).
+- **Hechas:** T-01 y T-02 (Hector; la protección se aplicó y verificó hoy) y T-04 y T-05 (Massimo; gates verificados en su auditoría, fusionadas en el PR #4).
+- **Fusionadas con un gate pendiente** (no cuentan):
+  - T-06: prueba visual.
+  - T-10: abrirlo desde otra laptop por IP.
+- **En `main` por el PR #4, pendientes de que Massimo confirme su criterio:** T-03, T-14, T-22, T-23, T-24, T-25 y T-34.
+- **En PR abierto** (no cuentan): T-11 (#7), T-12 (#8), T-27 (#9), T-30/T-41 (#10), T-28 (#11) y T-29 (#12).
 
 ## Bloqueos activos
 
-- **PR #4 sin revisión** (T-03, T-04/T-05, T-22–T-25, T-34): bloquea T-07 y T-15 (Hector) y T-11 y T-12 (Nahum). T-08 también depende de T-05. Requiere la aprobación de otro dev. Es grande (~1,900 líneas), así que conviene revisarlo por carpeta: Hector `shared/` + `store/`, y Nahum `shared/` desde el punto de vista del cliente.
-- **T-02 — `main` sin protección:** la API de GitHub devuelve `protected:false` y no hay rulesets. Tres commits de documentación entraron directo a `main`. Requiere una cuenta administradora (Nahum) y el JSON de `.github/proteccion-main.json`.
-- **T-06 — prueba visual:** falta abrir `scripts/verificar-ws.html` en tres pestañas y anotar el resultado.
-- ~~**T-04 — PostgreSQL 16 sin Docker.**~~ Resuelto el 4 oct a las 23:45: T-04, T-05 y la suite de economía pasan en el entorno objetivo (Bun 1.3.13 + PostgreSQL 16.15). Solo falta fusionar el PR #4.
-- **T-35** espera `GestorMesas` (T-09/T-18). **T-31** espera T-20, T-21, T-28 y T-24.
+- **T-07 (enrutador) sin publicar:** bloquea T-08, T-09, T-18 y las pruebas reales del cliente:
+  - T-13 espera T-08 y T-09;
+  - T-28 y T-29 esperan T-18 y T-20;
+  - T-30 y T-41 esperan los handlers de T-24/T-34 conectados al enrutador.
+- **PRs del cliente apilados (#7–#12):** se revisan y fusionan en orden. Tras cada squash, Nahum rebasa el siguiente sobre `main`.
+- **T-06 — prueba visual:** falta abrir `scripts/verificar-ws.html` en tres pestañas.
+- **T-42** espera T-36. **T-35** espera `GestorMesas` (T-09/T-18). **T-31** espera T-20, T-21, T-28 y T-24.
 
 ## Hoy le toca a… (lun 5 oct)
 
-- **Hector:** revisar el PR #4 (`shared/` y `store/`) → T-07 enrutador → T-15 Carta/Baraja. Hacer la prueba visual de T-06. T-07 y T-15 están en el camino crítico.
-- **Nahum:** aplicar la protección de `main` (T-02) → T-10 Vite/React (desbloqueada: solo depende de T-01) → T-12 mock tras fusionar el PR #4. T-33 guion no tiene dependencias.
-- **Massimo:** conseguir la aprobación y fusión del PR #4 (ya con evidencia en el entorno objetivo) → preparar los handlers de economía para conectarlos al enrutador de T-07 → coordinar la decisión de corte con el equipo.
+- **Hector:**
+  - T-07 enrutador → T-08/T-09 (desbloquean T-13) → T-15 y T-18.
+  - Revisar #7 (capa de red: confirmar que toda petición con `reqId` recibe una respuesta directa con ese `reqId`).
+  - Prueba visual de T-06.
+- **Nahum:**
+  - Rebasar y acompañar la revisión de #7–#12.
+  - T-27: página de prueba con las 52 cartas → T-33 guion → borradores de T-49 (manual) y T-51 (diapositivas) con capturas del mock.
+  - En cuanto existan T-08 y T-09, verificar T-13 contra el servidor real.
+- **Massimo:**
+  - Confirmar y marcar T-03, T-14, T-22–T-25 y T-34.
+  - Revisar #7 (uso de `shared/` en el cliente) y #10 (formato de `movimientos.listar`).
+  - Handlers de economía para el enrutador de T-07.
+  - Coordinar la decisión de corte.
 
 ## Registro diario
 
@@ -66,3 +87,5 @@ Preparadas fuera de `main` (no cuentan): T-03, T-04, T-05, T-14, T-22, T-23, T-2
 | 2026-10-05 | Nahum: T-27 (avance) en PR #9 (sobre #8). Carta en CSS, Ficha en SVG, Asiento, ManoDealer y MesaVisual con el dealer al centro y un color por asiento; 77 pruebas. Falta la pagina de prueba con las 52 cartas. |
 | 2026-10-05 | Nahum: T-30 y T-41 (avance) en PR #10 (sobre #9). Billetera e historial en un menu lateral accesible desde lobby y mesa; compra con validacion previa y clave por clic verificada en el mock. Falta probar contra T-24 y movimientos.listar reales. |
 | 2026-10-05 | Nahum: T-28 (avance) en PR #11 (sobre #10). Temporizador circular y barra de turno, cartas que vuelan del zapato y se descubren en orden de casino, total sobre la ultima carta, jugador propio al centro, selector de fichas y panel de acciones centrado; 101 pruebas. Falta la prueba con 3 pestanas reales (T-18). |
+| 2026-10-05 | Nahum: T-29 (avance) en PR #12 (sobre #11). Pantalla de resultado animada por tono (victoria con rayos, confeti y fichas volando; empate; derrota), pildora para reabrirla, avisos y saldo animados y resultados forzables en el mock; 116 pruebas. Falta probar con el servidor real (T-18/T-20). |
+| 2026-10-05 | Seguimiento de Nahum: main protegida y verificada (push directo rechazado, 1 aprobacion, historial lineal, solo squash); T-02 hecha. PR #4 y PR #6 (T-10) fusionados; T-04 y T-05 cuentan segun la auditoria de Massimo; T-10 con gate pendiente (otra laptop por IP). Avance 4/57 (7 %). Cliente publicado en PRs apilados #7 a #12. |
