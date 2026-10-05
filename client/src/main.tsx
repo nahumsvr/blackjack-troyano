@@ -1,11 +1,15 @@
 /**
- * Punto de entrada del cliente: monta React dentro del límite de errores raíz.
- * Si falta el contenedor `#raiz` (index.html alterado), se lanza un error explícito.
+ * Punto de entrada del cliente: crea el estado global con la conexión real y monta la app.
+ * El proveedor va FUERA del límite de errores para que un fallo de renderizado
+ * no cierre la conexión ni pierda el estado. Si falta `#raiz`, se lanza un error explícito.
  */
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { LimiteErrores } from "./components/LimiteErrores";
+import { urlWebSocket } from "./config";
+import { Conexion } from "./net/conexion";
+import { ProveedorJuego } from "./state/store";
 import "./estilos.css";
 
 const contenedor = document.getElementById("raiz");
@@ -13,8 +17,10 @@ if (contenedor === null) throw new Error("No existe el elemento #raiz en index.h
 
 createRoot(contenedor).render(
   <StrictMode>
-    <LimiteErrores>
-      <App />
-    </LimiteErrores>
+    <ProveedorJuego crearTransporte={() => new Conexion({ url: urlWebSocket(window.location) })}>
+      <LimiteErrores>
+        <App />
+      </LimiteErrores>
+    </ProveedorJuego>
   </StrictMode>,
 );
