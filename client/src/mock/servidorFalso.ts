@@ -17,6 +17,7 @@ import {
   type MensajeCliente,
   type MensajeServidor,
   type MesaEstado,
+  type Resultado,
 } from "@blackjack/shared";
 import { ErrorPeticion, errorLocal } from "../net/erroresLocales";
 import type { EstadoConexion, EventoTransporte, Intencion, OyenteTransporte, Transporte } from "../net/transporte";
@@ -27,13 +28,13 @@ import {
   LOBBY_DEMO,
   MESA_DEMO,
   MESA_LLENA,
-  RESULTADO_DEMO,
   TOKEN_DEMO,
   USUARIO_EXISTENTE,
   billeteraInicial,
   catalogoDemo,
   mesaEnFase,
   movimientosDemo,
+  resultadoDemo,
 } from "./fixtures";
 
 /** Retraso simulado de red, en ms. */
@@ -59,6 +60,8 @@ export class ServidorFalso implements Transporte {
   private fase: FaseMesa = "APUESTAS";
   private mesa: MesaEstado;
   private billetera: BilleteraEstado = billeteraInicial();
+  /** Resultado que recibe el usuario demo al llegar a PAGOS. */
+  private resultadoElegido: Resultado = "gana";
   private readonly clavesUsadas = new Set<string>();
 
   /** @param opciones - Latencia y reloj inyectables. */
@@ -101,7 +104,8 @@ export class ServidorFalso implements Transporte {
 
   /**
    * Cambia la fase de la mesa demo y publica el snapshot (si el usuario está sentado).
-   * En `PAGOS` publica también el resultado de la ronda.
+   * En `PAGOS` publica también el resultado de la ronda (con un `rondaId` nuevo, como una ronda
+   * real) y la billetera con el pago acreditado.
    * @param fase - Fase a mostrar.
    */
   irAFase(fase: FaseMesa): void {
@@ -109,7 +113,23 @@ export class ServidorFalso implements Transporte {
     this.mesa = mesaEnFase(fase, this.ahora());
     if (!this.sentado) return;
     this.emitir({ type: "mesa.estado", ...this.mesa });
-    if (fase === "PAGOS") this.emitir({ type: "ronda.resultado", ...RESULTADO_DEMO });
+    if (fase !== "PAGOS") return;
+    const ronda = resultadoDemo(this.resultadoElegido, crypto.randomUUID());
+    this.emitir({ type: "ronda.resultado", ...ronda });
+    const pago = ronda.resultados.find((fila) => fila.usuarioId === ID_DEMO)?.pago ?? 0;
+    if (pago > 0) {
+      this.billetera = { ...this.billetera, fichas: this.billetera.fichas + pago };
+      this.emitir({ type: "billetera", ...this.billetera });
+    }
+  }
+
+  /**
+   * Elige el resultado del usuario demo y juega la fase de pagos con él.
+   * @param resultado - Resultado a mostrar.
+   */
+  simularResultado(resultado: Resultado): void {
+    this.resultadoElegido = resultado;
+    this.irAFase("PAGOS");
   }
 
   /**

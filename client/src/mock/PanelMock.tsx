@@ -1,8 +1,9 @@
 /**
- * Barra superior del modo mock (`?mock=1`): permite recorrer las 6 fases de la mesa
- * y simular una caída de red sin servidor. No se muestra fuera del modo mock.
+ * Barra superior del modo mock (`?mock=1`): permite recorrer las 6 fases de la mesa, forzar
+ * cada resultado de la ronda (para ver sus animaciones) y simular una caída de red sin servidor.
+ * No se muestra fuera del modo mock.
  */
-import { FaseMesaSchema } from "@blackjack/shared";
+import { FaseMesaSchema, ResultadoSchema } from "@blackjack/shared";
 import { useState, type ReactNode } from "react";
 import type { ServidorFalso } from "./servidorFalso";
 
@@ -38,7 +39,21 @@ export function PanelMock({ servidor }: PropsPanelMock): ReactNode {
           {opcion}
         </button>
       ))}
-      <button type="button" onClick={() => servidor.simularCaida(CAIDA_MS)} className="rounded bg-red-800 px-2 py-0.5">
+      <span className="ml-2 font-bold">Resultado:</span>
+      {ResultadoSchema.options.map((resultado) => (
+        <button
+          key={resultado}
+          type="button"
+          onClick={() => {
+            servidor.simularResultado(resultado);
+            setFase("PAGOS");
+          }}
+          className="rounded bg-fuchsia-800 px-2 py-0.5 hover:bg-fuchsia-700"
+        >
+          {resultado}
+        </button>
+      ))}
+      <button type="button" onClick={() => servidor.simularCaida(CAIDA_MS)} className="ml-2 rounded bg-red-800 px-2 py-0.5">
         Simular caída
       </button>
     </aside>

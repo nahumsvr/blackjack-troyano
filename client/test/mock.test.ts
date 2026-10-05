@@ -3,9 +3,9 @@
  * y el servidor falso responde como el real a los flujos principales y a sus errores.
  */
 import { beforeEach, describe, expect, spyOn, test } from "bun:test";
-import { FaseMesaSchema, MensajeServidorSchema } from "@blackjack/shared";
+import { FaseMesaSchema, MensajeServidorSchema, ResultadoSchema, type MensajeServidor } from "@blackjack/shared";
 import { ErrorPeticion } from "../src/net/erroresLocales";
-import { LOBBY_DEMO, RESULTADO_DEMO, billeteraInicial, catalogoDemo, mesaEnFase, movimientosDemo } from "../src/mock/fixtures";
+import { LOBBY_DEMO, RESULTADO_DEMO, billeteraInicial, catalogoDemo, mesaEnFase, movimientosDemo, resultadoDemo } from "../src/mock/fixtures";
 import { ServidorFalso } from "../src/mock/servidorFalso";
 import type { Intencion } from "../src/net/transporte";
 
@@ -24,6 +24,11 @@ describe("fixtures dentro de contrato", () => {
       { type: "catalogo", articulos: catalogoDemo() },
     ];
     for (const mensaje of mensajes) expect(MensajeServidorSchema.safeParse(mensaje).error?.issues ?? []).toEqual([]);
+  });
+
+  test.each(ResultadoSchema.options)("ronda de ejemplo con resultado %s", (resultado) => {
+    const mensaje = { type: "ronda.resultado", ...resultadoDemo(resultado, crypto.randomUUID()) };
+    expect(MensajeServidorSchema.safeParse(mensaje).error?.issues ?? []).toEqual([]);
   });
 
   test("el historial es coherente: cada saldo es el anterior más su cambio", () => {
@@ -128,5 +133,25 @@ describe("ServidorFalso", () => {
     await servidor.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
     for (const fase of FaseMesaSchema.options) servidor.irAFase(fase);
     expect(error).not.toHaveBeenCalled();
+  });
+
+  test("simularResultado: ronda nueva con el resultado elegido y el pago acreditado", async () => {
+    const recibidos: MensajeServidor[] = [];
+    servidor.suscribir((evento) => {
+      if (evento.tipo === "mensaje") recibidos.push(evento.mensaje);
+    });
+    await servidor.enviar({ type: "login", usuario: "demo", contrasena: "secreta" });
+    await servidor.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
+    const fichasAntes = billeteraInicial().fichas;
+
+    servidor.simularResultado("blackjack");
+    servidor.simularResultado("pierde");
+
+    const rondas = recibidos.filter((mensaje) => mensaje.type === "ronda.resultado");
+    expect(rondas.map((ronda) => ronda.resultados.find((fila) => fila.usuarioId === 1)?.resultado)).toEqual(["blackjack", "pierde"]);
+    expect(rondas[0]?.rondaId).not.toBe(rondas[1]?.rondaId);
+    // Solo el blackjack paga (250); perder no emite billetera.
+    const billeteras = recibidos.filter((mensaje) => mensaje.type === "billetera");
+    expect(billeteras.at(-1)?.fichas).toBe(fichasAntes + 250);
   });
 });
