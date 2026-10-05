@@ -1,6 +1,6 @@
 /**
  * Lista de avisos (toasts) en la esquina inferior derecha. Los avisos se ocultan solos
- * (el controlador programa su retiro) o al hacer clic en ellos.
+ * (el controlador programa su retiro) o al hacer clic en ellos. Cada aviso entra deslizándose.
  */
 import type { ReactNode } from "react";
 import { useJuego } from "../state/store";
@@ -14,7 +14,7 @@ export function Avisos(): ReactNode {
   return (
     <ul aria-live="polite" className="fixed right-4 bottom-4 z-50 flex max-w-sm flex-col gap-2">
       {estado.avisos.map((aviso) => (
-        <li key={aviso.id}>
+        <li key={aviso.id} className="animate-entrar-derecha">
           <button
             type="button"
             onClick={() => acciones.quitarAviso(aviso.id)}
