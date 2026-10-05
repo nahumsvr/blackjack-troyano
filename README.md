@@ -47,7 +47,7 @@ bun run test
 
 Las pruebas del transporte cubren el conteo de conexiones WebSocket y las respuestas HTTP de `/ws` y de una ruta inexistente. El protocolo tiene ejemplos válidos e inválidos; las pruebas de economía requieren una base de pruebas separada (consulta el manual).
 
-El esquema se verificó localmente con PostgreSQL 18.6: siete tablas, 14 artículos, restricciones de saldo/inventario e idempotencia y reinicio atómico. El arranque del Compose con PostgreSQL 16 queda pendiente de un entorno con acceso al daemon de Docker.
+El entorno objetivo se verificó el 4 de octubre: Compose levanta PostgreSQL 16.15. Con Bun 1.3.13 en un clon limpio, `db:reset` crea siete tablas y 14 artículos, `typecheck` pasa y la suite completa (70 pruebas, incluida la economía) termina sin fallos. Las restricciones de saldo e inventario se comprobaron directamente en SQL.
 
 ## Organización
 

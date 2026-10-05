@@ -46,9 +46,11 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** `server` y `client` importan `@blackjack/shared` sin errores de tipos y hay un test con 1 ejemplo válido y 1 inválido por cada mensaje (todos pasan). *Desbloquea a Hector y Nahum.*
 - [ ] T-04 · 🔓 `docker-compose.yml` con Postgres 16 + volumen, `.env.example` con `DATABASE_URL` · Massimo · depende de: T-01
   - **Preparación local (2026-10-04):** Compose PostgreSQL 16, volumen y .env.example preparados; docker compose config --quiet correcto. Arranque Docker pendiente por permisos del daemon. Esquema comprobado aparte en PostgreSQL 18.6; no acredita el gate de PostgreSQL 16. Incluido en PR #4 (abierto).
+  - **Gate verificado (2026-10-04, 23:45):** `docker compose up -d --wait` → postgres:16.15 sano; `psql $DATABASE_URL -c 'select 1'` → 1 (puerto 5433 por conflicto local). Pendiente fusión del PR #4.
   - **Hecho cuando:** `docker compose up -d` levanta la BD y `psql $DATABASE_URL -c 'select 1'` responde.
 - [ ] T-05 · 🔓 `server/db/schema.sql` (7 tablas con PK, FK, `CHECK` e índices de `PLAN.md` §4), `seed.sql` (14 artículos) y script `bun run db:reset` · Massimo · depende de: T-04
   - **Preparación local (2026-10-04):** Siete tablas, índices, 14 artículos y db:reset atómico implementados. Reinicio, restricciones y conservación de datos ante fallo comprobados en PostgreSQL 18.6; pendiente entorno objetivo y PR. Incluido en PR #4 (abierto).
+  - **Gate verificado (2026-10-04, 23:45):** en PostgreSQL 16.15 con Bun 1.3.13, `db:reset` → 7 tablas y 14 artículos; `UPDATE usuarios SET fichas = -1` falla por `usuarios_fichas_check`; artículo repetido en `inventario` falla por `inventario_pkey`. Pendiente fusión del PR #4.
   - **Hecho cuando:** `bun run db:reset` en limpio crea 7 tablas y 14 artículos; `UPDATE usuarios SET fichas = -1` falla por `CHECK`; insertar dos veces el mismo artículo en `inventario` falla por PK. *Desbloquea a Hector (T-08).*
 - [ ] T-14 · README con requisitos (Bun, Docker) y los 4 comandos para arrancar (borrador del manual de instalación) · Massimo · depende de: T-05
   - **Preparación local (2026-10-04):** README y docs/manual-instalacion.md actualizados con los comandos existentes y límites actuales. Pendiente que Nahum arranque independientemente siguiendo el README. Incluido en PR #4 (abierto).
@@ -100,6 +102,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** comprar 5,000 funciona; comprar 10 más → `LIMITE_DIARIO`; cambiar la fecha de los movimientos a "ayer" en SQL → se puede comprar otra vez; repetir la misma `clave` no cobra dos veces.
 - [ ] T-25 · Tests de economía contra Postgres real: 10 compras de 1,000 en paralelo con límite 5,000 → exactamente 5 exitosas; doble `clave`; dinero insuficiente; cantidades 0, -10, 10.5, 15, 1e9 · Massimo · depende de: T-24
   - **Preparación local (2026-10-04):** Suite de economía/tienda ejecutada contra PostgreSQL 18.6 con TEST_DATABASE_URL: concurrencia, límites, idempotencia, rechazo, paginación y reconciliación contable. Suite conjunta: 70 pruebas correctas; pendiente repetir entorno objetivo. Incluido en PR #4 (abierto).
+  - **Entorno objetivo (2026-10-04, 23:45):** clon limpio con Bun 1.3.13 + PostgreSQL 16.15: 70 pruebas, 381 aserciones y 0 fallos (cubre también T-23, T-24 y T-34). Pendiente fusión del PR #4.
   - **Hecho cuando:** `bun test` en verde y la suma de `movimientos` de cada usuario de prueba coincide con su saldo final.
 - [ ] T-31 · Integración Hito 2 en 3 laptops (coordina, los 3 participan); abrir issues por cada fallo · Massimo · depende de: T-20, T-21, T-28, T-24
   - **Hecho cuando:** **checkpoint Hito 2** — 3 personas en 3 laptops juegan 5 rondas seguidas sin errores, y cada una compra fichas respetando el límite.

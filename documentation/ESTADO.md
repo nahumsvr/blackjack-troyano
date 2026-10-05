@@ -39,14 +39,14 @@ Preparadas fuera de `main` (no cuentan): T-03, T-04, T-05, T-14, T-22, T-23, T-2
 - **PR #4 sin revisión** (T-03, T-04/T-05, T-22–T-25, T-34): bloquea T-07 y T-15 (Hector) y T-11 y T-12 (Nahum). T-08 también depende de T-05. Requiere la aprobación de otro dev. Es grande (~1,900 líneas), así que conviene revisarlo por carpeta: Hector `shared/` + `store/`, y Nahum `shared/` desde el punto de vista del cliente.
 - **T-02 — `main` sin protección:** la API de GitHub devuelve `protected:false` y no hay rulesets. Tres commits de documentación entraron directo a `main`. Requiere una cuenta administradora (Nahum) y el JSON de `.github/proteccion-main.json`.
 - **T-06 — prueba visual:** falta abrir `scripts/verificar-ws.html` en tres pestañas y anotar el resultado.
-- **T-04 — PostgreSQL 16:** en la laptop de Massimo el usuario no tiene acceso al daemon de Docker. Cualquier otro integrante puede ejecutar `docker compose up -d --wait` y `select 1` para cerrar el gate.
+- ~~**T-04 — PostgreSQL 16 sin Docker.**~~ Resuelto el 4 oct a las 23:45: T-04, T-05 y la suite de economía pasan en el entorno objetivo (Bun 1.3.13 + PostgreSQL 16.15). Solo falta fusionar el PR #4.
 - **T-35** espera `GestorMesas` (T-09/T-18). **T-31** espera T-20, T-21, T-28 y T-24.
 
 ## Hoy le toca a… (lun 5 oct)
 
 - **Hector:** revisar el PR #4 (`shared/` y `store/`) → T-07 enrutador → T-15 Carta/Baraja. Hacer la prueba visual de T-06. T-07 y T-15 están en el camino crítico.
 - **Nahum:** aplicar la protección de `main` (T-02) → T-10 Vite/React (desbloqueada: solo depende de T-01) → T-12 mock tras fusionar el PR #4. T-33 guion no tiene dependencias.
-- **Massimo:** conseguir la aprobación y fusión del PR #4 → cerrar el gate de T-04 en un equipo con Docker → preparar los handlers de economía para conectarlos al enrutador de T-07 → coordinar la decisión de corte con el equipo.
+- **Massimo:** conseguir la aprobación y fusión del PR #4 (ya con evidencia en el entorno objetivo) → preparar los handlers de economía para conectarlos al enrutador de T-07 → coordinar la decisión de corte con el equipo.
 
 ## Registro diario
 
@@ -59,3 +59,4 @@ Preparadas fuera de `main` (no cuentan): T-03, T-04, T-05, T-14, T-22, T-23, T-2
 | 2026-10-04 | Massimo: T-03, T-04/T-05, T-22–T-25 y servicios T-34 preparados localmente; suite conjunta typecheck + 70 tests/381 aserciones con PostgreSQL real. README/manual/arquitectura y empaquetador preparados parcialmente. Ver Avance-M-01.md. |
 | 2026-10-04 | Massimo: trabajo anterior publicado en PR #4 (abierto, sin revisión). |
 | 2026-10-04 | T-01 hecha por Hector (PR #1); auditoría en clon limpio de main. T-02: main sin protección. T-06: falta prueba visual. Congelamiento no alcanzado; avance 1/57 (2 %). Ver Avance-M-02.md. |
+| 2026-10-04 | Massimo: entorno objetivo verificado (Bun 1.3.13 + PostgreSQL 16.15, clon limpio). Gates de T-04 y T-05 cumplidos y 70 pruebas sin fallos; se cuentan al fusionarse el PR #4. |
