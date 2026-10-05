@@ -1,16 +1,20 @@
 /**
  * Pantalla de mesa. Dibuja el snapshot `mesa.estado` tal cual y habilita las acciones solo
  * cuando el servidor las aceptaría (fase y turno); el servidor sigue siendo quien decide.
- * La mesa se dibuja con `MesaVisual` (dealer al centro, jugadores alrededor);
- * T-28/T-29 completan los controles de apuesta y el overlay de resultado.
+ * La mesa se dibuja con `MesaVisual` (dealer al centro, jugadores alrededor). Al centro del paño
+ * aparecen pistas de qué hacer ("Haz tu apuesta", "¡Te toca!") y el resultado propio de la ronda;
+ * bajo la mesa, un panel centrado muestra solo las acciones posibles en cada fase.
  */
 import { useState, type ReactNode } from "react";
 import { colorDeAsiento } from "../components/colorJugador";
 import { MesaVisual } from "../components/MesaVisual";
 import { BotonBilletera } from "../components/BotonBilletera";
+import { BotonJuego } from "../components/BotonJuego";
 import { IndicadorConexion } from "../components/IndicadorConexion";
 import type { PestanaMenu } from "../components/MenuLateral";
+import { Ficha } from "../components/Ficha";
 import { Reloj } from "../components/Reloj";
+import { SelectorApuesta } from "../components/SelectorApuesta";
 import { useJuego } from "../state/store";
 import { validarApuesta } from "../state/validacion";
 
@@ -23,6 +27,13 @@ const TEXTO_FASE = {
   DEALER: "Juega el dealer",
   PAGOS: "Pagos",
 } as const;
+
+/** Mensaje del panel del jugador en las fases donde no le toca hacer nada. */
+const TEXTO_ESPERA: Record<"ESPERANDO" | "DEALER" | "PAGOS", string> = {
+  ESPERANDO: "Esperando a que se sienten más jugadores…",
+  DEALER: "Juega el dealer…",
+  PAGOS: "Pagando la ronda…",
+};
 
 /** Texto del resultado propio. */
 const TEXTO_RESULTADO = { blackjack: "¡Blackjack!", gana: "Ganaste", empate: "Empate", pierde: "Perdiste", pasado: "Te pasaste" } as const;
@@ -54,10 +65,12 @@ export function PantallaMesa({ alAbrirMenu }: PropsPantallaMesa): ReactNode {
   const puedeActuar = conectado && !estado.espectador && !ocupado && propio !== null;
 
   const validacionApuesta = validarApuesta(textoApuesta, estado.billetera?.fichas ?? 0);
-  const puedeApostar = puedeActuar && mesa.fase === "APUESTAS" && propio?.estado === "SIN_APUESTA" && validacionApuesta.ok;
   const esMiTurno = puedeActuar && mesa.fase === "TURNOS" && mesa.turnoDe === miId;
   const jugadorEnTurno = mesa.asientos.find((asiento) => asiento !== null && asiento.usuarioId === mesa.turnoDe) ?? null;
   const miResultado = estado.resultado?.resultados.find((resultado) => resultado.usuarioId === miId) ?? null;
+  // Pistas para el jugador propio; no dependen de peticiones pendientes para no parpadear al hacer clic.
+  const turnoPropio = !estado.espectador && mesa.fase === "TURNOS" && mesa.turnoDe === miId;
+  const debeApostar = !estado.espectador && mesa.fase === "APUESTAS" && propio?.estado === "SIN_APUESTA";
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-4 p-6">
@@ -65,7 +78,9 @@ export function PantallaMesa({ alAbrirMenu }: PropsPantallaMesa): ReactNode {
         <div>
           <h1 className="text-2xl font-bold">{mesa.nombre}</h1>
           <p>
-            {TEXTO_FASE[mesa.fase]}
+            <span key={mesa.fase} className="inline-block animate-aparecer">
+              {TEXTO_FASE[mesa.fase]}
+            </span>
             {jugadorEnTurno !== null && (
               <>
                 {" · "}
@@ -94,55 +109,77 @@ export function PantallaMesa({ alAbrirMenu }: PropsPantallaMesa): ReactNode {
       {estado.espectador && (
         <p className="rounded bg-sky-800 p-2 text-sm">Tu asiento se abrió en otra pestaña; aquí solo puedes mirar.</p>
       )}
-      {propio?.estado === "ESPERANDO_RONDA" && <p className="rounded bg-sky-800 p-2 text-sm">Entraste a media ronda: juegas desde la siguiente.</p>}
 
       <MesaVisual mesa={mesa} miId={miId} desfaseMs={estado.desfaseMs}>
-        {miResultado !== null && (
-          <p className="rounded-lg bg-amber-400 px-4 py-2 text-center text-lg font-bold text-emerald-950 shadow-xl">
+        {miResultado !== null ? (
+          <p key="resultado" className="animate-aparecer rounded-lg bg-amber-400 px-4 py-2 text-center text-lg font-bold text-emerald-950 shadow-xl">
             {TEXTO_RESULTADO[miResultado.resultado]} · apostaste {miResultado.apuesta}, recibes {miResultado.pago}
           </p>
-        )}
+        ) : turnoPropio ? (
+          <p key="turno" className="animate-aparecer rounded-full bg-amber-400 px-4 py-1.5 font-bold text-emerald-950 shadow-lg">
+            ¡Te toca! Pide carta o plántate
+          </p>
+        ) : debeApostar ? (
+          <p key="apuesta" className="animate-aparecer rounded-full bg-emerald-950/80 px-4 py-1.5 text-sm font-semibold text-amber-200 shadow-lg">
+            Haz tu apuesta antes de que acabe el tiempo
+          </p>
+        ) : null}
       </MesaVisual>
 
-      <section className="flex flex-wrap items-start gap-3">
-        <div className="flex flex-col gap-1">
-          <div className="flex gap-2">
-            <input
-              inputMode="numeric"
-              value={textoApuesta}
-              onChange={(evento) => setTextoApuesta(evento.target.value)}
-              aria-label="Fichas a apostar"
-              className="w-24 rounded bg-emerald-950 px-2 py-1"
-            />
-            <button
-              type="button"
-              disabled={!puedeApostar}
-              onClick={() => validacionApuesta.ok && void acciones.apostar(validacionApuesta.cantidad)}
-              className="rounded bg-amber-400 px-3 py-1 font-semibold text-emerald-950 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Apostar
-            </button>
-          </div>
-          {mesa.fase === "APUESTAS" && !validacionApuesta.ok && <span className="text-sm text-amber-300">{validacionApuesta.motivo}</span>}
-        </div>
-        <button
-          type="button"
-          disabled={!esMiTurno}
-          onClick={() => void acciones.pedir()}
-          className="rounded bg-sky-500 px-4 py-1 font-semibold text-emerald-950 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Pedir
-        </button>
-        <button
-          type="button"
-          disabled={!esMiTurno}
-          onClick={() => void acciones.plantarse()}
-          className="rounded bg-sky-500 px-4 py-1 font-semibold text-emerald-950 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Plantarse
-        </button>
+      {/* Panel del jugador, centrado bajo su asiento: muestra solo lo que puede hacer en esta fase. */}
+      <section
+        aria-label="Tus acciones"
+        className="mx-auto flex w-full max-w-xl flex-col items-center gap-3 rounded-3xl bg-emerald-900/50 px-6 py-5 text-center shadow-inner ring-1 ring-emerald-700/50"
+      >
+        {propio === null || estado.espectador ? (
+          <p className="text-emerald-200">Estás mirando la mesa.</p>
+        ) : propio.estado === "ESPERANDO_RONDA" ? (
+          <p className="text-emerald-200">Entraste a media ronda: juegas desde la siguiente.</p>
+        ) : mesa.fase === "APUESTAS" && propio.estado === "SIN_APUESTA" ? (
+          <SelectorApuesta
+            texto={textoApuesta}
+            alCambiar={setTextoApuesta}
+            fichas={estado.billetera?.fichas ?? 0}
+            validacion={validacionApuesta}
+            habilitado={puedeActuar}
+            enviando={estado.pendientes.includes("apostar")}
+            alApostar={(cantidad) => void acciones.apostar(cantidad)}
+          />
+        ) : mesa.fase === "APUESTAS" ? (
+          <p className="flex items-center gap-3 text-lg font-semibold">
+            <Ficha cantidad={propio.apuesta} tamano="grande" />
+            Apostaste {propio.apuesta.toLocaleString("es-MX")}. Esperando a los demás…
+          </p>
+        ) : mesa.fase === "REPARTO" || mesa.fase === "TURNOS" ? (
+          <>
+            <div className="flex flex-wrap justify-center gap-4">
+              <BotonJuego variante="verde" icono="+" llamando={esMiTurno} disabled={!esMiTurno} onClick={() => void acciones.pedir()}>
+                Pedir
+              </BotonJuego>
+              <BotonJuego variante="rojo" icono="✋" llamando={esMiTurno} disabled={!esMiTurno} onClick={() => void acciones.plantarse()}>
+                Plantarse
+              </BotonJuego>
+            </div>
+            <p className="text-sm text-emerald-200">{textoTurno(mesa.fase, turnoPropio, jugadorEnTurno?.usuario ?? null)}</p>
+          </>
+        ) : (
+          <p className="text-emerald-200">{TEXTO_ESPERA[mesa.fase]}</p>
+        )}
       </section>
-
     </main>
   );
+}
+
+/**
+ * Leyenda bajo Pedir/Plantarse durante el reparto y los turnos.
+ * @param fase - `REPARTO` o `TURNOS`.
+ * @param turnoPropio - Es el turno de este jugador.
+ * @param enTurno - Nombre de quien juega, si hay alguien en turno.
+ * @returns Texto corto para el jugador.
+ */
+function textoTurno(fase: "REPARTO" | "TURNOS", turnoPropio: boolean, enTurno: string | null): string {
+  if (fase === "REPARTO") return "Repartiendo cartas…";
+  // Sin el total: se ve sobre tu última carta cuando termina de descubrirse (aquí lo adelantaría).
+  if (turnoPropio) return "¿Otra carta o te plantas?";
+  return enTurno === null ? "Esperando turno…" : `Turno de ${enTurno}`;
 }
