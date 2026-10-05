@@ -28,6 +28,23 @@ export const INDICES_ASIENTO = [0, 1, 2, 3, 4] as const;
 /** Índice válido de asiento. */
 export type IndiceAsiento = (typeof INDICES_ASIENTO)[number];
 
+/** Lugar del dibujo que queda abajo al centro, frente al dealer. */
+export const LUGAR_CENTRAL: IndiceAsiento = 2;
+
+/**
+ * Lugar del dibujo donde va un asiento. Cada jugador se ve a sí mismo abajo al centro, como en
+ * los casinos en línea; la mesa "gira" sin cambiar el orden: quien está a tu derecha en el
+ * servidor sigue a tu derecha en pantalla. El asiento real (`indice`) no cambia, solo el dibujo.
+ * @param indice - Asiento en el servidor (0–4).
+ * @param indicePropio - Asiento del usuario de esta pestaña, o `null` si no está sentado (espectador).
+ * @returns Lugar del dibujo (0–4, de izquierda a derecha).
+ */
+export function lugarVisual(indice: IndiceAsiento, indicePropio: IndiceAsiento | null): IndiceAsiento {
+  if (indicePropio === null) return indice;
+  const total = INDICES_ASIENTO.length;
+  return ((((indice - indicePropio + LUGAR_CENTRAL) % total) + total) % total) as IndiceAsiento;
+}
+
 /** Posición en % del ancho (`x`) y del alto (`y`) del contenedor. */
 export interface Posicion {
   x: number;

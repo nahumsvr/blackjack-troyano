@@ -81,7 +81,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 ### Nahum
 - [ ] T-27 · Componentes `Carta` (frente y reverso por CSS/SVG, sin imágenes externas), `Asiento` (avatar, nombre, apuesta, total, estado, desconectado) y `ManoDealer` · Nahum · depende de: T-12 · avance en PR #9 (falta la pagina de las 52 cartas)
   - **Hecho cuando:** en el mock se ven las 52 cartas y los 5 reversos del catálogo correctamente.
-- [ ] T-28 · Pantalla de mesa: fase, cuenta regresiva a partir de `finEn`, fichas para apostar, botones Pedir/Plantarse habilitados **solo** en tu turno · Nahum · depende de: T-27, T-11 (mock) y T-18 (real)
+- [ ] T-28 · Pantalla de mesa: fase, cuenta regresiva a partir de `finEn`, fichas para apostar, botones Pedir/Plantarse habilitados **solo** en tu turno · Nahum · depende de: T-27, T-11 (mock) y T-18 (real) · avance en PR #11 (falta probar con 3 pestanas reales, requiere T-18)
   - **Hecho cuando:** con 3 pestañas reales, solo la pestaña con el turno tiene los botones activos y las 3 ven la carta repartida en < 1 s.
 - [ ] T-29 · Resultado de ronda (overlay con ganó/perdió/empate y fichas) + avisos de error legibles a partir de `error.mensaje` · Nahum · depende de: T-28
   - **Hecho cuando:** al terminar la ronda cada jugador ve su resultado; forzar `pedir` fuera de turno desde consola muestra el aviso "No es tu turno".
