@@ -16,21 +16,19 @@ import type { Asiento } from "@blackjack/shared";
 export interface ColorJugador {
   /** Nombre del color, para lectores de pantalla y el manual de usuario. */
   nombre: string;
-  /** Borde izquierdo grueso del asiento. */
+  /** Borde del asiento. */
   borde: string;
   /** Color del nombre del jugador. */
   texto: string;
-  /** Fondo del punto junto al nombre. */
-  punto: string;
 }
 
 /** Un color por asiento, en el orden de los índices 0 a 4. Tonos separados en el círculo cromático. */
 const COLORES_POR_ASIENTO: readonly [ColorJugador, ColorJugador, ColorJugador, ColorJugador, ColorJugador] = [
-  { nombre: "azul", borde: "border-l-sky-400", texto: "text-sky-300", punto: "bg-sky-400" },
-  { nombre: "rosa", borde: "border-l-pink-400", texto: "text-pink-300", punto: "bg-pink-400" },
-  { nombre: "naranja", borde: "border-l-orange-400", texto: "text-orange-300", punto: "bg-orange-400" },
-  { nombre: "lima", borde: "border-l-lime-400", texto: "text-lime-300", punto: "bg-lime-400" },
-  { nombre: "violeta", borde: "border-l-violet-400", texto: "text-violet-300", punto: "bg-violet-400" },
+  { nombre: "azul", borde: "border-sky-400", texto: "text-sky-300" },
+  { nombre: "rosa", borde: "border-pink-400", texto: "text-pink-300" },
+  { nombre: "naranja", borde: "border-orange-400", texto: "text-orange-300" },
+  { nombre: "lima", borde: "border-lime-400", texto: "text-lime-300" },
+  { nombre: "violeta", borde: "border-violet-400", texto: "text-violet-300" },
 ];
 
 /**

@@ -7,7 +7,7 @@ const INDICES = [0, 1, 2, 3, 4] as const;
 describe("colorDeAsiento", () => {
   test("los 5 asientos tienen colores distintos en todas sus clases", () => {
     const colores = INDICES.map(colorDeAsiento);
-    for (const campo of ["nombre", "borde", "texto", "punto"] as const) {
+    for (const campo of ["nombre", "borde", "texto"] as const) {
       expect(new Set(colores.map((color) => color[campo])).size).toBe(INDICES.length);
     }
   });
@@ -18,8 +18,8 @@ describe("colorDeAsiento", () => {
 
   test("no usa los tonos reservados de la UI (verde, ámbar, rojo)", () => {
     for (const indice of INDICES) {
-      const { borde, texto, punto } = colorDeAsiento(indice);
-      expect(`${borde} ${texto} ${punto}`).not.toMatch(/emerald|green|amber|yellow|red/);
+      const { borde, texto } = colorDeAsiento(indice);
+      expect(`${borde} ${texto}`).not.toMatch(/emerald|green|amber|yellow|red/);
     }
   });
 });

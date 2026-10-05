@@ -1,12 +1,12 @@
 /**
  * Pantalla de mesa. Dibuja el snapshot `mesa.estado` tal cual y habilita las acciones solo
  * cuando el servidor las aceptaría (fase y turno); el servidor sigue siendo quien decide.
- * Versión funcional mínima: T-27 aporta los componentes visuales de carta y asiento,
- * y T-28/T-29 el diseño final y el overlay de resultado.
+ * La mesa se dibuja con `MesaVisual` (dealer al centro, jugadores alrededor);
+ * T-28/T-29 completan los controles de apuesta y el overlay de resultado.
  */
-import type { Asiento, CartaVista } from "@blackjack/shared";
 import { useState, type ReactNode } from "react";
 import { colorDeAsiento } from "../components/colorJugador";
+import { MesaVisual } from "../components/MesaVisual";
 import { PanelBilletera } from "../components/PanelBilletera";
 import { Reloj } from "../components/Reloj";
 import { useJuego } from "../state/store";
@@ -27,43 +27,6 @@ const TEXTO_RESULTADO = { blackjack: "¡Blackjack!", gana: "Ganaste", empate: "E
 
 /** Apuesta sugerida al abrir la mesa. */
 const APUESTA_SUGERIDA = "10";
-
-/**
- * Texto corto de una carta (`A♠`), o `🂠` si está oculta.
- * @param carta - Carta del snapshot.
- * @returns Representación textual.
- */
-function textoCarta(carta: CartaVista): string {
-  return "oculta" in carta ? "🂠" : `${carta.rango}${carta.palo}`;
-}
-
-/**
- * Fila de un asiento de la mesa. El color del asiento (borde, punto y nombre) identifica al
- * jugador; el color nunca es la única pista: el nombre y "(tú)" siempre se muestran.
- * @param props - Asiento y si es el turno o el jugador propio.
- * @returns Elemento del asiento.
- */
-function FilaAsiento({ asiento, enTurno, propio }: { asiento: Asiento; enTurno: boolean; propio: boolean }): ReactNode {
-  const color = colorDeAsiento(asiento.indice);
-  return (
-    <li
-      data-color={color.nombre}
-      className={`rounded border-l-8 p-3 ${color.borde} ${enTurno ? "ring-2 ring-amber-400" : ""} ${propio ? "bg-emerald-800" : "bg-emerald-900/60"}`}
-    >
-      <div className="flex justify-between">
-        <span className={`flex items-center gap-2 font-semibold ${color.texto}`}>
-          <span className={`inline-block h-3 w-3 rounded-full ${color.punto}`} aria-hidden="true" />
-          {asiento.usuario} {propio && "(tú)"}
-        </span>
-        {!asiento.conectado && <span className="text-sm text-red-300">desconectado</span>}
-      </div>
-      <div className="font-mono text-lg">{asiento.cartas.map(textoCarta).join(" ") || "—"}</div>
-      <div className="text-sm text-emerald-200">
-        Apuesta {asiento.apuesta} · Total {asiento.total} · {asiento.estado}
-      </div>
-    </li>
-  );
-}
 
 /**
  * Mesa de juego con apuestas, turnos y resultado.
@@ -88,7 +51,7 @@ export function PantallaMesa(): ReactNode {
   const miResultado = estado.resultado?.resultados.find((resultado) => resultado.usuarioId === miId) ?? null;
 
   return (
-    <main className="mx-auto flex max-w-4xl flex-col gap-4 p-6">
+    <main className="mx-auto flex max-w-5xl flex-col gap-4 p-6">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold">{mesa.nombre}</h1>
@@ -120,29 +83,13 @@ export function PantallaMesa(): ReactNode {
       )}
       {propio?.estado === "ESPERANDO_RONDA" && <p className="rounded bg-sky-800 p-2 text-sm">Entraste a media ronda: juegas desde la siguiente.</p>}
 
-      <section className="rounded bg-emerald-900/60 p-4">
-        <h2 className="font-semibold">Dealer</h2>
-        <div className="font-mono text-lg">{mesa.dealer.cartas.map(textoCarta).join(" ") || "—"}</div>
-        <div className="text-sm">Total {mesa.dealer.total ?? "?"}</div>
-      </section>
-
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {mesa.asientos.map((asiento, indice) =>
-          asiento === null ? (
-            <li key={indice} className="rounded border border-dashed border-emerald-800 p-3 text-emerald-600">
-              Asiento libre
-            </li>
-          ) : (
-            <FilaAsiento key={indice} asiento={asiento} enTurno={mesa.turnoDe === asiento.usuarioId} propio={asiento.usuarioId === miId} />
-          ),
+      <MesaVisual mesa={mesa} miId={miId}>
+        {miResultado !== null && (
+          <p className="rounded-lg bg-amber-400 px-4 py-2 text-center text-lg font-bold text-emerald-950 shadow-xl">
+            {TEXTO_RESULTADO[miResultado.resultado]} · apostaste {miResultado.apuesta}, recibes {miResultado.pago}
+          </p>
         )}
-      </ul>
-
-      {miResultado !== null && (
-        <p className="rounded bg-amber-400 p-3 text-center text-lg font-bold text-emerald-950">
-          {TEXTO_RESULTADO[miResultado.resultado]} · apostaste {miResultado.apuesta}, recibes {miResultado.pago}
-        </p>
-      )}
+      </MesaVisual>
 
       <section className="flex flex-wrap items-start gap-3">
         <div className="flex flex-col gap-1">
