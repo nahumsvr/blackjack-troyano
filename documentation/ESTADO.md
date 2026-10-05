@@ -1,6 +1,14 @@
 # ESTADO — ¿Dónde vamos?
 
-_Última actualización: jue 1 oct 2026_
+_Última actualización: dom 4 oct 2026_
+
+## Sesión local del 4 de octubre
+
+T-03 y la base de datos/economía avanzaron localmente; contrato, SQL y servicios están verificados. No se crearon PR nuevos ni se fusionaron estas tareas. Véase [Avance-M-01.md](Avance-M-01.md) para archivos, evidencia y pendientes.
+
+El historial local ya contiene las fusiones de PR #1, #2 y #3. Las notas anteriores que los indican abiertos están desactualizadas. Los contadores de abajo son históricos y requieren auditar sus criterios antes de recalcular: no se comprobó protección efectiva de main (T-02) ni el gate visual de tres pestañas de T-06 en esta sesión. Las casillas nuevas se conservan abiertas hasta sus gates y revisión/fusión.
+
+**Bloqueos actuales:** acceso al daemon Docker para PostgreSQL 16; revisión/fusión de la base local; T-07/T-08/T-18 y cliente para integrar economía; T-35 espera GestorMesas. Pruebas locales con Bun 1.4.2/PostgreSQL 18.6; objetivo documentado Bun 1.3.13/PostgreSQL 16. El juego de tres usuarios y la fecha de congelamiento requieren evaluación del líder con este estado real.
 
 ## Hito actual
 
@@ -43,3 +51,5 @@ Avance por hito: H1 0/14 · H2 0/19 · H3 0/10 · H4 0/8 · H5 0/5 · Entrega 0/
 | 2026-10-01 | Hector: T-01 preparada localmente en t-01-monorepo-bun. bun install en clon limpio y typecheck correctos. Sin tests aun. PR #1 abierto; no se contabiliza como fusionada. |
 | 2026-10-01 | Hector: plantilla T-02 publicada en PR #2 (borrador). Nahum aplicara la proteccion de main; pendiente comprobar rechazos. |
 | 2026-10-01 | Hector: T-06 publicada en PR #3 (borrador). Tipos y 3 pruebas WebSocket correctos. Pendiente verificacion visual y revision; bienvenida confirmada y documentada en PLAN.md. Avance-H-01.md publicado para contexto del equipo. |
+
+| 2026-10-04 | Massimo: T-03, T-04/T-05, T-22–T-25 y servicios T-34 preparados localmente; suite conjunta typecheck + 70 tests/381 aserciones con PostgreSQL real. README/manual/arquitectura y empaquetador preparados parcialmente. Sin PR/fusión; Docker PG16, router/game/client, revisiones y pruebas independientes pendientes. Ver Avance-M-01.md. |

@@ -189,7 +189,9 @@ Formato: JSON de texto. Todo mensaje del cliente puede llevar `reqId?: string` (
 | `movimientos.listar` | `limite?` (1–100, def. 50), `antesDe?` (id) | Sí | Cualquiera | `movimientos` | `MENSAJE_INVALIDO` |
 | `ping` | — | No | Cualquiera | `pong` | — |
 
-Mensaje que requiere sesión y llega sin ella → `NO_AUTENTICADO`. JSON inválido, `type` desconocido o campo fuera de esquema → `MENSAJE_INVALIDO`.
+Mensaje que requiere sesión y llega sin ella → `NO_AUTENTICADO`. JSON inválido, `type` desconocido, campos extra o estructura mal formada → `MENSAJE_INVALIDO`. Excepción de cantidades: en `apostar` y `fichas.comprar`, si `cantidad` está presente y es el único campo inválido (incluyendo una cadena como `"abc"`), se devuelve `CANTIDAD_INVALIDA`, conforme a T-20. Una cantidad faltante o una petición con otros errores conserva `MENSAJE_INVALIDO`. El enrutador usa `crearErrorValidacion(entrada, resultado.error)` de `shared/` para aplicar esta prioridad y reflejar solo un `reqId` válido.
+
+`MensajeClienteSchema` contiene los límites por defecto del PLAN. Si se modifican los valores centrales de `server/src/config.ts`, el enrutador debe construir su esquema con `crearMensajeClienteSchema({ apuestaMin: APUESTA_MIN, apuestaMax: APUESTA_MAX, compraMin: COMPRA_FICHAS_MIN, compraMax: COMPRA_FICHAS_MAX, multiplo: MULTIPLO_FICHAS })`. Así cliente y servidor usan la misma definición sin que `shared/` importe código del servidor. Los límites de tamaño y ritmo corresponden al transporte T-07/T-37.
 
 ### 3.2 Servidor → Cliente
 
@@ -198,15 +200,19 @@ Mensaje que requiere sesión y llega sin ella → `NO_AUTENTICADO`. JSON inváli
 | `bienvenida` | `conectados` (entero >= 0) | Al abrir o cerrar una conexion /ws; conteo de sockets, no de usuarios, en topic `lobby` (T-06) |
 | `sesion` | `token`, `usuario: {id, usuario}`, `billetera`, `equipado: {avatar, reverso, tema}`, `mesaId: string \| null` | Tras `registro`, `login`, `reanudar` |
 | `lobby` | `mesas: [{id, nombre, ocupados, capacidad, fase}]` | Al pedirlo y cuando cambia la ocupación (topic `lobby`) |
-| `mesa.estado` | `MesaEstado` (ver §3.3) | Tras cada cambio de la mesa (topic `mesa:<id>`) |
+| `mesa.estado` | `type` + campos de `MesaEstado` en la raíz (ver §3.3); sin propiedad `estado` | Tras cada cambio de la mesa (topic `mesa:<id>`) |
 | `ronda.resultado` | `rondaId`, `dealer: {cartas, total}`, `resultados: [{usuarioId, resultado, apuesta, pago}]` | Al entrar a `PAGOS` |
 | `billetera` | `dinero`, `fichas`, `compradoHoy`, `disponibleHoy`, `limiteDiario`, `reinicioEn` (ISO) | Tras cualquier operación de dinero (topic `usuario:<id>`) |
 | `catalogo` | `articulos: [{id, tipo, nombre, precio, poseido}]` | Al pedirlo |
-| `inventario` | `articulos: [...]`, `equipado: {avatar, reverso, tema}` | Al pedirlo, al comprar o equipar |
+| `inventario` | `articulos: [{id, tipo, nombre, precio}]` (solo poseídos; sin `poseido`), `equipado: {avatar, reverso, tema}` | Al pedirlo, al comprar o equipar |
 | `movimientos` | `items: [{id, tipo, deltaDinero, deltaFichas, dineroDespues, fichasDespues, referencia, creadoEn}]`, `hayMas` | Al pedirlo |
 | `ok` | `reqId?` | Confirmación sin datos |
 | `error` | `codigo`, `mensaje` (en español, para mostrar), `reqId?` | Cualquier validación fallida |
 | `pong` | `t` (timestamp del servidor) | Respuesta a `ping` |
+
+Todos los mensajes del servidor aceptan `reqId?` para correlacionar respuestas directas; las publicaciones a un topic lo omiten. `sesion.billetera` contiene los seis campos de la respuesta `billetera`, sin `type` ni `reqId`. `sesion.usuario.id`, `turnoDe` y `usuarioId` son enteros positivos; los identificadores de artículos equipados son strings del catálogo. `movimientos.items[].id` y `movimientos.listar.antesDe` son strings decimales positivos sin ceros iniciales, hasta `9223372036854775807` (`bigserial`), para conservar precisión. `referencia` es string de hasta 80 caracteres o `null`; `creadoEn` y `reinicioEn` son ISO 8601 con zona horaria. Los saldos y deltas deben ser enteros seguros de JavaScript; un bigint SQL que no pueda convertirse exactamente se rechaza con `ERROR_INTERNO`.
+
+`disponibleHoy = max(0, limiteDiario - compradoHoy)`, incluso si se reduce el límite después de compras previas. `movimientos.listar.limite` se aplica como 50 al parsear si se omite; el cursor exclusivo de la próxima página es el último `items[].id` recibido. `resultado` usa `blackjack | gana | empate | pierde | pasado`; `pago` es el total devuelto incluida la apuesta. Los mensajes, artículos y snapshots rechazan campos desconocidos.
 
 ### 3.3 `MesaEstado` (snapshot)
 
@@ -230,7 +236,7 @@ type CartaVista =
   | { oculta: true };
 ```
 
-La carta oculta del dealer **nunca** viaja al cliente antes de la fase `DEALER` (evita trampas inspeccionando la red).
+La carta oculta del dealer **nunca** viaja al cliente antes de la fase `DEALER` (evita trampas inspeccionando la red). Antes de `DEALER`, hay como máximo una carta visible del dealer; cualquier carta oculta contiene exclusivamente `{oculta:true}` y obliga a `total:null`. En `DEALER` y `PAGOS`, sus cartas están reveladas. Las cartas del jugador siempre están reveladas en el snapshot; el reverso es presentación durante el reparto. `asientos` contiene exactamente cinco posiciones (vacías como `null`); `indice` coincide con su posición en el arreglo.
 
 ### 3.4 Códigos de error
 
@@ -242,7 +248,7 @@ La carta oculta del dealer **nunca** viaja al cliente antes de la fase `DEALER` 
 | `USUARIO_EXISTE` / `CREDENCIALES_INVALIDAS` / `SESION_INVALIDA` | Autenticación |
 | `MESA_NO_EXISTE` / `MESA_LLENA` / `YA_EN_OTRA_MESA` / `NO_ESTAS_EN_MESA` | Asientos |
 | `FASE_INCORRECTA` / `NO_ES_TU_TURNO` / `YA_APOSTASTE` | Flujo del juego |
-| `CANTIDAD_INVALIDA` | Cero, negativo, decimal, no múltiplo de 10, fuera de rango |
+| `CANTIDAD_INVALIDA` | Cantidad presente de tipo incorrecto, cero, negativo, decimal, no múltiplo de 10, fuera de rango (si es el único error estructural) |
 | `FICHAS_INSUFICIENTES` / `DINERO_INSUFICIENTE` / `LIMITE_DIARIO` | Economía |
 | `ARTICULO_NO_EXISTE` / `YA_POSEIDO` / `NO_POSEIDO` / `BLOQUEADO_EN_MANO` | Tienda / inventario |
 | `ERROR_INTERNO` | Excepción no prevista (se registra en consola; la conexión sigue viva) |
