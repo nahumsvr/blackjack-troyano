@@ -25,7 +25,7 @@ bun run dev
 
 `bun run dev` inicia el servidor en `0.0.0.0:3000` y la entrada provisional del cliente. La entrada del cliente solo imprime un mensaje en la consola; aún no abre una página web. Para detener ambos procesos, usa `Ctrl+C`.
 
-Para comprobar el WebSocket manualmente, abre [`scripts/verificar-ws.html`](scripts/verificar-ws.html) como archivo local en tres pestañas y pulsa **Conectar** en cada una. Deja `127.0.0.1:3000` como servidor si haces la prueba en la misma computadora, o escribe la IP de la computadora que ejecuta Bun si pruebas desde otra en la misma red. Las tres pestañas deben mostrar `Conectados: 3`; al cerrar una, las otras deben mostrar `Conectados: 2`.
+Para comprobar el WebSocket manualmente, abre [`scripts/verificar-ws.html`](../scripts/verificar-ws.html) como archivo local en tres pestañas y pulsa **Conectar** en cada una. Deja `127.0.0.1:3000` como servidor si haces la prueba en la misma computadora, o escribe la IP de la computadora que ejecuta Bun si pruebas desde otra en la misma red. Las tres pestañas deben mostrar `Conectados: 3`; al cerrar una, las otras deben mostrar `Conectados: 2`.
 
 ## Verificaciones
 

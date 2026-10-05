@@ -3,7 +3,7 @@
 export const HOST = "0.0.0.0";
 /** Puerto único previsto para el servidor. */
 export const PUERTO = 3000;
-/** Ruta del upgrade WebSocket descrita en PLAN.md. */
+/** Ruta del upgrade WebSocket descrita en documentation/PLAN.md. */
 export const RUTA_WS = "/ws";
 /** Topic compartido por las conexiones del lobby. */
 export const TOPIC_LOBBY = "lobby";

@@ -3,12 +3,12 @@
 Proyecto universitario (Sistemas Distribuidos, Parcial 1). Equipo: **Hector** (juego/servidor), **Nahum** (cliente), **Massimo** (contrato/economía/docs). Entrega: **mié 7 oct 2026, 13:00 CDMX**, en `.zip`.
 
 Documentos de referencia (léelos antes de trabajar):
-- `PLAN.md` — arquitectura, protocolo, BD, clases, máquina de estados, cronograma, criterio de corte.
-- `TAREAS.md` — tareas con dueño, dependencias y criterio de "hecho".
-- `ESTADO.md` — avance y bloqueos.
-- `CHECKLIST_ENTREGA.md` — verificación final contra la rúbrica.
+- `documentation/PLAN.md` — arquitectura, protocolo, BD, clases, máquina de estados, cronograma, criterio de corte.
+- `documentation/TAREAS.md` — tareas con dueño, dependencias y criterio de "hecho".
+- `documentation/ESTADO.md` — avance y bloqueos.
+- `documentation/CHECKLIST_ENTREGA.md` — verificación final contra la rúbrica.
 
-**Prioridad absoluta:** que funcione sin errores de validación. No agregues features fuera de `TAREAS.md`; los extras (doblar, split, seguro, chat, ranking) no se empiezan antes del congelamiento (dom 4 oct 22:00). No cambies el protocolo ni el esquema sin actualizar `PLAN.md` y avisar en el PR.
+**Prioridad absoluta:** que funcione sin errores de validación. No agregues features fuera de `documentation/TAREAS.md`; los extras (doblar, split, seguro, chat, ranking) no se empiezan antes del congelamiento (dom 4 oct 22:00). No cambies el protocolo ni el esquema sin actualizar `documentation/PLAN.md` y avisar en el PR.
 
 ## Stack
 
@@ -76,7 +76,7 @@ Además:
 - PRs pequeños (idealmente < 400 líneas). Título: `T-XX · descripción`. En la descripción: qué se hizo, cómo probarlo, criterio de "hecho" cumplido.
 - Commits en español, en imperativo: `Agrega validación de turno en pedir`.
 - Antes de pedir revisión: `bun run typecheck` y `bun test` en verde.
-- El PR incluye marcar la tarea en `TAREAS.md` y la línea en `ESTADO.md`.
+- El PR incluye marcar la tarea en `documentation/TAREAS.md` y la línea en `documentation/ESTADO.md`.
 - Tras el congelamiento (tag `v0.9-congelado`) solo se fusionan correcciones de bugs y documentación.
 
 ## Comandos
@@ -93,18 +93,18 @@ bun run bots 3 --mesa mesa-1  # 3 jugadores falsos para pruebas
 bun run empaquetar            # genera el .zip de entrega
 ```
 
-(Los scripts se crean en T-01, T-05, T-26 y T-54; si alguno aún no existe, revisa `TAREAS.md`.)
+(Los scripts se crean en T-01, T-05, T-26 y T-54; si alguno aún no existe, revisa `documentation/TAREAS.md`.)
 
 ## Rutina de seguimiento
 
 Cuando alguien pida **"¿dónde vamos?"** o **"actualiza el estado"**:
 
-1. Lee `TAREAS.md`, `ESTADO.md` y el historial reciente (`git log --oneline -30`, ramas y PRs fusionados; `gh pr list --state all` si está disponible).
-2. Marca `[x]` en `TAREAS.md` las tareas cuyo PR ya está fusionado en `main` y cuyo criterio de "hecho" se cumple. Si hay duda, pregunta; no marques por suposición.
-3. Recalcula en `ESTADO.md`: completadas/total por dev, total y por hito; porcentajes redondeados.
-4. Compara contra el cronograma de `PLAN.md` §8 y actualiza el semáforo: 🟢 a tiempo · 🟡 en riesgo (tarea del camino crítico T-01 → T-03 → T-07 → T-18 → T-20 → T-31 con más de medio día de atraso, o hito a < 1 día con < 70 % hecho) · 🔴 atrasados (el hito no se cumplió en su fecha).
+1. Lee `documentation/TAREAS.md`, `documentation/ESTADO.md` y el historial reciente (`git log --oneline -30`, ramas y PRs fusionados; `gh pr list --state all` si está disponible).
+2. Marca `[x]` en `documentation/TAREAS.md` las tareas cuyo PR ya está fusionado en `main` y cuyo criterio de "hecho" se cumple. Si hay duda, pregunta; no marques por suposición.
+3. Recalcula en `documentation/ESTADO.md`: completadas/total por dev, total y por hito; porcentajes redondeados.
+4. Compara contra el cronograma de `documentation/PLAN.md` §8 y actualiza el semáforo: 🟢 a tiempo · 🟡 en riesgo (tarea del camino crítico T-01 → T-03 → T-07 → T-18 → T-20 → T-31 con más de medio día de atraso, o hito a < 1 día con < 70 % hecho) · 🔴 atrasados (el hito no se cumplió en su fecha).
 5. Actualiza "Bloqueos activos" (tareas cuya dependencia no está hecha) y "Hoy le toca a…" (siguientes tareas desbloqueadas de cada dev, priorizando las 🔓).
 6. Agrega una línea al registro diario con la fecha.
-7. Responde con un resumen corto: estado del hito, % por dev, qué sigue para cada uno y qué está en riesgo. Si el riesgo lo amerita, sugiere aplicar el **criterio de corte** de `PLAN.md` §10.
+7. Responde con un resumen corto: estado del hito, % por dev, qué sigue para cada uno y qué está en riesgo. Si el riesgo lo amerita, sugiere aplicar el **criterio de corte** de `documentation/PLAN.md` §10.
 
-**Al terminar cualquier tarea:** marca su check en `TAREAS.md` (con número de PR) y agrega una línea al registro de `ESTADO.md` (`AAAA-MM-DD · T-XX hecha por <dev>`).
+**Al terminar cualquier tarea:** marca su check en `documentation/TAREAS.md` (con número de PR) y agrega una línea al registro de `documentation/ESTADO.md` (`AAAA-MM-DD · T-XX hecha por <dev>`).

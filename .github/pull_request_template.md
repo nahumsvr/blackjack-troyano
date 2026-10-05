@@ -14,9 +14,9 @@ Describe el comportamiento implementado y por qué cumple la tarea.
 
 ## Seguimiento y revisión
 
-- [ ] ¿Marcaste TAREAS.md con la tarea y el número de este PR?
-- [ ] Actualizaste el registro de ESTADO.md.
-- [ ] Si cambió el protocolo o el esquema, actualizaste PLAN.md y lo explicaste aquí.
+- [ ] ¿Marcaste `documentation/TAREAS.md` con la tarea y el número de este PR?
+- [ ] Actualizaste el registro de `documentation/ESTADO.md`.
+- [ ] Si cambió el protocolo o el esquema, actualizaste `documentation/PLAN.md` y lo explicaste aquí.
 - [ ] Solicitaste revisión del dueño de cada carpeta modificada.
 - [ ] Hay una aprobación de otro dev antes de fusionar.
 
