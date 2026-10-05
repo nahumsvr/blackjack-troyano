@@ -1,6 +1,6 @@
 /** Pruebas de la geometría de la mesa dibujada. */
 import { describe, expect, test } from "bun:test";
-import { INDICES_ASIENTO, PANO, posicionAsiento } from "../src/components/posicionesMesa";
+import { INDICES_ASIENTO, LUGAR_CENTRAL, PANO, lugarVisual, posicionAsiento } from "../src/components/posicionesMesa";
 
 describe("posicionAsiento", () => {
   const posiciones = INDICES_ASIENTO.map(posicionAsiento);
@@ -28,5 +28,26 @@ describe("posicionAsiento", () => {
       expect(y).toBeGreaterThan(50);
       expect(y).toBeLessThanOrEqual(100 - PANO.abajo);
     }
+  });
+});
+
+describe("lugarVisual", () => {
+  test("el asiento propio siempre se dibuja abajo al centro", () => {
+    for (const propio of INDICES_ASIENTO) expect(lugarVisual(propio, propio)).toBe(LUGAR_CENTRAL);
+  });
+
+  test("es una rotación: cada asiento cae en un lugar distinto y se conserva el orden circular", () => {
+    for (const propio of INDICES_ASIENTO) {
+      const lugares = INDICES_ASIENTO.map((indice) => lugarVisual(indice, propio));
+      expect(new Set(lugares).size).toBe(INDICES_ASIENTO.length);
+      for (const indice of INDICES_ASIENTO) {
+        const siguiente = ((indice + 1) % INDICES_ASIENTO.length) as (typeof INDICES_ASIENTO)[number];
+        expect((lugarVisual(siguiente, propio) - lugarVisual(indice, propio) + 5) % 5).toBe(1);
+      }
+    }
+  });
+
+  test("sin asiento propio (espectador) no se gira nada", () => {
+    for (const indice of INDICES_ASIENTO) expect(lugarVisual(indice, null)).toBe(indice);
   });
 });
