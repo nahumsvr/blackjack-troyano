@@ -16,6 +16,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Preparacion local (2026-10-01):** implementada en `t-01-monorepo-bun`; instalacion limpia y tipos verificados. PR #1 abierto; pendiente revision de Nahum/Massimo por el scaffolding minimo y fusion en main.
 - [ ] T-02 · 🔓 Repo en GitHub, `main` protegida (1 aprobación obligatoria), plantilla de PR con casilla "¿marcaste TAREAS.md?" · Hector · depende de: T-01
   - **Hecho cuando:** un `git push` directo a `main` es rechazado y un PR no se puede fusionar sin aprobación.
+  - **Preparacion local (2026-10-01):** plantilla de PR en `t-02-plantilla-proteccion`. Hector confirmo que Nahum configurara main; PR #2 abierto como borrador; pendiente aplicar y verificar proteccion y fusion.
 - [ ] T-06 · 🔓 `Bun.serve` en `0.0.0.0:3000` con upgrade a `/ws`, suscripción a topic `lobby` y mensaje de bienvenida con número de conectados · Hector · depende de: T-01
   - **Hecho cuando:** con 3 pestañas (o 3 laptops) abiertas, las 3 muestran "conectados: 3" y se actualiza en < 1 s al cerrar una. *Desbloquea a Nahum (T-11).*
   - **Preparacion local (2026-10-01):** implementada en `t-06-servidor-websocket`; tipos y 3 pruebas con sockets reales correctos. Bienvenida confirmada por Hector y documentada en PLAN.md. PR #3 abierto como borrador; pendiente verificacion visual con tres pestañas, revision y fusion.
