@@ -24,8 +24,7 @@ export function PanelBilletera(): ReactNode {
   const puedeComprar = validacion.ok && !comprando && estado.conexion === "conectado";
 
   return (
-    <section className="flex flex-col gap-2 rounded bg-emerald-900/60 p-4">
-      <h2 className="font-semibold">Billetera</h2>
+    <section aria-label="Billetera" className="flex flex-col gap-2 rounded bg-emerald-900/60 p-4">
       <p>
         Dinero: <strong>${billetera.dinero.toLocaleString("es-MX")}</strong> · Fichas:{" "}
         <strong>{billetera.fichas.toLocaleString("es-MX")}</strong>

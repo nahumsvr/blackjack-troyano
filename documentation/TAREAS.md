@@ -85,7 +85,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** con 3 pestañas reales, solo la pestaña con el turno tiene los botones activos y las 3 ven la carta repartida en < 1 s.
 - [ ] T-29 · Resultado de ronda (overlay con ganó/perdió/empate y fichas) + avisos de error legibles a partir de `error.mensaje` · Nahum · depende de: T-28
   - **Hecho cuando:** al terminar la ronda cada jugador ve su resultado; forzar `pedir` fuera de turno desde consola muestra el aviso "No es tu turno".
-- [ ] T-30 · Panel de billetera: dinero, fichas, "te quedan X fichas por comprar hoy, se reinicia a las 00:00", compra con botón deshabilitado mientras espera respuesta y `clave` nueva por clic · Nahum · depende de: T-24 (mock mientras tanto)
+- [ ] T-30 · Panel de billetera: dinero, fichas, "te quedan X fichas por comprar hoy, se reinicia a las 00:00", compra con botón deshabilitado mientras espera respuesta y `clave` nueva por clic · Nahum · depende de: T-24 (mock mientras tanto) · avance en PR #10 (falta probar con T-24 real)
   - **Hecho cuando:** comprar 1,000 actualiza saldo y disponible; con el límite agotado, el botón muestra el motivo y la hora de reinicio.
 - [ ] T-33 · Guion de exposición v1 (`docs/exposicion.md`): estructura, quién dice qué y tiempos (≈3 min cada uno), guion de la demo en vivo · Nahum · depende de: —
   - **Hecho cuando:** los 3 aprobaron el guion en el grupo y suma ≤ 9 min en papel.
@@ -127,7 +127,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** comprar un artículo descuenta fichas, aparece como poseído y el botón ya no deja comprarlo otra vez.
 - [ ] T-40 · Inventario y equipar; avatar y reverso de los demás visibles en la mesa; tema de mesa aplicado localmente · Nahum · depende de: T-35
   - **Hecho cuando:** A equipa `avatar_robot` en el lobby, entra a la mesa y B y C ven el robot en el asiento de A.
-- [ ] T-41 · Historial de movimientos (tabla con tipo, cambio en fichas/dinero, saldo resultante, fecha en hora local; "ver más") · Nahum · depende de: T-34
+- [ ] T-41 · Historial de movimientos (tabla con tipo, cambio en fichas/dinero, saldo resultante, fecha en hora local; "ver más") · Nahum · depende de: T-34 · avance en PR #10 (falta movimientos.listar real)
   - **Hecho cuando:** tras comprar fichas, apostar y comprar un artículo, aparecen las 3 filas en orden con los saldos correctos.
 - [ ] T-42 · Indicador de conexión propia (conectado / reconectando) y de jugadores desconectados en su asiento · Nahum · depende de: T-36
   - **Hecho cuando:** al apagar el Wi-Fi de una laptop, las otras dos ven a ese jugador como "desconectado" en < 2 s.

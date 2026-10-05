@@ -7,7 +7,9 @@
 import { useState, type ReactNode } from "react";
 import { colorDeAsiento } from "../components/colorJugador";
 import { MesaVisual } from "../components/MesaVisual";
-import { PanelBilletera } from "../components/PanelBilletera";
+import { BotonBilletera } from "../components/BotonBilletera";
+import { IndicadorConexion } from "../components/IndicadorConexion";
+import type { PestanaMenu } from "../components/MenuLateral";
 import { Reloj } from "../components/Reloj";
 import { useJuego } from "../state/store";
 import { validarApuesta } from "../state/validacion";
@@ -28,11 +30,18 @@ const TEXTO_RESULTADO = { blackjack: "¡Blackjack!", gana: "Ganaste", empate: "E
 /** Apuesta sugerida al abrir la mesa. */
 const APUESTA_SUGERIDA = "10";
 
+/** Props de la pantalla de mesa. */
+interface PropsPantallaMesa {
+  /** Abre el menú lateral (billetera e historial) sin salir de la mesa. */
+  alAbrirMenu: (pestana: PestanaMenu) => void;
+}
+
 /**
  * Mesa de juego con apuestas, turnos y resultado.
+ * @param props - Apertura del menú lateral.
  * @returns Pantalla de mesa, o nada si no hay snapshot.
  */
-export function PantallaMesa(): ReactNode {
+export function PantallaMesa({ alAbrirMenu }: PropsPantallaMesa): ReactNode {
   const { estado, acciones } = useJuego();
   const [textoApuesta, setTextoApuesta] = useState(APUESTA_SUGERIDA);
   const mesa = estado.mesa;
@@ -68,14 +77,18 @@ export function PantallaMesa(): ReactNode {
           </p>
         </div>
         <Reloj finEn={mesa.finEn} desfaseMs={estado.desfaseMs} />
-        <button
-          type="button"
-          disabled={!conectado || estado.pendientes.includes("mesa.salir")}
-          onClick={() => void acciones.salirDeMesa()}
-          className="rounded border border-emerald-600 px-3 py-1 disabled:opacity-50"
-        >
-          Salir de la mesa
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <IndicadorConexion />
+          <BotonBilletera alAbrir={() => alAbrirMenu("billetera")} />
+          <button
+            type="button"
+            disabled={!conectado || estado.pendientes.includes("mesa.salir")}
+            onClick={() => void acciones.salirDeMesa()}
+            className="rounded border border-emerald-600 px-3 py-1 disabled:opacity-50"
+          >
+            Salir de la mesa
+          </button>
+        </div>
       </header>
 
       {estado.espectador && (
@@ -130,7 +143,6 @@ export function PantallaMesa(): ReactNode {
         </button>
       </section>
 
-      <PanelBilletera />
     </main>
   );
 }
