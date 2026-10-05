@@ -35,7 +35,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** `bun run dev` abre la app en otra laptop de la misma red usando la IP de la máquina.
 - [x] T-11 · Capa de red: hook `useSocket` con reconexión (1 s, 2 s, 4 s… máx 10 s), envío con `reqId`, `reanudar` automático con token de `localStorage`, store global de estado · Nahum · depende de: T-03, T-10 · PR #7
   - **Hecho cuando:** reiniciar el servidor con la app abierta → el cliente muestra "reconectando" y vuelve solo, con la misma sesión, sin recargar.
-- [ ] T-12 · 🔓 Mock del servidor (`?mock=1`) con snapshots `MesaEstado` de las 6 fases, billetera, catálogo e inventario de ejemplo · Nahum · depende de: T-03
+- [x] T-12 · 🔓 Mock del servidor (`?mock=1`) con snapshots `MesaEstado` de las 6 fases, billetera, catálogo e inventario de ejemplo · Nahum · depende de: T-03 · PR #8
   - **Hecho cuando:** sin backend, se pueden ver las pantallas de mesa en cada fase y la tienda. *Permite que el cliente avance sin esperar al servidor.*
 - [ ] T-13 · Pantallas de login/registro y lobby conectadas al servidor real (errores del servidor visibles como aviso) · Nahum · depende de: T-08, T-09, T-11
   - **Hecho cuando:** **checkpoint Hito 1** — 3 pestañas con 3 usuarios distintos logueadas ven el lobby y la ocupación en vivo.
