@@ -1,6 +1,6 @@
 # ESTADO — ¿Dónde vamos?
 
-_Última actualización: mar 6 oct 2026 CDMX, con T-08/T-15/T-16/T-54 fusionadas (PR #19/#25/#27/#20). Fechas del registro normalizadas a America/Mexico_City._
+_Última actualización: mar 6 oct 2026 CDMX, con T-08/T-15/T-16/T-54 fusionadas (PR #19/#25/#27/#20) y evidencia de aceptación T-06. Fechas del registro normalizadas a America/Mexico_City._
 
 ## Resumen
 
@@ -30,21 +30,19 @@ Solo se cuentan tareas con PR fusionado en `main` y criterio de "hecho" comproba
 
 | Dev | Completadas | Total | % |
 |---|---|---|---|
-| Hector | 6 | 19 | 32 % |
+| Hector | 7 | 19 | 37 % |
 | Nahum | 2 | 17 | 12 % |
 | Massimo | 8 | 19 | 42 % |
 | Equipo | 0 | 2 | 0 % |
-| **Total** | **16** | **57** | **28 %** |
+| **Total** | **17** | **57** | **30 %** |
 
-Avance por hito: H1 9/14 (64 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 · H5 1/5 (20 %) · Entrega 0/1
+Avance por hito: H1 10/14 (71 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 · H5 1/5 (20 %) · Entrega 0/1
 
 - **Hechas:**
-  - T-01, T-02, T-07, T-08, T-15 y T-16 (Hector); enrutador/auth, Carta/Baraja y Mano/Dealer fusionados y comprobados con Bun 1.3.13 y PostgreSQL 16.15.
+  - T-01, T-02, T-06, T-07, T-08, T-15 y T-16 (Hector); enrutador/auth, Carta/Baraja y Mano/Dealer fusionados y comprobados con Bun 1.3.13 y PostgreSQL 16.15.
   - T-10 (Nahum, PR #6 fusionado en `main`; marca restaurada desde `main` durante la revisión del PR #7).
   - T-12 (Nahum, PR #16): vista de tienda de solo lectura en `?mock=1`.
   - T-04, T-05, T-23, T-24, T-25, T-34 y T-54 (Massimo). Su criterio está verificado con PostgreSQL 16 en Avance-M-02, que indicaba marcarlas al fusionarse el PR #4.
-- **Fusionadas con un gate pendiente** (no cuentan):
-  - T-06: prueba visual.
 - **T-03 hecha:** PR #4 aporta contrato y pruebas; PR #14 centraliza límites; PR #7 integró el cliente que consume `@blackjack/shared`.
 - **T-14 y T-22:** README/manual e interfaz `Billetera` están en `main`, pero sus criterios (instalación independiente e importación por Hector) carecen de evidencia de cierre; siguen pendientes.
 - **PR #7 ya está en `main`:** T-11, T-12, T-27–T-30 y T-41 tienen implementación integrada; conservan casilla abierta cuando falta su criterio de aceptación completo.
@@ -56,14 +54,12 @@ Avance por hito: H1 9/14 (64 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 ·
   - T-28 y T-29 esperan T-18 y T-20;
   - T-30 y T-41 esperan los handlers de T-24/T-34 conectados al enrutador.
 - **Cliente integrado (PR #7):** T-11 ya puede verificar recuperación de la misma sesión con T-08; falta documentar esa prueba del cliente real.
-- **T-06 — prueba visual:** falta abrir `scripts/verificar-ws.html` en tres pestañas.
 - **T-42** espera T-36. **T-35** espera `GestorMesas` (T-09/T-18). **T-31** espera T-20, T-21, T-28 y T-24.
 
 ## Hoy le toca a… (mar 6 oct, con empaquetado en main)
 
 - **Hector:**
   - T-15/T-16 hechas; T-09/T-17/T-18 publicadas en PR #22/#28/#29, pendientes de revisión/fusión. T-19/T-20/T-21/T-26 también están publicadas en PR #30–#33 y aún no cuentan. Las prioridades y el alcance corresponden al líder.
-  - Prueba visual de T-06.
 - **Nahum:**
   - T-33 guion de exposición (PR #17 fusionado, pendiente de aprobación del grupo).
   - T-27 (desbloqueada por T-12): página de prueba con las 52 cartas → borradores de T-49 (manual) y T-51 (diapositivas) con capturas del mock.
@@ -113,3 +109,4 @@ Avance por hito: H1 9/14 (64 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 ·
 | 2026-10-05 | T-16 hecha por Hector, PR #27 fusionado durante la revisión documental. Rama actualizada a mainaf772d8 y comprobada con Bun 1.3.13/PostgreSQL 16.15: typecheck, 224 pruebas/3,497 aserciones y build del cliente. Avance base15/57, H2 5/19; Carta/Baraja y Mano/Dealer incluidos en arquitectura. |
 | 2026-10-05 | Massimo: revisión parcial de T-54 atendida en PR #20: rutas lógicas POSIX/CRLF, alternativas lockfile/Compose y 10 pruebas con ZIP real. Typecheck y suite con PostgreSQL 16.15: 213 pruebas, 3,431 aserciones, cero fallos. Las cifras históricas del empaquetado se distinguen de la aceptación final; T-54/T-55 siguen pendientes. |
 | 2026-10-06 | Massimo: segunda revisión de #23 atendida: registro sin filas duplicadas y ordenado por fecha CDMX; PR #20 añadido al resumen. T-54 hecha, fusionada en c2daf78: Bun 1.3.13 genera ZIP de 124 archivos/272,903 bytes, validado con unzip del sistema (<20 MB); no es aceptación del ZIP final. Avance base16/57, Massimo8/19; T-48/T-55 pendientes. |
+| 2026-10-06 | Massimo: review de #26 atendida; PR limitado a evidencia T-06 y seguimiento, apilado sobre #23 actualizado. Capturas/medición del 5 oct: tres pestañas Chromium renderizadas muestran 3 y luego 2 en 32 ms, sobre código fusionado desde PR #3. T-06 hecha por Hector, verificada por Massimo; avance 17/57 (30 %), H1 10/14. Evidencia de integración se conserva fuera de este PR en la rama local respaldo/t06-integracion-antes-review-20261006; requiere integración/revisión aparte. |
