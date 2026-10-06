@@ -113,14 +113,18 @@ export class GestorMesas {
   }
 
   /**
-   * Libera únicamente el asiento que aún pertenece al socket cerrado.
+   * Reserva únicamente el asiento que aún pertenece al socket cerrado.
    * @param usuarioId - Identidad del socket antes de borrar su sesión.
    * @param conexionId - Identificador único; un cierre tardío no afecta al nuevo dueño.
+   * @param reservar - false al revocar la sesión: equivale a salida explícita.
    * @returns Sin efecto para espectadores o usuarios sin asiento.
    */
-  desconectar(usuarioId: number, conexionId: string): void {
+  desconectar(usuarioId: number, conexionId: string, reservar = true): void {
     const mesaId = this.mesaDeUsuario(usuarioId);
-    if (mesaId !== null && this.propietarios.get(usuarioId) === conexionId) this.salir(usuarioId, conexionId);
+    if (mesaId === null || this.propietarios.get(usuarioId) !== conexionId) return;
+    if (!reservar) { this.salir(usuarioId, conexionId); return; }
+    this.propietarios.delete(usuarioId);
+    this.obtener(mesaId).marcarDesconectado(usuarioId);
   }
 
   /**
