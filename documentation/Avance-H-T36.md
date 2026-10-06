@@ -1,6 +1,6 @@
 # T-36 — Desconexión y recuperación de asiento
 
-6 de octubre de 2026, CDMX · Hector · Rama `t-36-desconexion-reconexion`.
+6 de octubre de 2026, CDMX · Hector · Rama `t-36-desconexion-reconexion` · [PR #37](https://github.com/nahumsvr/blackjack-troyano/pull/37), en borrador.
 
 La rama integra el motor, relojes, acciones y liquidación disponibles en #29–#33, la corrección de espectadores de #22 y el seguimiento de `main`. Esas dependencias deben fusionarse antes de aceptar T-36 en `main`.
 

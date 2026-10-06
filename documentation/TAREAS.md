@@ -151,7 +151,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 ### Hector
 - [ ] T-36 · Desconexión y reconexión (`PLAN.md` §7): auto-plantar, reserva de 60 s, `reanudar` recupera asiento, otra pestaña toma el asiento y la anterior queda espectadora · Hector · depende de: T-19, T-08
   - **Hecho cuando:** cerrar la pestaña del jugador en turno → se planta en < 1 s y la mesa sigue; reabrirla en < 60 s → vuelve a su asiento con sus cartas; abrir la mesa en una 2ª pestaña del mismo usuario → la 1ª ya no puede actuar.
-  - **Implementada (2026-10-06):** reserva con el único reloj de mesa, recuperación de mano/apuesta/saldo y propiedad entre pestañas; 12 casos nuevos, incluidos tres sockets y PostgreSQL reales. Ver [Avance-H-T36.md](Avance-H-T36.md). Pendiente revisión/fusión; no se suma a `main`.
+  - **Implementada — PR #37 (2026-10-06):** reserva con el único reloj de mesa, recuperación de mano/apuesta/saldo y propiedad entre pestañas; 12 casos nuevos, incluidos tres sockets y PostgreSQL reales. Ver [Avance-H-T36.md](Avance-H-T36.md). Pendiente revisión/fusión; no se suma a `main`.
 - [ ] T-37 · Endurecimiento: límite de 20 mensajes/s, acciones de espectadores rechazadas, `ERROR_INTERNO` sin tumbar el proceso, logs claros · Hector · depende de: T-07
   - **Hecho cuando:** un script que manda 1,000 mensajes basura en 1 s recibe errores y las otras pestañas siguen jugando sin retraso notable.
 - [ ] T-38 · En producción el servidor sirve `client/dist` (un solo puerto 3000) y el cliente usa el mismo host para `/ws` · Hector · depende de: T-10
