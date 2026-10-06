@@ -12,7 +12,7 @@ El repositorio ya tiene un monorepo con **Bun workspaces** (`server`, `client` y
 
 El conteo se actualiza cuando alguien se conecta o desconecta. Esta rama de integración compone registro, login, reanudar, logout, lobby, partidas, compras e historial reales. Conserva el cliente y las integraciones de economía y producción de los compañeros. Después de compilar, Bun sirve la página y sus assets desde `client/dist` en el mismo puerto que `/ws`.
 
-Al 6 de octubre, el lobby/motor y las integraciones de economía/producción aún esperan las PR #22 y #28–#33 para llegar a `main`. La integración local pasó typecheck, build y 326 pruebas con PostgreSQL 16.15, sin fallos ni omisiones; las pruebas LAN y la aceptación de la entrega siguen pendientes. [Estado y entrega de Hector](documentation/Entrega-Hector-2026-10-06.md).
+Al 6 de octubre, T-09/T-17 y las integraciones de economía/producción ya están en `main` (#22/#28). El motor completo espera las PR #29–#33; esta rama incorpora además la reserva y recuperación de asiento de T-36. Las pruebas LAN y la aceptación de la entrega siguen pendientes. [Estado y entrega de Hector](documentation/Entrega-Hector-2026-10-06.md).
 
 El cliente React (Vite + Tailwind) tiene:
 - acceso y lobby;
@@ -20,6 +20,8 @@ El cliente React (Vite + Tailwind) tiene:
 - resultado de la ronda;
 - billetera e historial en un menú lateral;
 - reconexión automática.
+
+En esta rama, cerrar la pestaña reserva el asiento durante 60 segundos y planta al jugador si tiene el turno. Al volver con su sesión, recupera las cartas y la apuesta; si la reserva vence con una apuesta activa, el asiento se libera después de liquidarla. Otra pestaña del mismo usuario toma el asiento y la anterior sigue viendo la mesa como espectadora. Cerrar sesión o salir de la mesa conserva la salida explícita prevista en el protocolo. [Implementación y pruebas de T-36](documentation/Avance-H-T36.md).
 
 El modo `http://localhost:5173/?mock=1` permite recorrer la interfaz sin backend. En la URL sin `?mock=1`, esta rama usa PostgreSQL y los handlers reales de lobby, juego y economía. La comprobación de todo el recorrido en tres laptops sigue pendiente.
 
