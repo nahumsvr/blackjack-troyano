@@ -75,6 +75,7 @@ Avance por hito: H1 8/14 (57 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 ·
 
 | Fecha | Nota |
 |---|---|
+| 2026-10-05 | Massimo: T-54 verificada por adelantado en ZIP real y copia extraída: instalación con lockfile fijo, typecheck, 203 pruebas con PostgreSQL 16.15 y build del cliente correctos. T-48/T-55 y entrega final pendientes. Auditoría de 26 declaraciones públicas de shared/db/store sin JSDoc faltante; revisión T-46 pendiente. Ver Avance-M-04.md. |
 | 2026-10-05 | Hector: T-07 implementada desde main con el contrato de PR #14 y cliente de PR #7 revisados; PR #18 en borrador. Typecheck correcto, 166 pruebas sin fallos (29 SQL omitidas por falta de TEST_DATABASE_URL) y build del cliente correcto. Seis pruebas nuevas con sockets reales cubren ataques, UTF-8, reqId, autorización y fallos async. T-06 visual sigue pendiente: el navegador no inició por fallo de ACL del entorno. |
 | 2026-09-29 | Plan aprobado: `PLAN.md`, `TAREAS.md`, `ESTADO.md`, `CHECKLIST_ENTREGA.md`, `CLAUDE.md` creados. 57 tareas, 0 % completado. |
 | 2026-10-01 | Hector: T-01 preparada localmente en t-01-monorepo-bun. bun install en clon limpio y typecheck correctos. Sin tests aun. PR #1 abierto; no se contabiliza como fusionada. |

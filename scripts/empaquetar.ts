@@ -85,7 +85,11 @@ export async function empaquetarProyecto(raiz: string): Promise<{
     if (!entrada.isDirectory()) throw new Error("La entrega requiere una carpeta regular: " + carpeta);
     archivos.push(...await recoger(raiz, carpeta));
   }
-  for (const obligatorio of ["README.md", ".env.example", "package.json", "docs/manual-instalacion.md"]) {
+  for (const obligatorio of [
+    "README.md", ".env.example", "package.json", "bun.lock", "bunfig.toml",
+    "docker-compose.yml", "docs/manual-instalacion.md",
+    "server/db/schema.sql", "server/db/seed.sql",
+  ]) {
     if (!archivos.includes(obligatorio)) throw new Error("Falta el archivo de entrega " + obligatorio + ".");
   }
   const temporal = await mkdtemp(join(raiz, ".empaquetar-"));

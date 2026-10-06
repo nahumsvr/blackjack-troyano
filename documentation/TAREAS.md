@@ -210,6 +210,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 - [ ] T-54 · Script `bun run empaquetar` → `blackjack-equipo.zip` sin `node_modules`, `.env`, `dist` ni `.git`, con `docs/` y `README` · Massimo · depende de: T-48
   - **Preparación local (2026-10-04):** Script empaquetar preparado para generar/validar ZIP de fuentes. Fixture ZIP del script verificada; archivo de sesión y validación de fuentes extraídas pendientes, además de instalación limpia del proyecto completo; no es el paquete final de entrega. Incluido en PR #4 (abierto).
   - **Hecho cuando:** el `.zip` pesa < 20 MB, abre con el descompresor del sistema y **no** es `.rar`.
+  - **Verificación adelantada (2026-10-05 CDMX):** ZIP real de 115 archivos y 255,142 bytes, integridad y exclusiones comprobadas. La copia extraída instaló con lockfile fijo, pasó typecheck, 203 pruebas con PostgreSQL 16.15 y build del cliente. Se exigen los scripts SQL, Compose y configuración de instalación antes de empaquetar; temporales `.empaquetar-*` ignorados por Git. T-48 y T-55 siguen pendientes; no es la entrega final. Ver [Avance-M-04.md](Avance-M-04.md).
 - [ ] T-55 · Probar el `.zip` en una máquina limpia (o usuario nuevo del SO) siguiendo solo el manual de instalación · Hector · depende de: T-54
   - **Hecho cuando:** desde descomprimir hasta jugar con 3 pestañas en ≤ 15 min, sin ayuda; problemas encontrados corregidos en el manual.
 - [ ] T-56 · Ensayo 2 final: < 10 min, los 3 hablan, sin leer diapositivas · **Equipo** · depende de: T-52
