@@ -10,7 +10,7 @@ El repositorio ya tiene un monorepo con **Bun workspaces** (`server`, `client` y
 {"type":"bienvenida","conectados":1}
 ```
 
-El conteo se actualiza cuando alguien se conecta o desconecta. El contrato Zod, PostgreSQL con esquema y catálogo inicial, y módulos de economía están disponibles; la economía aún no está conectada al enrutador. El cliente completo se integró en `main` con PR #7, pero sus pantallas de juego y economía se recorren con `?mock=1`: autenticación, lobby de mesas, partidas y compras reales en el servidor siguen pendientes. La ruta HTTP `/` responde `404` (servir el cliente desde Bun es T-38).
+El conteo se actualiza cuando alguien se conecta o desconecta. El contrato, PostgreSQL y los módulos de economía están disponibles. Enrutador y autenticación permiten registro, login, reanudar, logout y consulta de billetera; lobby, partidas, compras e historial reales requieren sus integraciones. El cliente recorre el flujo completo con `?mock=1`. Después de compilar, Bun sirve la página y sus assets desde `client/dist` en el mismo puerto que `/ws`.
 
 El cliente React (Vite + Tailwind) tiene:
 - acceso y lobby;
@@ -76,6 +76,13 @@ El entorno objetivo se verificó el 4 de octubre: Compose levanta PostgreSQL 16.
 | `docs/` | Manuales y arquitectura para la entrega. |
 | `documentation/` | Plan, convenciones, tareas y seguimiento del equipo. |
 
-`bun run empaquetar` genera `blackjack-equipo.zip` con fuentes, manuales y `.env.example`, sin dependencias, credenciales locales ni builds. El cliente compila con `bun run --filter @blackjack/client build` (genera `client/dist`). El arranque de producción en un solo puerto (`build`/`start` en la raíz) depende de T-38.
+`bun run empaquetar` genera `blackjack-equipo.zip` con fuentes, manuales y `.env.example`, sin dependencias, credenciales locales ni builds. Para producción, con `.env` y la base ya preparados:
+
+```bash
+bun run build
+bun run start
+```
+
+Abre `http://localhost:3000` o `http://<IP-del-servidor>:3000` desde otra laptop. HTTP y `/ws` usan el mismo puerto; no hace falta Vite. El ZIP omite `dist`, así que hay que compilar después de descomprimir. Si no hay build, `/` devuelve 404 con la indicación de compilar; las rutas ajenas al build también devuelven 404. El motor y el lobby real siguen dependiendo de sus tareas.
 
 El diseño previsto y las tareas pendientes están en [`PLAN.md`](documentation/PLAN.md) y [`TAREAS.md`](documentation/TAREAS.md). [`ESTADO.md`](documentation/ESTADO.md) registra el avance del equipo.
