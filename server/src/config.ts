@@ -9,6 +9,12 @@ export const PUERTO = 3000;
 export const RUTA_WS = "/ws";
 /** Topic compartido por las conexiones del lobby. */
 export const TOPIC_LOBBY = "lobby";
+/**
+ * Construye el topic privado que comparten las conexiones vigentes de un usuario.
+ * @param usuarioId - Identificador del usuario autenticado.
+ * @returns Topic de billetera e inventario según PLAN §2.
+ */
+export function topicUsuario(usuarioId: number): string { return `usuario:${usuarioId}`; }
 /** Mesas fijas del Hito 1; el contrato compartido establece cinco asientos. */
 export const CAPACIDAD_MESA = 5;
 export const MESAS = [

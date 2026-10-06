@@ -18,11 +18,15 @@ export interface DatosConexion {
 export type SocketConexion = ServerWebSocket<DatosConexion>;
 type TipoManejado = Exclude<MensajeCliente["type"], "ping">;
 /** Cada handler recibe solo su intención validada y devuelve la respuesta directa. */
-export type ManejadoresEnrutador = Partial<{
+type ManejadoresIntenciones = Partial<{
   [Tipo in TipoManejado]: (
     socket: SocketConexion, mensaje: Extract<MensajeCliente, { type: Tipo }>,
   ) => MensajeServidor | Promise<MensajeServidor>;
 }>;
+export type ManejadoresEnrutador = ManejadoresIntenciones & {
+  /** Mantiene una exclusión compartida hasta enviar la respuesta directa. */
+  serializar?: (socket: SocketConexion, mensaje: MensajeCliente, responder: () => Promise<void>) => Promise<void>;
+};
 
 /** Enrutador común; los servicios de auth, mesa y economía se conectan por inyección. */
 export class Enrutador {
@@ -31,13 +35,22 @@ export class Enrutador {
    * @param manejadores - Intenciones implementadas por las tareas siguientes.
    * @param registrarError - Registra excepciones inesperadas solo en el servidor.
    * @param validarSesion - Comprueba vigencia/revocación antes de ejecutar intenciones protegidas.
+   * @param limpiarConexion - Libera recursos de la conexión al cerrar el transporte.
    * @returns Enrutador con ping disponible incluso sin servicios instalados.
    */
   constructor(
     private readonly manejadores: ManejadoresEnrutador = {},
     private readonly registrarError: (error: unknown) => void = (error) => console.error("Error interno en Enrutador", error),
     private readonly validarSesion?: (socket: SocketConexion) => Promise<void>,
+    private readonly limpiarConexion?: (socket: SocketConexion) => void,
   ) {}
+
+  /**
+   * Libera los recursos inyectados sin guardar closures en los datos de cada socket.
+   * @param socket - Conexión cerrada; su identidad sigue disponible para el callback.
+   * @returns Nada.
+   */
+  cerrar(socket: SocketConexion): void { this.limpiarConexion?.(socket); }
 
   /**
    * Valida tamaño, JSON y esquema; conserva reqId y convierte fallos en error público.
@@ -83,11 +96,14 @@ export class Enrutador {
         throw new ErrorJuego("NO_AUTENTICADO");
       }
       if (!esAcceso && mensaje.type !== "ping") await this.validarSesion?.(socket);
-      // Un cierre durante la validación SQL no puede crear un asiento huérfano.
       if (socket.readyState !== WebSocket.OPEN) return;
-      const respuesta = await this.despachar(socket, mensaje);
-      // La correlación pertenece al transporte: un handler no puede heredar reqId de otra petición.
-      this.enviar(socket, { ...respuesta, reqId });
+      const responder = async () => {
+        const respuesta = await this.despachar(socket, mensaje);
+        // La correlación pertenece al transporte; la exclusión termina después del envío.
+        this.enviar(socket, { ...respuesta, reqId });
+      };
+      if (this.manejadores.serializar) await this.manejadores.serializar(socket, mensaje, responder);
+      else await responder();
     } catch (error) {
       const codigo = error instanceof ErrorJuego ? error.codigo : "ERROR_INTERNO";
       if (!(error instanceof ErrorJuego)) this.registrarError(error);
@@ -121,7 +137,8 @@ export class Enrutador {
   private ejecutar<Tipo extends TipoManejado>(
     tipo: Tipo, socket: SocketConexion, mensaje: Extract<MensajeCliente, { type: Tipo }>,
   ): MensajeServidor | Promise<MensajeServidor> {
-    const manejador = this.manejadores[tipo];
+    const intenciones: ManejadoresIntenciones = this.manejadores;
+    const manejador = intenciones[tipo];
     // Un servicio pendiente devuelve un error explícito; nunca una confirmación falsa.
     if (!manejador) throw new ErrorJuego("ERROR_INTERNO");
     return manejador(socket, mensaje);

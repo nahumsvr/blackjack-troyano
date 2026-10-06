@@ -6,6 +6,8 @@ import { crearEnrutadorAutenticado } from "../auth/manejadores";
 import { PUERTO } from "../config";
 import { GestorMesas } from "../game/GestorMesas";
 import { BilleteraSQL } from "../store/BilleteraSQL";
+import { Tienda } from "../store/Tienda";
+import { crearManejadoresEconomia } from "../store/manejadores";
 import type { DatosConexion, SocketConexion } from "./Enrutador";
 import { iniciarServidor } from "./servidor";
 
@@ -31,7 +33,8 @@ export function iniciarAplicacion(conexion: SQL, puerto = PUERTO): Server<DatosC
     gestor.desconectar(socket.data.usuarioId, socket.data.conexionId!);
   }
   const enrutador = crearEnrutadorAutenticado(new Sesiones(conexion), {
-    "billetera.consultar": async (socket) => ({ type: "billetera", ...await billetera.consultar(socket.data.usuarioId!) }),
+    ...crearManejadoresEconomia(billetera, new Tienda(conexion),
+      (topic, mensaje) => servidor.publish(topic, JSON.stringify(mensaje))),
     "lobby.listar": () => ({ type: "lobby", mesas: gestor.listar() }),
     "mesa.unirse": (socket, mensaje) => {
       const { usuario, equipado, conexionId } = socket.data;

@@ -7,7 +7,7 @@ import { Enrutador, type DatosConexion, type SocketConexion } from "./Enrutador"
  * Inicia Bun.serve y publica el conteo al abrir o cerrar un socket.
  * @param puerto - Puerto de escucha; cero permite usar uno libre en las pruebas.
  * @param enrutador - Validador y handlers compartidos por las conexiones.
- * @param alCerrar - Libera recursos del socket en los servicios de la aplicación.
+ * @param alCerrar - Limpieza adicional de la aplicación antes de retirar la identidad.
  * @returns Servidor que el llamador puede detener.
  * @throws Error Si no se puede abrir el puerto solicitado.
  */
@@ -34,6 +34,7 @@ export function iniciarServidor(
       },
       close(socket) {
         alCerrar?.(socket);
+        enrutador.cerrar(socket);
         socket.unsubscribe(TOPIC_LOBBY);
         conectados -= 1;
         servidor.publish(TOPIC_LOBBY, JSON.stringify({ type: "bienvenida", conectados }));
