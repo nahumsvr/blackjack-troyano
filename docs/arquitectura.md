@@ -1,21 +1,21 @@
 # Arquitectura de Blackjack Troyano
 
-Documento de implementación local, 4 de octubre de 2026. El diseño completo está en [PLAN.md](../documentation/PLAN.md); las tareas y sus criterios de aceptación están en [TAREAS.md](../documentation/TAREAS.md). Este borrador cubre la base disponible para T-32/T-50. Requiere actualizarse después del motor de juego y la revisión de Hector.
+Documento de implementación, actualizado el 6 de octubre de 2026. El diseño completo está en [PLAN.md](../documentation/PLAN.md); las tareas y sus criterios de aceptación están en [TAREAS.md](../documentation/TAREAS.md). El cliente del PR #7 y los límites únicos del PR #14 ya están en `main`; falta actualizar este documento cuando se integre el motor de juego y tras la revisión de Hector.
 
 ## Módulos disponibles y pendientes
 
 | Módulo | Implementación disponible | Integración pendiente |
 |---|---|---|
-| `shared/` | Esquemas Zod, tipos inferidos, códigos/mensajes españoles y `ErrorJuego` | Uso por el enrutador y la capa de red real |
+| `shared/` | Esquemas Zod, tipos inferidos, códigos/mensajes españoles, `ErrorJuego` y límites únicos `LIMITES_CANTIDAD` (PR #14) | Uso por el enrutador; el cliente ya consume el contrato en `main` (PR #7) |
 | `server/src/ws/servidor.ts` | `Bun.serve`, `/ws`, topic `lobby`, conteo `bienvenida` | Enrutamiento, sesión, límite de tamaño/ritmo y acciones |
 | `server/src/db/conexion.ts` | Pool PostgreSQL de Bun y `enTransaccion` | Inicialización y cierre desde el servidor |
 | `server/src/store/` | Interfaz `Billetera`, `BilleteraSQL`, `Tienda` y consultas de saldo/historial | Handlers WebSocket, publicación de respuestas y equipamiento |
 | `server/db/` | Siete tablas e índices, catálogo de 14 artículos | Uso por autenticación y persistencia de rondas |
 | `scripts/db-reset.ts` | Recreación atómica de tablas del proyecto con confirmación de destino | Instalación independiente según manual |
-| `client/` | Vite/React/Tailwind; capa de red con reconexión, `reqId` y validación Zod; store; pantallas de acceso, lobby y mesa; resultado de la ronda; billetera e historial; servidor falso `?mock=1` (PRs #6 a #12) | Conexión con el servidor real (T-13, T-28–T-30, T-41) y tienda/inventario (T-39/T-40, pospuestas) |
+| `client/` | Vite/React/Tailwind; capa de red con reconexión, `reqId` y validación Zod; store; pantallas de acceso, lobby y mesa; resultado; billetera e historial; servidor falso `?mock=1` (PR #6 y #7) | Integración con servidor real (T-13, T-28–T-30, T-41); vista de tienda en mock para completar T-12; tienda/inventario completos T-39/T-40, pospuestas |
 | `server/src/auth/`, `server/src/game/` | Diseño documentado | Sesiones, clases del juego y máquina de estados |
 
-Los servicios de economía se pueden invocar y probar directamente contra PostgreSQL. La implementación del transporte actual solo publica `bienvenida`: todavía no permite comprar ni jugar desde un navegador. Las instrucciones disponibles están en [manual-instalacion.md](manual-instalacion.md).
+Los servicios de economía se pueden invocar y probar directamente contra PostgreSQL; su integración WebSocket está pendiente de T-07. El servidor disponible en `main` publica `bienvenida`, pero todavía no permite comprar ni jugar desde un navegador. El cliente del PR #7 cubre la interfaz con el servidor falso; su integración real espera el enrutador, autenticación y motor. Las instrucciones disponibles están en [manual-instalacion.md](manual-instalacion.md).
 
 ## Dependencias implementadas
 

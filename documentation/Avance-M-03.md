@@ -1,5 +1,7 @@
 # Sesión de Massimo — 5 de octubre de 2026
 
+> **Actualización (6 oct 2026):** PR #14 se fusionó en `main` (`7bf4e89`) y PR #7 también se fusionó (`ea8c33f`). Con el cliente importando `@blackjack/shared`, T-03 cumple su criterio y está marcada como hecha en `TAREAS.md`. La revisión aprobada de #7 verificó 187 pruebas sin fallos con PostgreSQL 16, typecheck y build. Las secciones siguientes conservan el estado observado durante la sesión del 5 oct; los pasos de revisión/fusión ya resueltos se entienden como historial.
+
 Continuación de [Avance-M-02.md](Avance-M-02.md). Revisión del trabajo publicado por el equipo, revisión del PR #7 de Nahum y el PR #14 que unifica los límites de cantidad. No se cambiaron alcance, fechas ni valores del protocolo.
 
 ## Estado del repositorio al iniciar

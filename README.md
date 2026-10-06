@@ -10,7 +10,7 @@ El repositorio ya tiene un monorepo con **Bun workspaces** (`server`, `client` y
 {"type":"bienvenida","conectados":1}
 ```
 
-El conteo se actualiza cuando alguien se conecta o desconecta. El proyecto incluye el contrato Zod compartido, PostgreSQL con esquema y catálogo inicial, y módulos de economía que se prueban directamente contra la base. Su integración con el enrutador WebSocket está pendiente, igual que la autenticación y las partidas en el servidor. La ruta HTTP `/` responde `404` (servir el cliente desde Bun es T-38).
+El conteo se actualiza cuando alguien se conecta o desconecta. El contrato Zod, PostgreSQL con esquema y catálogo inicial, y módulos de economía están disponibles; la economía aún no está conectada al enrutador. El cliente completo se integró en `main` con PR #7, pero sus pantallas de juego y economía se recorren con `?mock=1`: autenticación, lobby de mesas, partidas y compras reales en el servidor siguen pendientes. La ruta HTTP `/` responde `404` (servir el cliente desde Bun es T-38).
 
 El cliente React (Vite + Tailwind) tiene:
 - acceso y lobby;

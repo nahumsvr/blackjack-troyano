@@ -1,6 +1,6 @@
 # CHECKLIST DE ENTREGA — verificación contra la rúbrica
 
-Se revisa completa el **lunes 5 oct** (T-44) y otra vez el **martes 6 oct** con el `.zip` final.
+Se revisa completa el **lunes 5 oct** (T-44) y otra vez el **martes 6 oct** con el `.zip` final. Último repaso documental: 6 oct; las casillas de aceptación de la demo siguen pendientes de ejecución y firma.
 Cada casilla la marca **alguien distinto de quien construyó esa parte**. Anotar quién probó y cuándo.
 
 ---
