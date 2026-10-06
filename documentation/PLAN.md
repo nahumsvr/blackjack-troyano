@@ -17,7 +17,7 @@ Equipo:
 
 ## 1. Supuestos y valores por defecto
 
-Todos los valores numéricos viven en `server/src/config.ts` (y los precios en `server/db/seed.sql`). Cambiarlos no requiere tocar lógica.
+Todos los valores numéricos viven en `server/src/config.ts` (y los precios en `server/db/seed.sql`). Cambiarlos no requiere tocar lógica. Excepción: los límites de apuesta y compra (mínimos, máximos y múltiplo) se definen en `LIMITES_CANTIDAD` de `shared/protocolo.ts`, porque también los usa el cliente, y `config.ts` los re-exporta.
 
 | Supuesto | Valor |
 |---|---|
@@ -191,7 +191,7 @@ Formato: JSON de texto. Todo mensaje del cliente puede llevar `reqId?: string` (
 
 Mensaje que requiere sesión y llega sin ella → `NO_AUTENTICADO`. JSON inválido, `type` desconocido, campos extra o estructura mal formada → `MENSAJE_INVALIDO`. Excepción de cantidades: en `apostar` y `fichas.comprar`, si `cantidad` está presente y es el único campo inválido (incluyendo una cadena como `"abc"`), se devuelve `CANTIDAD_INVALIDA`, conforme a T-20. Una cantidad faltante o una petición con otros errores conserva `MENSAJE_INVALIDO`. El enrutador usa `crearErrorValidacion(entrada, resultado.error)` de `shared/` para aplicar esta prioridad y reflejar solo un `reqId` válido.
 
-`MensajeClienteSchema` contiene los límites por defecto del PLAN. Si se modifican los valores centrales de `server/src/config.ts`, el enrutador debe construir su esquema con `crearMensajeClienteSchema({ apuestaMin: APUESTA_MIN, apuestaMax: APUESTA_MAX, compraMin: COMPRA_FICHAS_MIN, compraMax: COMPRA_FICHAS_MAX, multiplo: MULTIPLO_FICHAS })`. Así cliente y servidor usan la misma definición sin que `shared/` importe código del servidor. Los límites de tamaño y ritmo corresponden al transporte T-07/T-37.
+`MensajeClienteSchema` aplica `LIMITES_CANTIDAD`, la fuente única de los límites de cantidad; `server/src/config.ts` re-exporta esos valores como `APUESTA_MIN`, `APUESTA_MAX`, `COMPRA_FICHAS_MIN`, `COMPRA_FICHAS_MAX` y `MULTIPLO_FICHAS`. El enrutador usa `MensajeClienteSchema` directamente y el cliente valida con los mismos valores, sin que `shared/` importe código del servidor. Para cambiar un límite se edita solo `LIMITES_CANTIDAD`. Los límites de tamaño y ritmo corresponden al transporte T-07/T-37.
 
 ### 3.2 Servidor → Cliente
 
