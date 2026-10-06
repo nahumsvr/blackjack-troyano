@@ -1,32 +1,26 @@
 # ESTADO — ¿Dónde vamos?
 
-_Última actualización: mar 6 oct 2026 CDMX, con T-08/T-15/T-16/T-54 fusionadas (PR #19/#25/#27/#20) y evidencia de aceptación T-06. Fechas del registro normalizadas a America/Mexico_City._
+_Última actualización: mar 6 oct 2026 CDMX. Auditoría sobre `main` en `04802be` y PR abiertos. Fechas del registro en America/Mexico_City._
 
 ## Resumen
 
-Ya están en `main` los PR #4 (contrato, BD y economía), #6/#7 (cliente y mock), #14 (límites únicos), #16 (catálogo del mock), #17 (guion), #18 (enrutador), #19 (autenticación) #25 (Carta/Baraja), #27 (Mano/Dealer) y #20 (empaquetado). `main` está protegida: un push directo es rechazado, cada PR necesita 1 aprobación de otro dev, el historial es lineal y solo se permite fusionar con squash (la rama se borra al fusionar).
+`main` contiene contrato/BD/economía SQL (PR #4/#14), cliente y mock (#6/#7/#16), guion (#17), enrutador/auth (#18/#19), Carta/Baraja y Mano/Dealer (#25/#27), empaquetado (#20), documentación (#23), aceptación visual T-06 (#26) y reconexión con la misma sesión T-11 (#34).
 
-El cliente del PR #7 consume el contrato compartido. T-07/T-08 ya permiten acceso real y consulta de billetera; las pantallas de mesa y el recorrido completo de economía siguen usando el mock hasta integrar sus servicios. Tras T-08, una copia extraída del ZIP de fuentes pasó instalación con lockfile fijo, typecheck, 203 pruebas con PostgreSQL 16.15 y build del cliente.
+**PR #21 y #24 están fusionados en la rama de #22, todavía abierta.** Sus cambios de economía WebSocket y producción no están en `main`. El head auditado de #22 es `acd560a`; tiene conflictos y observaciones pendientes. En `main`, acceso y consulta de billetera funcionan, pero `lobby.listar` responde `ERROR_INTERNO`, no hay rondas reales y faltan los scripts raíz `build`/`start`.
 
-El camino crítico **T-01 → T-03 → T-07 → T-18 → T-20 → T-31** espera ahora T-09 y la integración de T-18; T-15/T-16 ya están fusionadas.
+El camino crítico **T-01 → T-03 → T-07 → T-18 → T-20 → T-31** espera la integración de T-09/T-18/T-20. Hay código publicado en la cadena #28 → #29 → #30 → #31 → #32 → #33, pero sus tareas conservan casillas abiertas hasta cumplir fusión y aceptación.
 
 ## Hito actual
 
-**Por calendario: Hito 5 — mar 6 oct** (ensayos y ZIP probado); entrega mañana, mié 7, 13:00 CDMX.
+**Hito 5 — mar 6 oct:** ensayos y ZIP probado. Entrega **mié 7 oct, 13:00 CDMX**; objetivo de subida **antes de las 11:00**.
 
-La fecha del calendario se calcula en CDMX: la revisión del PR #23 ocurrió el 6 oct a las 03:24 UTC, que corresponde al 5 oct a las 21:24 CDMX. En esa revisión el hito era H4. Esta segunda revisión se realiza el 6 oct local, por lo que el hito vigente ahora es H5. Los PRs #7/#16/#17 fusionados el 6 oct UTC también corresponden al 5 oct CDMX. El semáforo se calcula con esa misma zona horaria y permanece rojo por los hitos previos incumplidos.
+Estado: 🔴 **Atrasados**. H1/H2/H3/H4 no se cerraron en sus fechas y no existe el tag `v0.9-congelado`. Las pruebas unitarias e integración parcial no acreditan cinco rondas en tres laptops, instalación independiente ni aceptación de la entrega.
 
-Estado: 🔴 **Atrasados**. No se cumplieron el Hito 1 (30 sep), el Hito 2 (3 oct) ni el Hito 3/congelamiento (4 oct 22:00); no existe el tag `v0.9-congelado`.
-
-> Semáforo: 🟢 a tiempo · 🟡 en riesgo (una tarea del camino crítico con > medio día de atraso) · 🔴 atrasados (el hito no se cumple en su fecha)
-
-**Decisiones pendientes del equipo:**
-- Aplicar el criterio de corte de PLAN §10 y decidir si se mueve el congelamiento.
-- Confirmar con el equipo el criterio de corte y priorizar integración/pruebas del servidor frente a tareas de entrega aún abiertas.
+El líder debe confirmar el criterio de corte de PLAN §10 y la fecha/condiciones del congelamiento. T-39/T-40 están pospuestas; no se cambia el alcance en esta auditoría.
 
 ## Avance
 
-Solo se cuentan tareas con PR fusionado en `main` y criterio de "hecho" comprobado.
+Solo se cuentan tareas con código fusionado en `main` y criterio comprobado.
 
 | Dev | Completadas | Total | % |
 |---|---|---|---|
@@ -36,37 +30,37 @@ Solo se cuentan tareas con PR fusionado en `main` y criterio de "hecho" comproba
 | Equipo | 0 | 2 | 0 % |
 | **Total** | **18** | **57** | **32 %** |
 
-Avance por hito: H1 11/14 (79 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 · H5 1/5 (20 %) · Entrega 0/1
+Avance por hito: H1 11/14 (79 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 · H5 1/5 (20 %) · Entrega 0/1.
 
-- **Hechas:**
-  - T-01, T-02, T-06, T-07, T-08, T-15 y T-16 (Hector); enrutador/auth, Carta/Baraja y Mano/Dealer fusionados y comprobados con Bun 1.3.13 y PostgreSQL 16.15.
-  - T-10 (Nahum, PR #6 fusionado en `main`; marca restaurada desde `main` durante la revisión del PR #7).
-  - T-12 (Nahum, PR #16): vista de tienda de solo lectura en `?mock=1`.
-  - T-04, T-05, T-23, T-24, T-25, T-34 y T-54 (Massimo). Su criterio está verificado con PostgreSQL 16 en Avance-M-02, que indicaba marcarlas al fusionarse el PR #4.
-- **T-03 hecha:** PR #4 aporta contrato y pruebas; PR #14 centraliza límites; PR #7 integró el cliente que consume `@blackjack/shared`.
-- **T-14 y T-22:** README/manual e interfaz `Billetera` están en `main`, pero sus criterios (instalación independiente e importación por Hector) carecen de evidencia de cierre; siguen pendientes.
-- **PR #7 ya está en `main`:** T-11, T-12, T-27–T-30 y T-41 tienen implementación integrada; conservan casilla abierta cuando falta su criterio de aceptación completo.
+- **Hector:** T-01/T-02/T-06/T-07/T-08/T-15/T-16.
+- **Nahum:** T-10/T-11/T-12; T-11 acreditada en PR #34 con cliente real, PostgreSQL y capturas.
+- **Massimo:** T-03/T-04/T-05/T-23/T-24/T-25/T-34/T-54. T-54 acredita el script ZIP, no T-55 ni el paquete final.
+- **T-22:** interfaz/db fusionadas desde #4. #31 ya contiene consumidor y billetera falsa con el mismo contrato; queda comprobar esa integración revisada antes de cerrar el criterio.
+- **T-14/T-48:** requieren instalación independiente de Nahum. La fusión de #23 aportó documentación, no esa aceptación.
+
+## Verificación de esta auditoría
+
+Sobre `main` en `04802be`, con **Bun 1.3.13 y PostgreSQL 16.15**: typecheck, **236 pruebas / 3,540 aserciones**, cero fallos/omisiones, y build del cliente correctos. Se usaron schemas aleatorios de pruebas; no se ejecutó `db:reset`. El Bun global sigue en 1.4.2; la comprobación usó un ejecutable 1.3.13 aislado.
 
 ## Bloqueos activos
 
-- **T-07/T-08 fusionadas:** autenticación y consulta de billetera disponibles; faltan T-09/T-18 y conexión de compras/historial:
-  - T-13 espera T-09;
-  - T-28 y T-29 esperan T-18 y T-20;
-  - T-30 y T-41 esperan los handlers de T-24/T-34 conectados al enrutador.
-- **T-42** espera T-36. **T-35** espera `GestorMesas` (T-09/T-18). **T-31** espera T-20, T-21, T-28 y T-24.
+- **#22 / T-09:** conflictos con `main` y revisión de transferencia de asiento entre pestañas, limpieza de cierre, cosméticos/JSDoc/topics. Al integrarse aporta también #21/#24. Desbloquea verificación de T-13/T-30 y producción.
+- **Cadena del motor #28–#33:** requiere revisiones y actualización sucesiva sobre las dependencias. #31 aún contiene auth/economía anteriores a las correcciones de #21; conservar logout compartido, caducidad, saldos ordenados, respuestas sin duplicados y servidor estático de #24 al resolver los cruces.
+- **#35 / T-27:** muestrario preparado, PR con conflictos; actualizar sin perder T-11 ni sobrescribir contadores.
+- **T-28/T-29/T-31/T-41:** esperan acciones y rondas reales integradas. El historial final requiere compras, apuestas y artículos con saldos correctos.
+- **T-36/T-37/T-42:** falta aceptación de desconexión/reserva de 60 s y endurecimiento de 20 mensajes/s; la reconexión de sesión T-11 no prueba recuperación de asiento/mano.
+- **T-35:** espera T-18 integrado y validación autoritativa de fase; coordinar con el alcance que confirme el líder para cosméticos/tienda.
+- **T-43/T-44/T-45/T-46/T-47:** falta congelamiento y revisión final por otro integrante. Se puede preparar auditoría/checklist sin marcar el cierre.
+- **T-33/T-51/T-52/T-53/T-56:** falta aprobación del guion/diapositivas, ensayos cronometrados y video de respaldo.
+- **T-48/T-50/T-55/T-57:** manual independiente, arquitectura final revisada, ZIP jugable en máquina limpia y subida/verificación final.
 
-## Hoy le toca a… (mar 6 oct, con empaquetado en main)
+## Hoy le toca a… (mar 6 oct, después de T-11)
 
-- **Hector:**
-  - T-15/T-16 hechas; T-09/T-17/T-18 publicadas en PR #22/#28/#29, pendientes de revisión/fusión. T-19/T-20/T-21/T-26 también están publicadas en PR #30–#33 y aún no cuentan. Las prioridades y el alcance corresponden al líder.
-- **Nahum:**
-  - T-33 guion de exposición (PR #17 fusionado, pendiente de aprobación del grupo).
-  - T-27 (desbloqueada por T-12): página de prueba con las 52 cartas → borradores de T-49 (manual) y T-51 (diapositivas) con capturas del mock.
-  - T-11 hecha (reconexión con la misma sesión verificada con T-08); al llegar T-09, verificar T-13 contra el servidor real.
-- **Massimo:**
-  - Preparar la verificación de checklist T-44 cuando el equipo acuerde el corte.
-  - Handlers de economía para el enrutador de T-07 y coordinación con Hector.
-  - Adelantar empaquetado y documentación; las decisiones de alcance permanecen con el líder.
+- **Hector:** corregir/rebasar #22 y continuar las revisiones de #28–#33; completar aceptación de T-36/T-37 y producción LAN.
+- **Nahum:** actualizar #35, comprobar lobby/billetera reales cuando entre #22, y mesa/resultados/historial al integrar el motor; probar instalación según README/manual y preparar exposición/manual de usuario.
+- **Massimo:** apoyar los bloqueos de #22 y la composición económica de #31; preparar evidencia de T-22, auditoría JSDoc, matriz de T-44 y diagramas/manuales. Coordinar T-31 con tres laptops cuando exista juego integrado; regenerar el ZIP después de las correcciones.
+
+Plan para la sesión y hasta la entrega: [Avance-M-06.md](Avance-M-06.md). Las decisiones de alcance permanecen con el líder.
 
 ## Registro diario
 
@@ -107,6 +101,7 @@ Avance por hito: H1 11/14 (79 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 �
 | 2026-10-05 | Massimo: review #23 corregida (dependencias, errores reales, estado de auth/tests y calendario CDMX). Bun 1.3.13 + PostgreSQL 16.15: copia histórica extraída 203 pruebas/3,402 aserciones; rama sobre main83165c6 208/3,438, typecheck/build correctos. T-15 hecha por Hector, PR #25 fusionado; avance 14/57, H2 4/19. Ver Revision-PR-23.md. |
 | 2026-10-05 | T-16 hecha por Hector, PR #27 fusionado durante la revisión documental. Rama actualizada a mainaf772d8 y comprobada con Bun 1.3.13/PostgreSQL 16.15: typecheck, 224 pruebas/3,497 aserciones y build del cliente. Avance base15/57, H2 5/19; Carta/Baraja y Mano/Dealer incluidos en arquitectura. |
 | 2026-10-05 | Massimo: revisión parcial de T-54 atendida en PR #20: rutas lógicas POSIX/CRLF, alternativas lockfile/Compose y 10 pruebas con ZIP real. Typecheck y suite con PostgreSQL 16.15: 213 pruebas, 3,431 aserciones, cero fallos. Las cifras históricas del empaquetado se distinguen de la aceptación final; T-54/T-55 siguen pendientes. |
-| 2026-10-06 | Massimo: segunda revisión de #23 atendida: registro sin filas duplicadas y ordenado por fecha CDMX; PR #20 añadido al resumen. T-54 hecha, fusionada en c2daf78: Bun 1.3.13 genera ZIP de 124 archivos/272,903 bytes, validado con unzip del sistema (<20 MB); no es aceptación del ZIP final. Avance base16/57, Massimo8/19; T-48/T-55 pendientes. |
+| 2026-10-06 | Massimo: segunda revisión de #23 atendida: registro sin filas duplicadas y ordenado por fecha CDMX; PR #20 añadido al resumen. T-54 hecha, fusionada en c2daf78: Bun 1.3.13 genera ZIP de 124 archivos/272,903 bytes, validado con unzip del sistema (<20 MB); no es aceptación del ZIP final. Avance base16/57, Massimo 8/19; T-48/T-55 pendientes. |
 | 2026-10-06 | Massimo: review de #26 atendida; PR limitado a evidencia T-06 y seguimiento, apilado sobre #23 actualizado. Capturas/medición del 5 oct: tres pestañas Chromium renderizadas muestran 3 y luego 2 en 32 ms, sobre código fusionado desde PR #3. T-06 hecha por Hector, verificada por Massimo; avance 17/57 (30 %), H1 10/14. Evidencia de integración se conserva fuera de este PR en la rama local respaldo/t06-integracion-antes-review-20261006; requiere integración/revisión aparte. |
 | 2026-10-06 | T-11 hecha por Nahum: prueba de integración con cliente real (`Conexion` + `ControladorJuego` + reductor) contra servidor autenticado y PostgreSQL 16; reinicio del servidor → `reconectando` → vuelve solo con la misma sesión vía `reanudar`, y caso de token inválido. Verificación visual en navegador con capturas en `docs/evidencia/t11/`. 236 pruebas y typecheck en verde. Avance 18/57 (32 %), H1 11/14. |
+| 2026-10-06 | Massimo: auditoría de main `04802be` y PRs. #23/#26/#34 están en main; #21/#24 se fusionaron en la rama de #22 y todavía no llegan a main. #22 y #35 tienen conflictos; #31 contiene auth/economía anteriores a la revisión de #21. Bun 1.3.13/PostgreSQL 16.15: typecheck, 236 pruebas/3,540 aserciones y build del cliente correctos. Sin nuevas casillas cerradas: 18/57, Massimo 8/19. Plan de sesión/entrega en Avance-M-06. |

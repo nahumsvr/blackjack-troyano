@@ -35,6 +35,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Preparación histórica — PR #19 (2026-10-05, antes de fusionar):** Argon2id, tokens persistentes de siete días, registro atómico con saldos/inventario/equipado/libro contable y revocación de sesión. Nueve pruebas SQL/WebSocket, incluida recuperación tras reiniciar. Esa preparación recibió revisión y se fusionó, como registra el cierre siguiente. Detalle en [Avance-H-02.md](Avance-H-02.md).
   - **Hecha — PR #19 (2026-10-05 CDMX):** revisión aprobada y fusión en `831dcd2`; 203 pruebas completas con PostgreSQL 16.15 sin fallos. Criterio de registro/reanudación y errores de acceso comprobado en sockets reales. La prueba del cliente y el lobby completo siguen siendo T-11/T-13.
 - [ ] T-09 · `GestorMesas` con las 3 mesas de config, `lobby.listar`, `mesa.unirse`/`mesa.salir` (solo asientos, sin juego) y publicación de `lobby` al cambiar ocupación · Hector · depende de: T-08
+  - **Estado auditado (2026-10-06):** PR #22 abierto con conflictos; su rama ya recibió #21 (economía WS) y #24 (producción). Falta atender la revisión sobre pestañas/cierre, actualizar contra main y fusionar. No se cuenta todavía.
   - **Hecho cuando:** 3 usuarios distintos ven las 3 mesas; cuando uno se sienta, las otras 2 pestañas ven "1/5" en < 1 s; una sexta persona recibe `MESA_LLENA`.
 
 ### Nahum
@@ -99,6 +100,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 
 ### Nahum
 - [ ] T-27 · Componentes `Carta` (frente y reverso por CSS/SVG, sin imágenes externas), `Asiento` (avatar, nombre, apuesta, total, estado, desconectado) y `ManoDealer` · Nahum · depende de: T-12 · rama de PR #7 (avance original de #9)
+  - **Estado auditado (2026-10-06):** PR #35 aporta muestrario de 52 cartas y cinco reversos; tiene conflictos con main y sigue pendiente de revisión/fusión. La casilla permanece abierta.
   - **Hecho cuando:** en el mock se ven las 52 cartas y los 5 reversos del catálogo correctamente.
   - **Avance integrado en PR #7 (original #9, 2026-10-05):** `Carta` en CSS (reverso para `{oculta:true}`), `Ficha` en SVG, `Asiento`, `ManoDealer`, `MesaVisual` con el dealer al centro y un color por asiento. La animación de reparto y el volteo llegan con T-28. Falta la página de prueba con las 52 cartas; los 5 reversos del catálogo dependen de T-40 (pospuesta), hoy hay un reverso único.
 - [ ] T-28 · Pantalla de mesa: fase, cuenta regresiva a partir de `finEn`, fichas para apostar, botones Pedir/Plantarse habilitados **solo** en tu turno · Nahum · depende de: T-27, T-11 (mock) y T-18 (real) · rama de PR #7 (avance original de #11)
@@ -116,6 +118,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 
 ### Massimo
 - [ ] T-22 · 🔓 `server/src/db` (conexión `sql` de Bun, helper `enTransaccion`) + **interfaz `Billetera`** con JSDoc y firmas definitivas · Massimo · depende de: T-05
+  - **Avance comprobado (2026-10-06):** db e interfaz fusionadas desde PR #4. PR #31 ya usa el contrato y `BilleteraMemoria` en `server/test/soporteMesa.ts`; su interfaz de game coincide con la de main y store la re-exporta. Pendiente revisar/verificar la integración resultante; esta evidencia desbloquea la coordinación con Hector, sin cerrar aún T-22.
   - **Preparación local (2026-10-04):** crearConexion, enTransaccion e interfaz Billetera con firmas async implementados y verificados. Pendiente PR/fusión e importación por Hector en T-20. Incluido en PR #4 (abierto).
   - **Hecho cuando:** la interfaz está fusionada en `main` y Hector la importa para T-20 con una implementación falsa en memoria. *Desbloquea a Hector.*
 - [x] T-23 · `BilleteraSQL.debitarApuesta` / `acreditarPago` con `FOR UPDATE` + `movimientos` · Massimo · depende de: T-22 · PR #4
@@ -132,8 +135,10 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** `bun test` en verde y la suma de `movimientos` de cada usuario de prueba coincide con su saldo final.
   - **Hecha — PR #4 (2026-10-05):** PR #4 fusionado. Suite de economía con PostgreSQL real: 70 pruebas, 0 fallos ([Avance-M-02](Avance-M-02.md)); se marca según esa auditoría.
 - [ ] T-31 · Integración Hito 2 en 3 laptops (coordina, los 3 participan); abrir issues por cada fallo · Massimo · depende de: T-20, T-21, T-28, T-24
+  - **Trabajo disponible (2026-10-06):** motor/acciones/liquidación/bots publicados en #29–#33, pendientes de revisión/fusión. Preparar cuentas, laptops y consultas de reconciliación; ejecutar cinco rondas reales solo sobre la combinación integrada y documentar cada fallo.
   - **Hecho cuando:** **checkpoint Hito 2** — 3 personas en 3 laptops juegan 5 rondas seguidas sin errores, y cada una compra fichas respetando el límite.
 - [ ] T-32 · `docs/arquitectura.md` v1: arquitectura, diagrama de clases, máquina de estados y ER (desde `PLAN.md`, actualizados a lo que realmente se construyó) · Massimo · depende de: T-18
+  - **Avance — PR #23 fusionado (2026-10-06):** arquitectura describe auth/router, Carta/Baraja, Mano/Dealer y las 45 columnas SQL. Preparar los diagramas de Mesa/Gestor desde los PR publicados, identificando su base; cierre cuando estén integrados y renderizados/verificados.
   - **Preparación local (2026-10-04):** Borrador docs/arquitectura.md con módulos/clases existentes, ER y máquina de estados prevista. T-18 y revisión/renderizado de GitHub pendientes; no se considera terminada. Incluido en PR #4 (abierto).
   - **Hecho cuando:** los diagramas se ven renderizados en GitHub y coinciden con los nombres de las clases reales.
 
@@ -147,6 +152,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 - [ ] T-37 · Endurecimiento: límite de 20 mensajes/s, acciones de espectadores rechazadas, `ERROR_INTERNO` sin tumbar el proceso, logs claros · Hector · depende de: T-07
   - **Hecho cuando:** un script que manda 1,000 mensajes basura en 1 s recibe errores y las otras pestañas siguen jugando sin retraso notable.
 - [ ] T-38 · En producción el servidor sirve `client/dist` (un solo puerto 3000) y el cliente usa el mismo host para `/ws` · Hector · depende de: T-10
+  - **Estado auditado (2026-10-06):** PR #24 aprobado/fusionado dentro de la rama de #22, todavía fuera de main. Código de estáticos/caché y scripts preparado; falta integración, juego y prueba desde otra laptop para cerrar.
   - **Hecho cuando:** `bun run build && bun run start` y otra laptop abre `http://<ip>:3000` y juega.
   - **Desbloqueada (2026-10-05):** T-10 ya está en `main` (PR #6). El cliente construye la URL de `/ws` con el mismo host, así que funciona servido por Bun sin cambios.
 
@@ -196,12 +202,15 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 - [ ] T-44 · Pasar **completa** la sección de Funcionamiento de `CHECKLIST_ENTREGA.md`; cada fallo → issue asignado · Massimo · depende de: T-43
   - **Hecho cuando:** todas las casillas de Funcionamiento están en `[x]` o tienen issue abierto con dueño y fecha.
 - [ ] T-46 · JSDoc completo en `server/src/store`, `server/src/db` y `shared/` · Massimo · depende de: T-43
+  - **Trabajo disponible (2026-10-06):** se puede preparar auditoría JSDoc de shared/db/store y de los handlers nuevos de #21. No sustituye congelamiento ni revisión final de Hector.
   - **Preparación local (2026-10-04):** Los nuevos archivos shared/db/store incluyen comentarios de propósito y documentación de APIs. Revisión final de Hector y gate T-43 pendientes. Incluido en PR #4 (abierto).
   - **Hecho cuando:** ninguna función exportada queda sin JSDoc (revisado por Hector).
 - [ ] T-48 · `docs/manual-instalacion.md`: requisitos con versiones, clonar/descomprimir, `.env`, Docker, `db:reset`, `build`, `start`, cómo conectarse desde otra laptop, problemas comunes (puerto ocupado, firewall) · Massimo · depende de: T-38
+  - **Avance — PR #23 fusionado (2026-10-06):** documentación corregida y entorno Bun 1.3.13/PostgreSQL 16 comprobado. Producción de #24 espera #22; la instalación desde cero por Nahum siguiendo únicamente el manual continúa pendiente.
   - **Preparación local (2026-10-04):** Borrador docs/manual-instalacion.md disponible; build/start, PostgreSQL 16 y prueba independiente de Nahum pendientes. Incluido en PR #4 (abierto).
   - **Hecho cuando:** Nahum instala desde cero en su laptop siguiendo solo el manual.
 - [ ] T-50 · `docs/arquitectura.md` final: descripción de cada tabla + `schema.sql`/`seed.sql` referenciados, diagrama de clases, diagrama de dependencias, protocolo, máquina de estados, decisiones de diseño · Massimo · depende de: T-32, T-45
+  - **Avance — PR #23 fusionado (2026-10-06):** diccionario de siete tablas/45 columnas y diagramas de módulos/clases disponibles en main. Falta incorporar motor/gestor al fusionarse, exportar diagramas para el ZIP y revisión de Hector.
   - **Preparación local (2026-10-04):** Borrador de arquitectura referencia schema/seed y distingue implementación de diseño pendiente. Motor/auth/router/cliente y revisión de Hector pendientes.
   - **Hecho cuando:** cubre los 3 puntos de la rúbrica (BD con scripts, clases, dependencias) y Hector confirma que coincide con el código.
 
@@ -217,8 +226,8 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecha — PR #20 (2026-10-06 CDMX):** fusionada en `c2daf78`. Bun 1.3.13 genera ZIP real de fuentes (124 archivos, 272,903 bytes en la rama documental); `unzip -t` del sistema valida el archivo y pesa <20 MB. Diez regresiones del empaquetador verifican exclusiones y alternativas. T-48/T-55, prueba en Windows y paquete final con juego continúan pendientes; esta casilla acredita el script y su criterio, no la aceptación de la entrega.
   - **Preparación local (2026-10-04):** Script empaquetar preparado para generar/validar ZIP de fuentes. Fixture ZIP del script verificada; archivo de sesión y validación de fuentes extraídas pendientes, además de instalación limpia del proyecto completo; no es el paquete final de entrega. Incluido en PR #4 (abierto).
   - **Hecho cuando:** el `.zip` pesa < 20 MB, abre con el descompresor del sistema y **no** es `.rar`.
-  - **Corrida histórica (2026-10-05 CDMX, basada en main `831dcd2` más cambios locales del empaquetador):** aquel ZIP contenía 115 archivos y 255,142 bytes; integridad y exclusiones comprobadas. Su copia extraída instaló con lockfile fijo, pasó typecheck, 203 pruebas con PostgreSQL 16.15 y build del cliente. Estas cifras corresponden exclusivamente a esa corrida; no acreditan la aceptación del ZIP final ni cierran T-54/T-55. Regenerar y verificar el artefacto final tras integrar las tareas pendientes. Ver [Avance-M-04.md](Avance-M-04.md).
-  - **Corrección de revisión — PR #20 (2026-10-05 CDMX):** rutas lógicas POSIX y lectura CRLF del listado ZIP, lockfile `bun.lock` o `bun.lockb`, cualquiera de los cuatro nombres habituales de Compose y selección raíz derivada de los requisitos. Diez pruebas con ZIP real y fixtures temporales verifican contenido/exclusiones, alternativas, enlaces y conservación del ZIP anterior ante requisitos faltantes. Ejecutadas en Linux: verifican la representación portable de rutas, no ejecución nativa en Windows. T-54 y T-55 conservan sus casillas pendientes.
+  - **Corrida histórica (2026-10-05 CDMX, basada en main `831dcd2` más cambios locales del empaquetador):** aquel ZIP contenía 115 archivos y 255,142 bytes; integridad y exclusiones comprobadas. Su copia extraída instaló con lockfile fijo, pasó typecheck, 203 pruebas con PostgreSQL 16.15 y build del cliente. Estas cifras corresponden exclusivamente a esa corrida; no acreditan la aceptación del ZIP final ni T-55. El cierre posterior del script T-54 se registra arriba. Regenerar y verificar el artefacto final tras integrar las tareas pendientes. Ver [Avance-M-04.md](Avance-M-04.md).
+  - **Corrección de revisión — PR #20 (2026-10-05 CDMX):** rutas lógicas POSIX y lectura CRLF del listado ZIP, lockfile `bun.lock` o `bun.lockb`, cualquiera de los cuatro nombres habituales de Compose y selección raíz derivada de los requisitos. Diez pruebas con ZIP real y fixtures temporales verifican contenido/exclusiones, alternativas, enlaces y conservación del ZIP anterior ante requisitos faltantes. Ejecutadas en Linux: verifican la representación portable de rutas, no ejecución nativa en Windows. En esa revisión ambas casillas estaban pendientes; T-54 se cerró después de fusionar #20. T-55 continúa pendiente.
 - [ ] T-55 · Probar el `.zip` en una máquina limpia (o usuario nuevo del SO) siguiendo solo el manual de instalación · Hector · depende de: T-54
   - **Hecho cuando:** desde descomprimir hasta jugar con 3 pestañas en ≤ 15 min, sin ayuda; problemas encontrados corregidos en el manual.
 - [ ] T-56 · Ensayo 2 final: < 10 min, los 3 hablan, sin leer diapositivas · **Equipo** · depende de: T-52
