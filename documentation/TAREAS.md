@@ -78,8 +78,9 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 - [x] T-15 · Clases `Carta` y `Baraja` (4 mazos, Fisher–Yates con `crypto.getRandomValues`, rebarajar con < 25 %) con JSDoc · Hector · depende de: T-03 · PR #25
   - **Hecha — PR #25 (2026-10-05 CDMX):** fusionada en `83165c6`; cinco pruebas verifican 208 instancias, cuatro copias de cada vista, extracción sin reemplazo y umbral 52/51. Auditoría con Bun 1.3.13 y PostgreSQL 16.15: 208 pruebas sin fallos/omisiones, typecheck/build correctos.
   - **Hecho cuando:** `bun test` verifica 208 cartas únicas por rebarajado y que `necesitaRebarajar()` se activa con 51 cartas restantes.
-- [ ] T-16 · `Mano` (As 1/11, blanda, blackjack natural, pasada) y `Dealer` (pide ≤ 16, se planta en todo 17) · Hector · depende de: T-15
-  - **Implementada — PR #27 (2026-10-05):** `Mano` calcula total/blanda/natural/pasada sin mutar cartas; `Dealer` pide hasta 17 y se planta también en 17 blando. Dieciséis pruebas nuevas, typecheck y suite completa de 224 pruebas con PostgreSQL 16 pasan. PR apilado sobre T-15 (#25); pendiente revisión/fusión.
+- [x] T-16 · `Mano` (As 1/11, blanda, blackjack natural, pasada) y `Dealer` (pide ≤ 16, se planta en todo 17) · Hector · depende de: T-15
+  - **Preparación histórica — PR #27 (2026-10-05, antes de fusionar):** `Mano` calcula total/blanda/natural/pasada sin mutar cartas; `Dealer` pide hasta 17 y se planta también en 17 blando. Dieciséis pruebas nuevas, typecheck y suite completa de 224 pruebas con PostgreSQL 16 pasan. PR apilado sobre T-15 (#25); pendiente revisión/fusión.
+  - **Hecha — PR #27 (2026-10-05 CDMX):** fusionada en `af772d8`; sus dieciséis pruebas cubren los casos del criterio, As flexible y regla de 17 blando. Auditoría del entorno objetivo registrada en Revision-PR-23.md.
   - **Hecho cuando:** ≥ 10 casos de prueba pasan: A+K = 21 blackjack; A+A+9 = 21; A+6 = 17 blanda; A+6+10 = 17 dura; 10+6+A = 17; K+Q+2 = 22 pasada; el dealer con A+6 se planta.
 - [ ] T-17 · Función pura `resolver(mano, manoDealer, apuesta)` → `{resultado, pago}` · Hector · depende de: T-16
   - **Hecho cuando:** tests: blackjack con apuesta 10 → pago 25; gana con 10 → 20; empate → 10; pierde → 0; blackjack vs blackjack del dealer → empate; jugador pasado pierde aunque el dealer también se pase.

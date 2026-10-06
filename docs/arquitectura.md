@@ -1,6 +1,6 @@
 # Arquitectura de Blackjack Troyano
 
-Documento de implementación, actualizado el 5 de octubre de 2026 CDMX sobre `main` en `83165c6`, con T-07/T-08/T-15 fusionadas (PR #18/#19/#25). El diseño completo está en [PLAN.md](../documentation/PLAN.md); las tareas y sus criterios de aceptación están en [TAREAS.md](../documentation/TAREAS.md). El cliente, el contrato, la autenticación y Carta/Baraja están en `main`; faltan el motor de mesa y la revisión final de Hector.
+Documento de implementación, actualizado el 5 de octubre de 2026 CDMX sobre `main` en `af772d8`, con T-07/T-08/T-15/T-16 fusionadas (PR #18/#19/#25/#27). El diseño completo está en [PLAN.md](../documentation/PLAN.md); las tareas y sus criterios de aceptación están en [TAREAS.md](../documentation/TAREAS.md). El cliente, el contrato, la autenticación, Carta/Baraja y Mano/Dealer están en `main`; faltan el motor de mesa y la revisión final de Hector.
 
 ## Módulos disponibles y pendientes
 
@@ -14,7 +14,7 @@ Documento de implementación, actualizado el 5 de octubre de 2026 CDMX sobre `ma
 | `scripts/db-reset.ts` | Recreación atómica de tablas del proyecto con confirmación de destino | Instalación independiente según manual |
 | `client/` | Vite/React/Tailwind, red/reconexión/reqId, pantallas y mock; catálogo de solo lectura en mock (T-12) | Lobby y partidas reales, verificación de reconexión cliente, compras/historial e inventario completos |
 | `server/src/auth/` | `Sesiones` y adaptador autenticado: registro atómico, login, reanudar, logout, vigencia/revocación antes de cada intención protegida | Recuperación de asiento cuando exista el juego |
-| `server/src/game/` | `Carta` inmutable y `Baraja` de cuatro mazos con Fisher–Yates criptográfico (T-15) | GestorMesas, Mano/Dealer/Mesa y máquina de estados |
+| `server/src/game/` | `Carta` inmutable, `Baraja` de cuatro mazos y `Mano`/`Dealer` con As flexible (T-15/T-16) | GestorMesas, Mesa y máquina de estados |
 
 El servidor disponible en `main` permite autenticar y consultar la billetera por WebSocket. Compras, inventario e historial tienen servicios SQL probados y esperan sus handlers; el lobby y las partidas requieren `GestorMesas` y el motor. El cliente cubre la interfaz completa con el mock. Las instrucciones disponibles están en [manual-instalacion.md](manual-instalacion.md).
 
@@ -49,7 +49,7 @@ flowchart LR
   Q --> PG
   RESET["scripts/db-reset.ts"] --> PG
   RESET --> SQL["schema.sql + seed.sql"]
-  GAME["game/Baraja y Carta"] --> SH
+  GAME["game/Carta, Baraja, Mano y Dealer"] --> SH
   GAME --> CFG
 ```
 
@@ -106,6 +106,24 @@ classDiagram
     +sacar() Carta
     +necesitaRebarajar() boolean
   }
+  class Mano {
+    +constructor(cartas)
+    +cartas Carta[]
+    +agregar(carta) void
+    +total() number
+    +esBlanda() boolean
+    +esBlackjack() boolean
+    +estaPasada() boolean
+  }
+  class Dealer {
+    +constructor(mano)
+    +mano Mano
+    +debePedir() boolean
+    +jugar(baraja) void
+  }
+  Mano *-- Carta
+  Dealer *-- Mano
+  Dealer ..> Baraja
   BilleteraSQL ..|> Billetera
   BilleteraSQL ..> ErrorJuego
   Tienda ..> ErrorJuego
@@ -117,7 +135,7 @@ classDiagram
 
 `CompraArticulo` contiene `{inventario, billetera}`; `PaginaMovimientos`, `{items, hayMas}`. `Tienda` y `BilleteraSQL` comparten consultas y transacciones, sin que una clase invoque a la otra. `equipar` aún requiere a `GestorMesas` para validar la fase y publicar el nuevo snapshot; no se declara como método implementado.
 
-`Carta` y `Baraja` están implementadas desde PR #25; las firmas del diagrama corresponden a sus archivos reales. Las clases previstas `Mano`, `Jugador`, `Dealer`, `Mesa` y `GestorMesas` se describen en PLAN §5 y se incorporarán cuando se fusionen. La dependencia de autenticación hacia el enrutador está en la función `crearEnrutadorAutenticado` de `auth/manejadores.ts`, que importa y construye `Enrutador`. La clase `Sesiones` no depende de `Enrutador`, y `Enrutador` no importa SQL ni clases de autenticación.
+`Carta`/`Baraja` y `Mano`/`Dealer` están implementadas desde PR #25/#27; las firmas del diagrama corresponden a sus archivos reales. `Mano` distingue el blackjack natural de un 21 con tres cartas y `Dealer` se planta también en 17 blando. Las clases previstas `Jugador`, `Mesa` y `GestorMesas` se describen en PLAN §5 y se incorporarán cuando se fusionen. La dependencia de autenticación hacia el enrutador está en la función `crearEnrutadorAutenticado` de `auth/manejadores.ts`, que importa y construye `Enrutador`. La clase `Sesiones` no depende de `Enrutador`, y `Enrutador` no importa SQL ni clases de autenticación.
 
 ## Persistencia
 
@@ -299,6 +317,6 @@ stateDiagram-v2
 
 ## Verificación y cierre pendiente
 
-`server/test/protocolo.test.ts` verifica un ejemplo válido/inválido por mensaje, tipos desconocidos, cantidades, errores públicos, IDs sin pérdida de precisión y protección del snapshot. `server/test/servidor.test.ts` comprueba conteos con tres conexiones WebSocket reales. `enrutador.test.ts` cubre mensajes malformados, tamaño UTF-8, correlación y continuidad del servidor; `autenticacion.test.ts`, registro atómico, credenciales, revocación y recuperación de sesiones persistentes. `baraja.test.ts` verifica Carta/Baraja, extracción sin reemplazo y el umbral de 52/51. Las pruebas de economía están en `economia.test.ts`; economía/auth requieren PostgreSQL de pruebas, según el manual.
+`server/test/protocolo.test.ts` verifica un ejemplo válido/inválido por mensaje, tipos desconocidos, cantidades, errores públicos, IDs sin pérdida de precisión y protección del snapshot. `server/test/servidor.test.ts` comprueba conteos con tres conexiones WebSocket reales. `enrutador.test.ts` cubre mensajes malformados, tamaño UTF-8, correlación y continuidad del servidor; `autenticacion.test.ts`, registro atómico, credenciales, revocación y recuperación de sesiones persistentes. `baraja.test.ts` verifica Carta/Baraja, extracción sin reemplazo y el umbral de 52/51. `mano.test.ts` cubre dieciséis casos de Ases, natural, pasadas y regla del dealer. Las pruebas de economía están en `economia.test.ts`; economía/auth requieren PostgreSQL de pruebas, según el manual.
 
-Antes de cerrar T-32/T-50: incorporar las clases reales de mesa/mano/dealer y su integración cuando se fusionen, confirmar publicación de eventos y dependencias del cliente, completar equipamiento/persistencia de rondas, renderizar los diagramas en GitHub y obtener revisión de Hector. Auth, router y Carta/Baraja ya se describen aquí. El juego desde tres laptops, los manuales independientes y el paquete final mantienen sus propios criterios de aceptación.
+Antes de cerrar T-32/T-50: incorporar las clases reales de mesa/gestor y su integración cuando se fusionen, confirmar publicación de eventos y dependencias del cliente, completar equipamiento/persistencia de rondas, renderizar los diagramas en GitHub y obtener revisión de Hector. Auth, router, Carta/Baraja y Mano/Dealer ya se describen aquí. El juego desde tres laptops, los manuales independientes y el paquete final mantienen sus propios criterios de aceptación.

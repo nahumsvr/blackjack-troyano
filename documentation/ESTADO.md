@@ -1,14 +1,14 @@
 # ESTADO — ¿Dónde vamos?
 
-_Última actualización: lun 5 oct 2026 CDMX, con T-08/T-15 fusionadas (PR #19/#25). Fechas del registro normalizadas a America/Mexico_City._
+_Última actualización: lun 5 oct 2026 CDMX, con T-08/T-15/T-16 fusionadas (PR #19/#25/#27). Fechas del registro normalizadas a America/Mexico_City._
 
 ## Resumen
 
-Ya están en `main` los PR #4 (contrato, BD y economía), #6/#7 (cliente y mock), #14 (límites únicos), #16 (catálogo del mock), #17 (guion), #18 (enrutador), #19 (autenticación) y #25 (Carta/Baraja). `main` está protegida: un push directo es rechazado, cada PR necesita 1 aprobación de otro dev, el historial es lineal y solo se permite fusionar con squash (la rama se borra al fusionar).
+Ya están en `main` los PR #4 (contrato, BD y economía), #6/#7 (cliente y mock), #14 (límites únicos), #16 (catálogo del mock), #17 (guion), #18 (enrutador), #19 (autenticación) y #25 (Carta/Baraja) y #27 (Mano/Dealer). `main` está protegida: un push directo es rechazado, cada PR necesita 1 aprobación de otro dev, el historial es lineal y solo se permite fusionar con squash (la rama se borra al fusionar).
 
 El cliente del PR #7 consume el contrato compartido. T-07/T-08 ya permiten acceso real y consulta de billetera; las pantallas de mesa y el recorrido completo de economía siguen usando el mock hasta integrar sus servicios. Tras T-08, una copia extraída del ZIP de fuentes pasó instalación con lockfile fijo, typecheck, 203 pruebas con PostgreSQL 16.15 y build del cliente.
 
-El camino crítico **T-01 → T-03 → T-07 → T-18 → T-20 → T-31** espera ahora T-09 y las clases de T-16 necesarias para T-18; T-15 ya está fusionada.
+El camino crítico **T-01 → T-03 → T-07 → T-18 → T-20 → T-31** espera ahora T-09 y la integración de T-18; T-15/T-16 ya están fusionadas.
 
 ## Hito actual
 
@@ -30,16 +30,16 @@ Solo se cuentan tareas con PR fusionado en `main` y criterio de "hecho" comproba
 
 | Dev | Completadas | Total | % |
 |---|---|---|---|
-| Hector | 5 | 19 | 26 % |
+| Hector | 6 | 19 | 32 % |
 | Nahum | 2 | 17 | 12 % |
 | Massimo | 7 | 19 | 37 % |
 | Equipo | 0 | 2 | 0 % |
-| **Total** | **14** | **57** | **25 %** |
+| **Total** | **15** | **57** | **26 %** |
 
-Avance por hito: H1 9/14 (64 %) · H2 4/19 (21 %) · H3 1/10 (10 %) · H4 0/8 · H5 0/5 · Entrega 0/1
+Avance por hito: H1 9/14 (64 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 · H5 0/5 · Entrega 0/1
 
 - **Hechas:**
-  - T-01, T-02, T-07, T-08 y T-15 (Hector); enrutador/auth y Carta/Baraja fusionados y comprobados con Bun 1.3.13 y PostgreSQL 16.15.
+  - T-01, T-02, T-07, T-08, T-15 y T-16 (Hector); enrutador/auth , Carta/Baraja y Mano/Dealer fusionados y comprobados con Bun 1.3.13 y PostgreSQL 16.15.
   - T-10 (Nahum, PR #6 fusionado en `main`; marca restaurada desde `main` durante la revisión del PR #7).
   - T-12 (Nahum, PR #16): vista de tienda de solo lectura en `?mock=1`.
   - T-04, T-05, T-23, T-24, T-25 y T-34 (Massimo). Su criterio está verificado con PostgreSQL 16 en Avance-M-02, que indicaba marcarlas al fusionarse el PR #4.
@@ -62,7 +62,7 @@ Avance por hito: H1 9/14 (64 %) · H2 4/19 (21 %) · H3 1/10 (10 %) · H4 0/8 ·
 ## Hoy le toca a… (lun 5 oct, después de T-08)
 
 - **Hector:**
-  - Continuar Hito 2 hasta T-18: T-15 hecha; T-16/T-17/T-18 publicadas en PR #27/#28/#29, pendientes de revisión/fusión. Alcance autorizado el 5 oct; T-19 y posteriores se retoman en otro chat. T-09 (PR #22) sigue pendiente de revisión/fusión; las decisiones de alcance corresponden al líder.
+  - Continuar Hito 2 hasta T-18: T-15/T-16 hechas; T-17/T-18 publicadas en PR #28/#29, pendientes de revisión/fusión. Alcance autorizado el 5 oct; T-19 y posteriores se retoman en otro chat. T-09 (PR #22) sigue pendiente de revisión/fusión; las decisiones de alcance corresponden al líder.
   - Prueba visual de T-06.
 - **Nahum:**
   - T-33 guion de exposición (PR #17 fusionado, pendiente de aprobación del grupo).
@@ -109,3 +109,4 @@ Avance por hito: H1 9/14 (64 %) · H2 4/19 (21 %) · H3 1/10 (10 %) · H4 0/8 ·
 | 2026-10-05 | T-08 hecha por Hector (PR #19 fusionado). Auditoría de Massimo: documentación ajustada a main 831dcd2, 203 pruebas PostgreSQL 16.15 en copia extraída, typecheck/build correctos. Contadores 13/57 (23 %), H1 9/14; las casillas de pruebas independientes y motor continúan pendientes. |
 | 2026-10-05 | Massimo: integración de T-24/T-34 por WebSocket preparada en PR #21; 210 pruebas y typecheck con PostgreSQL 16.15, revisión/fusión pendientes. T-35 espera GestorMesas. Empaquetado verificado en PR #20; T-48/T-55 siguen abiertos. |
 | 2026-10-05 | Massimo: review #23 corregida (dependencias, errores reales, estado de auth/tests y calendario CDMX). Bun 1.3.13 + PostgreSQL 16.15: copia histórica extraída 203 pruebas/3,402 aserciones; rama sobre main83165c6 208/3,438, typecheck/build correctos. T-15 hecha por Hector, PR #25 fusionado; avance 14/57, H2 4/19. Ver Revision-PR-23.md. |
+| 2026-10-05 | T-16 hecha por Hector, PR #27 fusionado durante la revisión documental. Rama actualizada a mainaf772d8 y comprobada con Bun 1.3.13/PostgreSQL 16.15: typecheck, 224 pruebas/3,497 aserciones y build del cliente. Avance base15/57, H2 5/19; Carta/Baraja y Mano/Dealer incluidos en arquitectura. |
