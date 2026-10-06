@@ -63,6 +63,7 @@ Avance por hito: H1 5/14 (36 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 ·
   - Prueba visual de T-06.
 - **Nahum:**
   - Atender la revisión del PR #7, que incluye el trabajo de #8–#12.
+  - **Siguiente paso inmediato: T-12** — agregar a `?mock=1` una vista de tienda que muestre el catálogo de ejemplo de `tienda.catalogo`. La vista de lectura cumple el criterio de T-12; la compra y confirmación de T-39 siguen pospuestas.
   - T-27: página de prueba con las 52 cartas → T-33 guion → borradores de T-49 (manual) y T-51 (diapositivas) con capturas del mock.
   - En cuanto existan T-08 y T-09, verificar T-13 contra el servidor real.
 - **Massimo:**
@@ -94,3 +95,4 @@ Avance por hito: H1 5/14 (36 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 ·
 | 2026-10-05 | Seguimiento de Nahum (2): T-23, T-24, T-25 y T-34 marcadas segun Avance-M-02 (avance 8/57, 14 %); T-12 desmarcada porque su criterio pide la tienda (T-39, pospuesta); notas con fecha en las tareas del cliente; README, manual de instalacion y arquitectura actualizados con el cliente; Avance-N-01 con el detalle. |
 | 2026-10-05 | Review del PR #7: T-10 restaurada como hecha según `main`; T-11 queda pendiente hasta probar la misma sesión con `reanudar` de T-08; T-12 sigue pendiente porque falta la pantalla de tienda. El trabajo de #8–#12 está en la rama del PR #7. Se cherry-pickearon allí los cuatro commits de seguimiento que habían quedado fuera de PR: TAREAS, ESTADO, README/manual/arquitectura y Avance-N-01. Avance: 9/57 (16 %). |
 | 2026-10-05 | Massimo: límites de apuesta y compra con fuente única en `shared/` (`LIMITES_CANTIDAD`); `config.ts` los re-exporta (PR #14). Revisión del PR #7 con cambios pedidos. Ver Avance-M-03.md. |
+| 2026-10-05 | Siguiente paso de Nahum: completar T-12 con una vista de tienda en `?mock=1` que muestre el catálogo de ejemplo de `tienda.catalogo`; no requiere completar la compra de T-39, que sigue pospuesta. |

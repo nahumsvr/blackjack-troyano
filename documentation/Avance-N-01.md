@@ -58,7 +58,7 @@ Cada PR tiene commits atómicos: cada commit compila y pasa sus pruebas. Todo el
 - **Pantallas base:** acceso, lobby, mesa e historial.
 - **Barra del modo mock:** fases y caída simulada.
 - **Verificación:** recorrido completo sin backend; un doble clic en comprar cobra una sola vez; apuestas inválidas no se envían.
-- **Pendiente:** el mock tiene datos de `tienda.catalogo`, pero falta la pantalla de tienda que pide el criterio de T-12 (T-39 está pospuesta); T-12 sigue sin marcar.
+- **Siguiente paso de Nahum:** agregar a `?mock=1` una vista de tienda accesible desde la app que muestre el catálogo de ejemplo de `tienda.catalogo`. Esa vista de lectura cumple el criterio de T-12; la compra y su confirmación completas son T-39 y siguen pospuestas. Hasta que se pueda abrir y ver la tienda sin backend, T-12 permanece sin marcar.
 
 ### T-27 · Componentes de la mesa — trabajo original de PR #9, integrado en PR #7
 
@@ -168,11 +168,12 @@ Cada PR tiene commits atómicos: cada commit compila y pasa sus pruebas. Todo el
 
 ### Próximas tareas de Nahum (en orden)
 
-1. **T-27:** página de prueba con las 52 cartas, visible solo en mock (por ejemplo, `?mock=1&cartas=1`).
-2. **T-33:** guion de la exposición (`docs/exposicion.md`).
-3. **T-49 y T-51:** borradores del manual y de las diapositivas, con capturas del mock.
-4. **Con T-07, T-08 y T-09 en `main`:** probar T-13 contra el servidor real, con 3 pestañas y 3 usuarios; verificar T-11 al recuperar la misma sesión mediante `reanudar`.
-5. **Con T-18 y T-20:** verificar T-28 y T-29 con 3 pestañas reales y hacer la integración T-31 con el equipo.
+1. **T-12:** agregar una vista de tienda a `?mock=1` y mostrar el catálogo de ejemplo de `tienda.catalogo`; no requiere compra real.
+2. **T-27:** página de prueba con las 52 cartas, visible solo en mock (por ejemplo, `?mock=1&cartas=1`).
+3. **T-33:** guion de la exposición (`docs/exposicion.md`).
+4. **T-49 y T-51:** borradores del manual y de las diapositivas, con capturas del mock.
+5. **Con T-07, T-08 y T-09 en `main`:** probar T-13 contra el servidor real, con 3 pestañas y 3 usuarios; verificar T-11 al recuperar la misma sesión mediante `reanudar`.
+6. **Con T-18 y T-20:** verificar T-28 y T-29 con 3 pestañas reales y hacer la integración T-31 con el equipo.
 
 ### Cómo probar el cliente
 
