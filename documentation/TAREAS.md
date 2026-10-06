@@ -75,7 +75,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 
 ### Hector
 - [ ] T-15 · Clases `Carta` y `Baraja` (4 mazos, Fisher–Yates con `crypto.getRandomValues`, rebarajar con < 25 %) con JSDoc · Hector · depende de: T-03
-  - **Implementada (2026-10-05):** `Carta` inmutable y `Baraja` con Fisher–Yates criptográfico sin sesgo de módulo. Cinco pruebas comprueban 208 instancias, cuatro copias de las 52 vistas, extracción sin reemplazo y umbral 52/51. Typecheck y 208 pruebas con PostgreSQL 16 pasan; pendiente publicación/revisión/fusión para contar en main.
+  - **Implementada — PR #25 (2026-10-05):** `Carta` inmutable y `Baraja` con Fisher–Yates criptográfico sin sesgo de módulo. Cinco pruebas comprueban 208 instancias, cuatro copias de las 52 vistas, extracción sin reemplazo y umbral 52/51. Typecheck y 208 pruebas con PostgreSQL 16 pasan; pendiente revisión/fusión para contar en main.
   - **Hecho cuando:** `bun test` verifica 208 cartas únicas por rebarajado y que `necesitaRebarajar()` se activa con 51 cartas restantes.
 - [ ] T-16 · `Mano` (As 1/11, blanda, blackjack natural, pasada) y `Dealer` (pide ≤ 16, se planta en todo 17) · Hector · depende de: T-15
   - **Hecho cuando:** ≥ 10 casos de prueba pasan: A+K = 21 blackjack; A+A+9 = 21; A+6 = 17 blanda; A+6+10 = 17 dura; 10+6+A = 17; K+Q+2 = 22 pasada; el dealer con A+6 se planta.
