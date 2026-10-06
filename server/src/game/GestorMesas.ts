@@ -13,7 +13,7 @@ export class GestorMesas {
   /**
    * Construye las mesas e informa al transporte cuando otra conexión toma un asiento.
    * @param publicar - Transporte pub/sub; recibe mensajes del contrato sin reqId.
-   * @param alReemplazar - Retira la suscripción y avisa a la conexión anterior.
+   * @param alReemplazar - Avisa a la conexión anterior; conserva su suscripción como espectadora.
    * @returns Gestor en memoria, sin acceso a SQL o billeteras.
    */
   constructor(private readonly publicar: (topic: string, mensaje: MensajeServidor) => void,
@@ -78,7 +78,7 @@ export class GestorMesas {
       asiento.conectado = true;
     }
     const anterior = this.propietarios.get(usuario.id);
-    // El gestor decide la transferencia; el transporte solo retira la conexión anterior.
+    // El gestor decide la transferencia; el transporte avisa a la espectadora sin retirar su vista.
     this.propietarios.set(usuario.id, conexionId);
     if (anterior !== undefined && anterior !== conexionId) this.alReemplazar(anterior);
     if (cambiado) this.publicarCambios(mesaId, actual === null);

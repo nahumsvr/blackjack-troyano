@@ -10,7 +10,7 @@ import { ClienteWsPrueba, crearBasePruebas } from "./soporteHito1";
 
 const destino = process.env.TEST_DATABASE_URL;
 describe.skipIf(!destino)("Cliente real del Hito 1", () => {
-  test("una segunda pestaña devuelve al cliente real al lobby y conserva su sesión", async () => {
+  test("una segunda pestaña deja al cliente real como espectador hasta que decide salir", async () => {
     const base = await crearBasePruebas(destino!);
     const servidor = iniciarAplicacion(base.conexion, 0);
     const modelo = { estado: ESTADO_INICIAL as EstadoJuego };
@@ -22,7 +22,7 @@ describe.skipIf(!destino)("Cliente real del Hito 1", () => {
     async function esperar(condicion: () => boolean) {
       const hasta = performance.now() + 8000;
       while (!condicion()) {
-        if (performance.now() > hasta) throw new Error("El cliente no volvió al lobby");
+        if (performance.now() > hasta) throw new Error("El cliente no alcanzó el estado esperado");
         await Bun.sleep(10);
       }
     }
@@ -34,11 +34,15 @@ describe.skipIf(!destino)("Cliente real del Hito 1", () => {
       const sesion = modelo.estado.sesion;
       segunda = await ClienteWsPrueba.conectar(url);
       await segunda.enviar({ type: "login", usuario: "cliente_traspaso", contrasena: "secreto09" });
-      await esperar(() => modelo.estado.mesaId === null && modelo.estado.avisos.length > 0);
-      expect(modelo.estado.mesa).toBeNull();
+      await esperar(() => modelo.estado.espectador && modelo.estado.avisos.length > 0);
+      expect(modelo.estado.mesa?.id).toBe("mesa-1");
+      expect(modelo.estado.mesaId).toBe("mesa-1");
       expect(modelo.estado.sesion).toEqual(sesion);
       expect(almacen.leer()).toBe(sesion?.token ?? null);
       await segunda.enviar({ type: "mesa.salir" });
+      await esperar(() => modelo.estado.mesa?.asientos.every((asiento) => asiento === null) === true);
+      expect(modelo.estado.espectador).toBe(true);
+      expect(await controlador.salirDeMesa()).toBe(true);
       expect(await controlador.listarLobby()).toBe(true);
       expect(modelo.estado.mesaId).toBeNull();
       expect(modelo.estado.lobby[0]?.ocupados).toBe(0);

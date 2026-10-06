@@ -24,8 +24,8 @@ export function iniciarAplicacion(conexion: SQL, puerto = PUERTO): Server<DatosC
   const gestor = new GestorMesas((topic, mensaje) => servidor.publish(topic, JSON.stringify(mensaje)), (conexionId) => {
     const anterior = conexiones.get(conexionId);
     if (!anterior) return;
-    desuscribirMesa(anterior);
-    anterior.send(JSON.stringify({ type: "error", codigo: "NO_ESTAS_EN_MESA", mensaje: "Otra pestaña tomó tu asiento. Volviste al lobby." }));
+    // PLAN §7.5: perder la propiedad no retira la vista ni sus snapshots.
+    anterior.send(JSON.stringify({ type: "error", codigo: "NO_ESTAS_EN_MESA", mensaje: "Otra pestaña tomó tu asiento; ahora solo miras la mesa." }));
   });
   const billetera = new BilleteraSQL(conexion);
   function desuscribirMesa(socket: SocketConexion): void {
@@ -55,7 +55,13 @@ export function iniciarAplicacion(conexion: SQL, puerto = PUERTO): Server<DatosC
       return { type: "mesa.estado", ...snapshot };
     },
     "mesa.salir": (socket) => {
-      gestor.salir(socket.data.usuarioId!, socket.data.conexionId!);
+      try {
+        gestor.salir(socket.data.usuarioId!, socket.data.conexionId!);
+      } catch (error) {
+        // Una espectadora puede dejar su vista sin liberar el asiento de la dueña,
+        // incluso cuando esta ya salió. mesaId identifica la suscripción, no la propiedad.
+        if (!(error instanceof ErrorJuego) || error.codigo !== "NO_ESTAS_EN_MESA" || socket.data.mesaId === undefined) throw error;
+      }
       desuscribirMesa(socket);
       return { type: "ok" };
     },
