@@ -12,6 +12,13 @@ import { Tienda } from "../src/store/Tienda";
 const destino = process.env.TEST_DATABASE_URL;
 const pruebas = destino ? describe : describe.skip;
 
+// Bun 1.3.13/Windows puede bloquear el avance de SQL dentro del matcher .rejects.
+// Capturar primero conserva las mismas aserciones y falla también si la operación tuvo éxito.
+async function errorDe(operacion: Promise<unknown>): Promise<unknown> {
+  try { await operacion; } catch (error) { return error; }
+  throw new Error("La operación debía rechazarse");
+}
+
 pruebas("economía y tienda contra PostgreSQL real (TEST_DATABASE_URL)", () => {
   const schema = `economia_${crypto.randomUUID().replaceAll("-", "")}`;
   let admin: SQL;
@@ -77,7 +84,7 @@ pruebas("economía y tienda contra PostgreSQL real (TEST_DATABASE_URL)", () => {
   test("apuesta sin saldo conserva usuario y movimientos", async () => {
     const id = await usuario(10_000, 20);
     const antes = await billetera.consultar(id);
-    await expect(billetera.debitarApuesta(id, 30, crypto.randomUUID())).rejects.toMatchObject({ codigo: "FICHAS_INSUFICIENTES" });
+    expect(await errorDe(billetera.debitarApuesta(id, 30, crypto.randomUUID()))).toMatchObject({ codigo: "FICHAS_INSUFICIENTES" });
     expect(await billetera.consultar(id)).toEqual(antes);
     expect(await cantidadMovimientos(id)).toBe(1);
   });
@@ -121,7 +128,7 @@ pruebas("economía y tienda contra PostgreSQL real (TEST_DATABASE_URL)", () => {
     expect(estados.every((e) => e.dinero === 5_000 && e.fichas === 5_500)).toBe(true);
     // La clave identifica la intención original; una cantidad válida distinta no recobra.
     expect(await billetera.comprarFichas(id, 10, clave)).toEqual(estados[0]!);
-    await expect(billetera.comprarFichas(id, 10, crypto.randomUUID())).rejects.toMatchObject({ codigo: "LIMITE_DIARIO" });
+    expect(await errorDe(billetera.comprarFichas(id, 10, crypto.randomUUID()))).toMatchObject({ codigo: "LIMITE_DIARIO" });
     expect(await cantidadMovimientos(id)).toBe(2);
   });
 
@@ -135,7 +142,7 @@ pruebas("economía y tienda contra PostgreSQL real (TEST_DATABASE_URL)", () => {
   test("dinero insuficiente hace rollback y no consume la clave", async () => {
     const id = await usuario(10, 500);
     const antes = await billetera.consultar(id);
-    await expect(billetera.comprarFichas(id, 20, crypto.randomUUID())).rejects.toMatchObject({ codigo: "DINERO_INSUFICIENTE" });
+    expect(await errorDe(billetera.comprarFichas(id, 20, crypto.randomUUID()))).toMatchObject({ codigo: "DINERO_INSUFICIENTE" });
     expect(await billetera.consultar(id)).toEqual(antes);
     expect(await cantidadMovimientos(id)).toBe(1);
   });
@@ -143,15 +150,15 @@ pruebas("economía y tienda contra PostgreSQL real (TEST_DATABASE_URL)", () => {
   test.each([0, -10, 10.5, 15, 1e9, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])(
     "compra inválida %p no toca el libro contable", async (cantidad) => {
       const id = await usuario();
-      await expect(billetera.comprarFichas(id, cantidad, crypto.randomUUID())).rejects.toMatchObject({ codigo: "CANTIDAD_INVALIDA" });
+      expect(await errorDe(billetera.comprarFichas(id, cantidad, crypto.randomUUID()))).toMatchObject({ codigo: "CANTIDAD_INVALIDA" });
       expect(await cantidadMovimientos(id)).toBe(1);
     },
   );
 
   test("UUID inválido y pago negativo se rechazan antes de SQL", async () => {
     const id = await usuario();
-    await expect(billetera.comprarFichas(id, 10, "invalida")).rejects.toMatchObject({ codigo: "MENSAJE_INVALIDO" });
-    await expect(billetera.acreditarPago(id, -1, crypto.randomUUID())).rejects.toMatchObject({ codigo: "CANTIDAD_INVALIDA" });
+    expect(await errorDe(billetera.comprarFichas(id, 10, "invalida"))).toMatchObject({ codigo: "MENSAJE_INVALIDO" });
+    expect(await errorDe(billetera.acreditarPago(id, -1, crypto.randomUUID()))).toMatchObject({ codigo: "CANTIDAD_INVALIDA" });
     expect(await cantidadMovimientos(id)).toBe(1);
   });
 
@@ -181,10 +188,10 @@ pruebas("economía y tienda contra PostgreSQL real (TEST_DATABASE_URL)", () => {
 
   test("helper transaccional revierte una escritura que termina con error", async () => {
     const id = await usuario();
-    await expect(enTransaccion(sql, async (tx) => {
+    expect(await errorDe(enTransaccion(sql, async (tx) => {
       await tx`UPDATE usuarios SET fichas = 1 WHERE id = ${id}`;
       throw new ErrorJuego("ERROR_INTERNO");
-    })).rejects.toMatchObject({ codigo: "ERROR_INTERNO" });
+    }))).toMatchObject({ codigo: "ERROR_INTERNO" });
     expect((await billetera.consultar(id)).fichas).toBe(500);
   });
 
@@ -205,9 +212,9 @@ pruebas("economía y tienda contra PostgreSQL real (TEST_DATABASE_URL)", () => {
 
   test("tienda rechaza no existente, ya poseído y saldo insuficiente sin cobrar", async () => {
     const id = await usuario(10_000, 10);
-    await expect(tienda.comprar(id, "no_existe")).rejects.toMatchObject({ codigo: "ARTICULO_NO_EXISTE" });
-    await expect(tienda.comprar(id, "avatar_basico")).rejects.toMatchObject({ codigo: "YA_POSEIDO" });
-    await expect(tienda.comprar(id, "avatar_robot")).rejects.toMatchObject({ codigo: "FICHAS_INSUFICIENTES" });
+    expect(await errorDe(tienda.comprar(id, "no_existe"))).toMatchObject({ codigo: "ARTICULO_NO_EXISTE" });
+    expect(await errorDe(tienda.comprar(id, "avatar_basico"))).toMatchObject({ codigo: "YA_POSEIDO" });
+    expect(await errorDe(tienda.comprar(id, "avatar_robot"))).toMatchObject({ codigo: "FICHAS_INSUFICIENTES" });
     expect((await tienda.inventario(id)).articulos).toHaveLength(3);
     expect(await cantidadMovimientos(id)).toBe(1);
   });
@@ -219,7 +226,7 @@ pruebas("economía y tienda contra PostgreSQL real (TEST_DATABASE_URL)", () => {
     try {
       expect(await tienda.catalogo(id)).toHaveLength(13);
       expect((await tienda.inventario(id)).articulos.some((a) => a.id === "avatar_gato")).toBe(true);
-      await expect(tienda.comprar(await usuario(), "avatar_gato")).rejects.toMatchObject({ codigo: "ARTICULO_NO_EXISTE" });
+      expect(await errorDe(tienda.comprar(await usuario(), "avatar_gato"))).toMatchObject({ codigo: "ARTICULO_NO_EXISTE" });
     } finally {
       await sql`UPDATE articulos SET activo = true WHERE id = 'avatar_gato'`;
     }
@@ -265,14 +272,14 @@ pruebas("economía y tienda contra PostgreSQL real (TEST_DATABASE_URL)", () => {
 
   test("paginación inválida y usuarios ausentes producen errores de dominio", async () => {
     const id = await usuario();
-    for (const limite of [0, 101, 1.5]) await expect(tienda.listarMovimientos(id, limite)).rejects.toMatchObject({ codigo: "MENSAJE_INVALIDO" });
-    for (const cursor of ["0", "-1", "abc", "9223372036854775808"]) await expect(tienda.listarMovimientos(id, 50, cursor)).rejects.toMatchObject({ codigo: "MENSAJE_INVALIDO" });
-    await expect(billetera.consultar(2_147_483_647)).rejects.toMatchObject({ codigo: "NO_AUTENTICADO" });
+    for (const limite of [0, 101, 1.5]) expect(await errorDe(tienda.listarMovimientos(id, limite))).toMatchObject({ codigo: "MENSAJE_INVALIDO" });
+    for (const cursor of ["0", "-1", "abc", "9223372036854775808"]) expect(await errorDe(tienda.listarMovimientos(id, 50, cursor))).toMatchObject({ codigo: "MENSAJE_INVALIDO" });
+    expect(await errorDe(billetera.consultar(2_147_483_647))).toMatchObject({ codigo: "NO_AUTENTICADO" });
   });
 
   test("sumar un pago que excede enteros JSON seguros revierte", async () => {
     const id = await usuario(10_000, Number.MAX_SAFE_INTEGER);
-    await expect(billetera.acreditarPago(id, 1, crypto.randomUUID())).rejects.toMatchObject({ codigo: "ERROR_INTERNO" });
+    expect(await errorDe(billetera.acreditarPago(id, 1, crypto.randomUUID()))).toMatchObject({ codigo: "ERROR_INTERNO" });
     expect((await billetera.consultar(id)).fichas).toBe(Number.MAX_SAFE_INTEGER);
     expect(await cantidadMovimientos(id)).toBe(1);
   });
