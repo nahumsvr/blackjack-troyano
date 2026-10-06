@@ -1,0 +1,51 @@
+/** Reloj y zapato deterministas; permiten ensayar rondas y carreras sin demoras reales. */
+import { ErrorJuego, type CartaVisible } from "@blackjack/shared";
+import { Carta } from "../src/game/Carta";
+import type { ZapatoMesa } from "../src/game/Mesa";
+import { RelojMesa, type TemporizadorMesa } from "../src/game/RelojMesa";
+
+/** Temporizador manual que detecta más de un timeout activo por mesa. */
+export class TiempoManual implements TemporizadorMesa {
+  private instante = 1_800_000_000_000;
+  private secuencia = 0;
+  readonly pendientes = new Map<number, { fin: number; accion: () => void }>();
+  maximo = 0;
+  readonly reloj = new RelojMesa(this);
+
+  /** @returns Epoch ms simulado. */
+  ahora(): number { return this.instante; }
+  /** @param accion - Callback. @param demora - Plazo en ms. @returns Id único. */
+  programar(accion: () => void, demora: number): number {
+    const id = ++this.secuencia;
+    this.pendientes.set(id, { fin: this.instante + demora, accion });
+    this.maximo = Math.max(this.maximo, this.pendientes.size);
+    return id;
+  }
+  /** @param id - Timeout a retirar. @returns Retira únicamente ese callback. */
+  cancelar(id: unknown): void { this.pendientes.delete(id as number); }
+  /** @param ms - Intervalo a recorrer. @returns Ejecuta todos los vencimientos en orden. */
+  avanzar(ms: number): void {
+    const hasta = this.instante + ms;
+    for (;;) {
+      const primero = [...this.pendientes].sort((a, b) => a[1].fin - b[1].fin)[0];
+      if (!primero || primero[1].fin > hasta) break;
+      this.instante = primero[1].fin;
+      this.pendientes.delete(primero[0]);
+      primero[1].accion();
+    }
+    this.instante = hasta;
+  }
+}
+
+/**
+ * @param rangos - Orden de extracción, independiente del azar criptográfico.
+ * @returns Zapato que falla si el ensayo intenta consumir cartas no previstas.
+ * @throws ErrorJuego ERROR_INTERNO al agotarse.
+ */
+export function crearZapatoFijo(rangos: readonly CartaVisible["rango"][]): ZapatoMesa {
+  const cartas = rangos.map((rango) => new Carta("♠", rango));
+  return {
+    sacar: () => { const carta = cartas.shift(); if (!carta) throw new ErrorJuego("ERROR_INTERNO"); return carta; },
+    barajar: () => {}, necesitaRebarajar: () => false,
+  };
+}

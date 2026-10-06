@@ -72,5 +72,7 @@ export function iniciarAplicacion(conexion: SQL, puerto = PUERTO): Server<DatosC
     alCerrar: limpiarMesa,
   });
   servidor = iniciarServidor(puerto, enrutador, limpiarMesa);
+  const detenerTransporte = servidor.stop.bind(servidor);
+  servidor.stop = (cerrarConexiones) => { gestor.detener(); return detenerTransporte(cerrarConexiones); };
   return servidor;
 }

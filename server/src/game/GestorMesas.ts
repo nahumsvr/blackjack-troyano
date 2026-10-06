@@ -43,6 +43,9 @@ export class GestorMesas {
     return this.ubicaciones.get(usuarioId) ?? null;
   }
 
+  /** Cancela todos los relojes antes de cerrar el transporte. @returns Sin valor. */
+  detener(): void { for (const mesa of this.mesas.values()) mesa.detener(); }
+
   /**
    * Obtiene una vista pública sin exponer los asientos internos.
    * @param mesaId - Mesa configurada.

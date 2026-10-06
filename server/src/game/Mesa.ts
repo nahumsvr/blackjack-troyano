@@ -1,10 +1,11 @@
-/** Máquina de estados autoritativa; T-19/T-20/T-21 conectarán reloj, débitos y pagos. */
+/** Máquina de estados y relojes autoritativos; el transporte inyecta dinero y persistencia. */
 import { CantidadApuestaSchema, ErrorJuego, type Asiento, type Equipado, type FaseMesa, type MesaEstado, type MensajeServidor, type UsuarioVista } from "@blackjack/shared";
-import { CAPACIDAD_MESA } from "../config";
+import { CAPACIDAD_MESA, TIEMPO_APUESTAS_MS, TIEMPO_TURNO_MS, TIEMPO_RESULTADOS_MS } from "../config";
 import { Baraja } from "./Baraja";
 import { Dealer } from "./Dealer";
 import { Jugador } from "./Jugador";
 import { Mano } from "./Mano";
+import { RelojMesa } from "./RelojMesa";
 
 /** Superficie mínima del zapato, inyectable sin añadir controles al protocolo del cliente. */
 export type ZapatoMesa = Pick<Baraja, "sacar" | "barajar" | "necesitaRebarajar">;
@@ -16,6 +17,7 @@ export class Mesa {
   private faseActual: FaseMesa = "ESPERANDO";
   private turno: number | null = null;
   private rondaActual: string | null = null;
+  private detenida = false;
 
   /**
    * Crea una mesa vacía con publicaciones independientes de su estado interno.
@@ -23,12 +25,14 @@ export class Mesa {
    * @param nombre - Nombre público.
    * @param publicar - Recibe snapshots independientes tras cada cambio.
    * @param baraja - Zapato real por defecto; se inyecta uno fijo para pruebas.
-   * @returns Mesa vacía, sin reloj ni operaciones de dinero.
+   * @param reloj - Único temporizador de la mesa; sustituible en pruebas.
+   * @returns Mesa vacía; al sentarse el primer jugador abre el reloj de apuestas.
    */
   constructor(
     readonly id: string, readonly nombre: string,
     private readonly publicar: (mensaje: Extract<MensajeServidor, { type: "mesa.estado" }>) => void,
     private readonly baraja: ZapatoMesa = new Baraja(),
+    private readonly reloj = new RelojMesa(),
   ) {}
 
   /** @returns Fase autoritativa para validar acciones y equipamiento. */
@@ -79,12 +83,14 @@ export class Mesa {
       if (this.asientos.every((asiento) => asiento === null)) {
         this.faseActual = "ESPERANDO";
         this.rondaActual = null;
+        this.reloj.cancelar();
       }
     } else {
       jugador.conectado = false;
       jugador.salidaPendiente = true;
       if (jugador.indice === this.turno) { this.avanzarTurno(); return; }
     }
+    if (this.fase === "APUESTAS") this.cerrarSiTodosApostaron();
     this.publicarEstado();
   }
 
@@ -103,6 +109,7 @@ export class Mesa {
     if (!jugador.conectado || jugador.salidaPendiente) throw new ErrorJuego("NO_ESTAS_EN_MESA");
     jugador.apuesta = cantidad;
     jugador.estado = "APOSTADO";
+    this.cerrarSiTodosApostaron();
     this.publicarEstado();
   }
 
@@ -125,6 +132,7 @@ export class Mesa {
       dealer.mano.agregar(this.baraja.sacar());
     }
     for (const [indice, jugador] of jugadores.entries()) jugador.mano = manos[indice]!;
+    this.reloj.cancelar();
     this.dealer = dealer;
     for (const jugador of jugadores) if (jugador.mano.esBlackjack()) jugador.estado = "BLACKJACK";
     this.faseActual = "REPARTO";
@@ -163,7 +171,7 @@ export class Mesa {
   snapshot(): MesaEstado {
     const revelar = this.fase === "DEALER" || this.fase === "PAGOS";
     return {
-      id: this.id, nombre: this.nombre, fase: this.fase, finEn: null,
+      id: this.id, nombre: this.nombre, fase: this.fase, finEn: this.reloj.finEn,
       turnoDe: this.turno === null ? null : this.asientos[this.turno]!.usuarioId,
       dealer: {
         cartas: this.dealer.mano.cartas.map((carta, indice) => revelar || indice === 0 ? carta.aVista() : { oculta: true }),
@@ -173,12 +181,17 @@ export class Mesa {
     };
   }
 
+  /** Impide nuevos relojes durante el cierre del transporte. @returns Sin valor. */
+  detener(): void { this.detenida = true; this.reloj.cancelar(); }
+
   private abrirApuestas(): void {
     this.dealer = new Dealer();
     this.turno = null;
     for (const jugador of this.asientos) jugador?.reiniciarRonda();
     this.faseActual = this.asientos.some((jugador) => jugador !== null) ? "APUESTAS" : "ESPERANDO";
     this.rondaActual = this.fase === "APUESTAS" ? crypto.randomUUID() : null;
+    this.reloj.cancelar();
+    if (this.fase === "APUESTAS") this.programar(TIEMPO_APUESTAS_MS, () => this.cerrarApuestas());
     this.publicarEstado();
   }
 
@@ -190,6 +203,7 @@ export class Mesa {
       jugador.estado = "JUGANDO";
       this.turno = indice;
       this.faseActual = "TURNOS";
+      this.programar(TIEMPO_TURNO_MS, () => this.avanzarTurno());
       this.publicarEstado();
       return;
     }
@@ -199,6 +213,7 @@ export class Mesa {
   private jugarDealer(): void {
     this.turno = null;
     this.faseActual = "DEALER";
+    this.reloj.cancelar();
     this.publicarEstado();
     // Un natural ya tiene su resultado frente a cualquier dealer sin natural.
     if (this.participantes().some((jugador) => !jugador.mano.estaPasada() && !jugador.mano.esBlackjack())) {
@@ -208,6 +223,7 @@ export class Mesa {
       }
     }
     this.faseActual = "PAGOS";
+    this.programar(TIEMPO_RESULTADOS_MS, () => this.finalizarPagos());
     this.publicarEstado();
   }
 
@@ -223,4 +239,21 @@ export class Mesa {
 
   private exigirFase(fase: FaseMesa): void { if (this.fase !== fase) throw new ErrorJuego("FASE_INCORRECTA"); }
   private publicarEstado(): void { this.publicar({ type: "mesa.estado", ...this.snapshot() }); }
+
+  private cerrarSiTodosApostaron(): void {
+    const elegibles = this.asientos.filter((jugador) => jugador?.conectado && !jugador.salidaPendiente);
+    // Cerrar en el próximo tick conserva la respuesta a la última apuesta antes del reparto.
+    if (this.participantes().length > 0 && elegibles.every((jugador) => jugador!.apuesta > 0)) {
+      this.programar(0, () => this.cerrarApuestas());
+    }
+  }
+
+  private programar(demora: number, accion: () => void): void {
+    if (this.detenida) return;
+    this.reloj.programar(demora, () => {
+      if (this.detenida) return;
+      try { accion(); }
+      catch (error) { console.error(`Error en reloj de ${this.id}`, error); }
+    });
+  }
 }
