@@ -16,7 +16,7 @@ export class GestorMesas {
   /**
    * Construye el motor de las tres mesas y mantiene sus índices de ocupación.
    * @param publicar - Transporte pub/sub; recibe mensajes del contrato sin reqId.
-   * @param alReemplazar - Retira la suscripción y avisa a la conexión anterior.
+   * @param alReemplazar - Avisa a la conexión anterior; conserva su suscripción como espectadora.
    * @param servicios - Billetera y publicaciones privadas inyectadas en el motor.
    * @param crearMesa - Construcción del motor; nunca se expone por WebSocket.
    * @returns Gestor con las tres mesas y publicaciones nativas, sin importar store/.
@@ -92,7 +92,7 @@ export class GestorMesas {
     const snapshot = mesa.unirse(usuario, equipado);
     this.ubicaciones.set(usuario.id, mesaId);
     const anterior = this.propietarios.get(usuario.id);
-    // El gestor decide la transferencia; el transporte retira la conexión anterior.
+    // El gestor decide la transferencia; el transporte avisa a la espectadora sin retirar su vista.
     this.propietarios.set(usuario.id, conexionId);
     if (anterior !== undefined && anterior !== conexionId) this.alReemplazar(anterior);
     return snapshot;

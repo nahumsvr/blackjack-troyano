@@ -10,7 +10,7 @@ El cliente del PR #7 consume el contrato compartido. T-07/T-08 ya permiten acces
 
 El camino crítico **T-01 → T-03 → T-07 → T-18 → T-20 → T-31** espera ahora T-09 y la integración de T-18; T-15/T-16 ya están fusionadas.
 
-**Revisión de PR #22 (6 oct):** rama actualizada con main, #21 y #24 conservadas. Transferencia de asiento centralizada: la pestaña anterior se desuscribe, recibe `NO_ESTAS_EN_MESA` y vuelve al lobby con su sesión vigente. Incluye actualización de cosméticos, reducción de publicaciones y limpieza de cierre garantizada. Nahum debe revisar el ajuste del controlador. T-09 conserva `[ ]` hasta la fusión en main.
+**Revisión de PR #22 (6 oct):** rama actualizada con main, #21 y #24 conservadas. Transferencia de asiento centralizada según PLAN §7.5: la pestaña anterior recibe `NO_ESTAS_EN_MESA` y conserva snapshots como espectadora. Puede salir sin liberar el asiento ajeno, incluso después de salir o cerrar la dueña. Incluye actualización de cosméticos, reducción de publicaciones y limpieza de cierre garantizada. El controlador conserva el comportamiento de main. T-09 conserva `[ ]` hasta aprobación y fusión en main.
 
 ## Hito actual
 
@@ -33,21 +33,23 @@ Solo se cuentan tareas con PR fusionado en `main` y criterio de "hecho" comproba
 | Dev | Completadas | Total | % |
 |---|---|---|---|
 | Hector | 7 | 19 | 37 % |
-| Nahum | 3 | 17 | 18 % |
+| Nahum | 4 | 17 | 24 % |
 | Massimo | 8 | 19 | 42 % |
 | Equipo | 0 | 2 | 0 % |
-| **Total** | **18** | **57** | **32 %** |
+| **Total** | **19** | **57** | **33 %** |
 
-Avance por hito: H1 11/14 (79 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 · H5 1/5 (20 %) · Entrega 0/1
+Avance por hito: H1 11/14 (79 %) · H2 6/19 (32 %) · H3 1/10 (10 %) · H4 0/8 · H5 1/5 (20 %) · Entrega 0/1
 
 - **Hechas:**
   - T-01, T-02, T-06, T-07, T-08, T-15 y T-16 (Hector); enrutador/auth, Carta/Baraja y Mano/Dealer fusionados y comprobados con Bun 1.3.13 y PostgreSQL 16.15.
   - T-10 (Nahum, PR #6 fusionado en `main`; marca restaurada desde `main` durante la revisión del PR #7).
   - T-12 (Nahum, PR #16): vista de tienda de solo lectura en `?mock=1`.
+  - T-11 (Nahum, PR #34): reconexión con la misma sesión contra el servidor autenticado.
+  - T-27 (Nahum, PR #35): muestrario con las 52 cartas y los 5 reversos del catálogo en `?mock=1&muestrario`.
   - T-04, T-05, T-23, T-24, T-25, T-34 y T-54 (Massimo). Su criterio está verificado con PostgreSQL 16 en Avance-M-02, que indicaba marcarlas al fusionarse el PR #4.
 - **T-03 hecha:** PR #4 aporta contrato y pruebas; PR #14 centraliza límites; PR #7 integró el cliente que consume `@blackjack/shared`.
 - **T-14 y T-22:** README/manual e interfaz `Billetera` están en `main`, pero sus criterios (instalación independiente e importación por Hector) carecen de evidencia de cierre; siguen pendientes.
-- **PR #7 ya está en `main`:** T-11, T-12, T-27–T-30 y T-41 tienen implementación integrada; conservan casilla abierta cuando falta su criterio de aceptación completo.
+- **PR #7 ya está en `main`:** T-28–T-30 y T-41 tienen implementación integrada; conservan casilla abierta cuando falta su criterio de aceptación completo.
 
 ## Bloqueos activos
 
@@ -63,7 +65,7 @@ Avance por hito: H1 11/14 (79 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 �
   - T-15/T-16 hechas; T-09/T-17/T-18 publicadas en PR #22/#28/#29, pendientes de revisión/fusión. T-19/T-20/T-21/T-26 también están publicadas en PR #30–#33 y aún no cuentan. Las prioridades y el alcance corresponden al líder.
 - **Nahum:**
   - T-33 guion de exposición (PR #17 fusionado, pendiente de aprobación del grupo).
-  - T-27 (desbloqueada por T-12): página de prueba con las 52 cartas → borradores de T-49 (manual) y T-51 (diapositivas) con capturas del mock.
+  - T-27 hecha (PR #35) → borradores de T-49 (manual) y T-51 (diapositivas) con capturas del mock y del muestrario.
   - T-11 hecha (reconexión con la misma sesión verificada con T-08); al llegar T-09, verificar T-13 contra el servidor real.
 - **Massimo:**
   - Preparar la verificación de checklist T-44 cuando el equipo acuerde el corte.
@@ -119,3 +121,7 @@ Avance por hito: H1 11/14 (79 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 �
 | 2026-10-06 | Hector: revisión de T-20 atendida en PR #31; conserva limpieza/aviso de token compartido de #21 y cola económica común para apuestas/compras. Typecheck y 319 pruebas SQL sin fallos; pendiente revisión de Massimo y fusión. |
 | 2026-10-06 | Hector: revisión de T-21 atendida en PR #32; apagar completa liquidaciones pendientes, conserva UUID/créditos y espera todas las mesas. Regresión SQL falla con el apagado anterior y pasa tras la corrección; typecheck y 332 pruebas PostgreSQL sin fallos. Pendiente revisión de Massimo y fusión. |
 | 2026-10-06 | Hector: PR #33 (T-26) actualizado sobre las correcciones de #22 y #28–#32; no tenía comentarios propios. Typecheck, build y 336 pruebas PostgreSQL sin fallos; cuatro bots completan diez rondas, 40 resultados guardados y libro contable conciliado. Pendiente revisión/fusión. |
+| 2026-10-06 | T-27 hecha por Nahum (PR #35): muestrario `?mock=1&muestrario` con las 52 cartas, los 5 reversos del catálogo (solo CSS), dealer y asientos en sus estados; `Carta` acepta `reverso` para T-40. Typecheck y 244 pruebas en verde. Al integrarse con T-11 (#34): avance 19/57 (33 %), Nahum 4/17, H1 11/14, H2 6/19. |
+| 2026-10-06 | Nahum: corrección local de arranque de T-01, pendiente de PR. `server/package.json` carga explícitamente `.env` de la raíz; `bun run dev` arranca desde `server/` y desde raíz sin el error de DATABASE_URL. Typecheck correcto con Bun 1.3.8; conectividad PostgreSQL no comprobada en esta corrección. README/manual actualizados. |
+| 2026-10-06 | Hector: primera revisión de T-09 en PR #22 (`6a93a43`); main incorporada y #21/#24 conservadas. Traspaso, cosméticos, publicaciones y cierre corregidos; tipos y 270 pruebas PostgreSQL sin fallos. Revisión posterior solicita conservar la pestaña anterior como espectadora según PLAN §7.5; pendiente aprobación/fusión. |
+| 2026-10-06 | Hector: segunda revisión de T-09 atendida en PR #22; pestaña anterior como espectadora según PLAN §7.5, salida sin liberar asiento ajeno y recuperación tras salir/cerrar la dueña. Cliente de main conservado y conflicto de ESTADO resuelto con T-27. Bun 1.3.13/PostgreSQL 16.15: typecheck correcto y suite SQL completa sin fallos. Pendiente aprobación/fusión; avance aceptado 19/57. |

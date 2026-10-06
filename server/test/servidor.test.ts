@@ -76,9 +76,11 @@ describe("T-06: lobby WebSocket", () => {
 
   test("un fallo de limpieza no omite auth ni deja inflado el contador", async () => {
     let limpiezas = 0;
+    const errorAuth = new Error("fallo auth");
+    const errorMesa = new Error("fallo mesa");
     const registro = spyOn(console, "error").mockImplementation(() => {});
-    const enrutador = new Enrutador({}, undefined, undefined, () => { limpiezas++; throw new Error("fallo auth"); });
-    const aislado = iniciarServidor(0, enrutador, () => { throw new Error("fallo mesa"); });
+    const enrutador = new Enrutador({}, undefined, undefined, () => { limpiezas++; throw errorAuth; });
+    const aislado = iniciarServidor(0, enrutador, () => { throw errorMesa; });
     const clientes: ClienteWsPrueba[] = [];
     try {
       const url = `ws://127.0.0.1:${aislado.port}/ws`;
@@ -90,7 +92,9 @@ describe("T-06: lobby WebSocket", () => {
       await segunda.cerrar();
       await primera.esperar((mensaje) => mensaje.type === "bienvenida" && mensaje.conectados === 1, desde);
       expect(limpiezas).toBe(1);
-      expect(registro).toHaveBeenCalledTimes(2);
+      // console.error es global: cierres pendientes de otras pruebas no pertenecen a este servidor.
+      expect(registro.mock.calls.filter(([titulo, error]) => titulo === "Error al limpiar la mesa" && error === errorMesa)).toHaveLength(1);
+      expect(registro.mock.calls.filter(([titulo, error]) => titulo === "Error al limpiar la sesion" && error === errorAuth)).toHaveLength(1);
       expect(await primera.enviar({ type: "ping" })).toMatchObject({ type: "pong" });
     } finally {
       await Promise.all(clientes.map((cliente) => cliente.cerrar()));
