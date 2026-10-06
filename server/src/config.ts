@@ -11,6 +11,9 @@ export const RUTA_WS = "/ws";
 export const TOPIC_LOBBY = "lobby";
 /** Límite del protocolo medido en bytes UTF-8, antes de decodificar JSON. */
 export const MENSAJE_MAX_BYTES = 16 * 1024;
+/** Zapato de cuatro mazos; reposición entre rondas por debajo del 25 %. */
+export const NUM_MAZOS = 4;
+export const UMBRAL_REBARAJAR = 0.25;
 /*
  * Los límites de cantidad se definen una sola vez en `LIMITES_CANTIDAD` (shared/protocolo.ts)
  * porque el cliente los necesita para validar formularios y `shared/` no puede importar
