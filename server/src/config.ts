@@ -53,6 +53,12 @@ export const TIEMPO_TURNO_MS = 20_000;
 export const TIEMPO_RESULTADOS_MS = 5_000;
 /** Reintento interno sin abrir otra ronda ni repetir pagos confirmados. */
 export const REINTENTO_PAGOS_MS = 1_000;
+/** Bots T-26: diez rondas por defecto; cero en la CLI permite una demo continua. */
+export const BOTS_RONDAS = 10;
+export const BOTS_PLANTARSE_EN = 17;
+export const BOTS_RESPUESTA_MS = 8_000;
+/** Incluye turnos humanos y margen SQL para detectar una mesa sin resultados. */
+export const BOTS_SIN_RONDA_MS = 2 * (TIEMPO_APUESTAS_MS + CAPACIDAD_MESA * TIEMPO_TURNO_MS + TIEMPO_RESULTADOS_MS + BOTS_RESPUESTA_MS);
 /*
  * Los límites de cantidad se definen una sola vez en `LIMITES_CANTIDAD` (shared/protocolo.ts)
  * porque el cliente los necesita para validar formularios y `shared/` no puede importar

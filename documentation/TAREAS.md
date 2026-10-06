@@ -101,6 +101,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Revisión atendida — PR #32 (2026-10-06):** el apagado drena acciones y hace un último intento de la liquidación pendiente con el mismo UUID, conservando pagos confirmados e idempotencia SQL. Espera las tres mesas antes de cerrar el pool; reporta un fallo persistente sin nuevos timers. Pendiente revisión de Massimo y fusión.
   - **Hecho cuando:** tras una ronda de 3 jugadores, `SELECT * FROM rondas_jugadores WHERE ronda_id = …` muestra 3 filas con resultado y pago correctos, y las fichas de cada usuario coinciden con `movimientos`.
 - [ ] T-26 · `scripts/bots.ts`: N bots que se registran, se sientan, apuestan 10 y piden hasta 17 · Hector · depende de: T-20
+  - **Actualización de dependencias — PR #33 (2026-10-06):** no tiene comentarios propios; reconstruida sobre #32 corregida para conservar transferencias, cierre, relojes, economía y liquidación final. CLI real de cuatro bots y diez rondas, conciliación SQL y cancelación del grupo verificadas; pendiente aprobación/fusión.
   - **Hecho cuando:** `bun run bots 4 --mesa mesa-1` juega 10 rondas seguidas sin errores en la consola del servidor (sirve también de jugadores extra en la demo).
 
 ### Nahum
