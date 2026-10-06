@@ -1,4 +1,5 @@
-/** Ensayo del Hito 1 usando la red, controlador y reductor reales de Nahum. */
+/// <reference lib="dom" />
+/** Ensayo del Hito 1: los módulos del cliente requieren tipos DOM, incluso al probarlos en Bun. */
 import { describe, expect, test } from "bun:test";
 import { Conexion } from "../../client/src/net/conexion";
 import type { AlmacenToken } from "../../client/src/net/almacenToken";
