@@ -31,12 +31,12 @@ Solo se cuentan tareas con PR fusionado en `main` y criterio de "hecho" comproba
 | Dev | Completadas | Total | % |
 |---|---|---|---|
 | Hector | 7 | 19 | 37 % |
-| Nahum | 2 | 17 | 12 % |
+| Nahum | 3 | 17 | 18 % |
 | Massimo | 8 | 19 | 42 % |
 | Equipo | 0 | 2 | 0 % |
-| **Total** | **17** | **57** | **30 %** |
+| **Total** | **18** | **57** | **32 %** |
 
-Avance por hito: H1 10/14 (71 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 · H5 1/5 (20 %) · Entrega 0/1
+Avance por hito: H1 11/14 (79 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 · H5 1/5 (20 %) · Entrega 0/1
 
 - **Hechas:**
   - T-01, T-02, T-06, T-07, T-08, T-15 y T-16 (Hector); enrutador/auth, Carta/Baraja y Mano/Dealer fusionados y comprobados con Bun 1.3.13 y PostgreSQL 16.15.
@@ -53,7 +53,6 @@ Avance por hito: H1 10/14 (71 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 �
   - T-13 espera T-09;
   - T-28 y T-29 esperan T-18 y T-20;
   - T-30 y T-41 esperan los handlers de T-24/T-34 conectados al enrutador.
-- **Cliente integrado (PR #7):** T-11 ya puede verificar recuperación de la misma sesión con T-08; falta documentar esa prueba del cliente real.
 - **T-42** espera T-36. **T-35** espera `GestorMesas` (T-09/T-18). **T-31** espera T-20, T-21, T-28 y T-24.
 
 ## Hoy le toca a… (mar 6 oct, con empaquetado en main)
@@ -63,7 +62,7 @@ Avance por hito: H1 10/14 (71 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 �
 - **Nahum:**
   - T-33 guion de exposición (PR #17 fusionado, pendiente de aprobación del grupo).
   - T-27 (desbloqueada por T-12): página de prueba con las 52 cartas → borradores de T-49 (manual) y T-51 (diapositivas) con capturas del mock.
-  - Verificar reconexión cliente de T-11 con T-08; al llegar T-09, verificar T-13 contra el servidor real.
+  - T-11 hecha (reconexión con la misma sesión verificada con T-08); al llegar T-09, verificar T-13 contra el servidor real.
 - **Massimo:**
   - Preparar la verificación de checklist T-44 cuando el equipo acuerde el corte.
   - Handlers de economía para el enrutador de T-07 y coordinación con Hector.
@@ -110,3 +109,4 @@ Avance por hito: H1 10/14 (71 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 �
 | 2026-10-05 | Massimo: revisión parcial de T-54 atendida en PR #20: rutas lógicas POSIX/CRLF, alternativas lockfile/Compose y 10 pruebas con ZIP real. Typecheck y suite con PostgreSQL 16.15: 213 pruebas, 3,431 aserciones, cero fallos. Las cifras históricas del empaquetado se distinguen de la aceptación final; T-54/T-55 siguen pendientes. |
 | 2026-10-06 | Massimo: segunda revisión de #23 atendida: registro sin filas duplicadas y ordenado por fecha CDMX; PR #20 añadido al resumen. T-54 hecha, fusionada en c2daf78: Bun 1.3.13 genera ZIP de 124 archivos/272,903 bytes, validado con unzip del sistema (<20 MB); no es aceptación del ZIP final. Avance base16/57, Massimo8/19; T-48/T-55 pendientes. |
 | 2026-10-06 | Massimo: review de #26 atendida; PR limitado a evidencia T-06 y seguimiento, apilado sobre #23 actualizado. Capturas/medición del 5 oct: tres pestañas Chromium renderizadas muestran 3 y luego 2 en 32 ms, sobre código fusionado desde PR #3. T-06 hecha por Hector, verificada por Massimo; avance 17/57 (30 %), H1 10/14. Evidencia de integración se conserva fuera de este PR en la rama local respaldo/t06-integracion-antes-review-20261006; requiere integración/revisión aparte. |
+| 2026-10-06 | T-11 hecha por Nahum: prueba de integración con cliente real (`Conexion` + `ControladorJuego` + reductor) contra servidor autenticado y PostgreSQL 16; reinicio del servidor → `reconectando` → vuelve solo con la misma sesión vía `reanudar`, y caso de token inválido. Verificación visual en navegador con capturas en `docs/evidencia/t11/`. 236 pruebas y typecheck en verde. Avance 18/57 (32 %), H1 11/14. |
