@@ -8,7 +8,7 @@ Ya están en `main` los PR #4 (contrato, BD y economía), #6 (base del cliente),
 
 El PR #7 se fusionó en `main` el 6 oct a las 00:51 UTC (5 oct 18:51 CDMX), integrando el cliente y los cambios de #8–#12. La revisión aprobada verificó 187 pruebas sin fallos con PostgreSQL 16, `typecheck` en los 3 paquetes y build del cliente. El flujo completo sigue usando el mock: la prueba contra el servidor real depende de T-07, T-08 y T-18. PR #14 también está fusionado (`7bf4e89`).
 
-El camino crítico **T-01 → T-03 → T-07 → T-18 → T-20 → T-31** ya no está detenido en T-03 (el contrato está en `main`). Ahora espera a **T-07** (enrutador), y con él a T-08, T-09 y T-18, que son los que permiten probar el cliente contra el servidor real.
+T-07 ya está fusionada en PR #18. El camino crítico **T-01 → T-03 → T-07 → T-18 → T-20 → T-31** espera ahora T-09 y el motor de mesa de T-18. T-08 está implementada y comprobada con PostgreSQL 16; pendiente revisión/fusión.
 
 ## Hito actual
 
@@ -28,16 +28,16 @@ Solo se cuentan tareas con PR fusionado en `main` y criterio de "hecho" comproba
 
 | Dev | Completadas | Total | % |
 |---|---|---|---|
-| Hector | 2 | 19 | 11 % |
+| Hector | 3 | 19 | 16 % |
 | Nahum | 2 | 17 | 12 % |
 | Massimo | 7 | 19 | 37 % |
 | Equipo | 0 | 2 | 0 % |
-| **Total** | **11** | **57** | **19 %** |
+| **Total** | **12** | **57** | **21 %** |
 
-Avance por hito: H1 7/14 (50 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 · H5 0/5 · Entrega 0/1
+Avance por hito: H1 8/14 (57 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 · H5 0/5 · Entrega 0/1
 
 - **Hechas:**
-  - T-01 y T-02 (Hector); la protección de `main` se aplicó y verificó hoy.
+  - T-01, T-02 y T-07 (Hector); PR #18 fusionado con validación de los ataques y continuidad de tres conexiones.
   - T-10 (Nahum, PR #6 fusionado en `main`; marca restaurada desde `main` durante la revisión del PR #7).
   - T-12 (Nahum, PR #16): vista de tienda de solo lectura en `?mock=1`.
   - T-04, T-05, T-23, T-24, T-25 y T-34 (Massimo). Su criterio está verificado con PostgreSQL 16 en Avance-M-02, que indicaba marcarlas al fusionarse el PR #4.
@@ -49,7 +49,7 @@ Avance por hito: H1 7/14 (50 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 ·
 
 ## Bloqueos activos
 
-- **T-07 implementada en PR #18 (borrador), pendiente revisión/fusión:** validación y despacho comprobados; los handlers de T-08, T-09 y T-18 siguen pendientes para las pruebas reales del cliente:
+- **T-08 implementada; T-07 fusionada en PR #18:** autenticación y consulta de billetera comprobadas contra PostgreSQL 16; falta revisar/fusionar T-08 y completar T-09/T-18:
   - T-13 espera T-08 y T-09;
   - T-28 y T-29 esperan T-18 y T-20;
   - T-30 y T-41 esperan los handlers de T-24/T-34 conectados al enrutador.
@@ -60,7 +60,7 @@ Avance por hito: H1 7/14 (50 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 ·
 ## Hoy le toca a… (mar 6 oct)
 
 - **Hector:**
-  - T-07 enrutador → T-08/T-09 (desbloquean T-13) → T-15 y T-18.
+  - Cerrar revisión/fusión de T-08 → T-09 (desbloquean T-13). El alcance actual de Hector termina en el Hito 1; T-15/T-18 se retoman después.
   - Prueba visual de T-06.
 - **Nahum:**
   - T-33 guion de exposición (PR abierto, pendiente de aprobación del grupo).
@@ -100,3 +100,4 @@ Avance por hito: H1 7/14 (50 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 ·
 | 2026-10-06 | PR #7 fusionado en `main` (`ea8c33f`); revisión aprobada verificó consumo del contrato, 187 pruebas, typecheck y build. T-03 marcada hecha; T-11 sigue pendiente de `reanudar` real (T-08) y T-12 de mostrar el catálogo en el mock. Avance 10/57 (18 %). |
 | 2026-10-06 | Nahum: T-33 v1 en PR #17 (`docs/exposicion.md`, 9:00 en papel); pendiente aprobación de los 3. |
 | 2026-10-06 | T-12 hecha por Nahum (PR #16): pestaña «Tienda» de solo lectura en el menú lateral con el catálogo del mock; desbloquea T-27. Avance 11/57 (19 %). |
+| 2026-10-05 | Hector: T-07 hecha, PR #18 fusionado. T-08 implementada con nueve pruebas PostgreSQL/WebSocket, registro atómico y sesiones persistentes; pendiente revisión/fusión. Docker recuperado conservando respaldos y datos. Avance fusionado: 12/57 (21 %), H1 8/14. |
