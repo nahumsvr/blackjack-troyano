@@ -10,6 +10,8 @@ El cliente del PR #7 consume el contrato compartido. T-07/T-08 ya permiten acces
 
 El camino crítico **T-01 → T-03 → T-07 → T-18 → T-20 → T-31** espera ahora T-09 y la integración de T-18; T-15/T-16 ya están fusionadas.
 
+**Revisión de PR #22 (6 oct):** rama actualizada con main, #21 y #24 conservadas. Transferencia de asiento centralizada: la pestaña anterior se desuscribe, recibe `NO_ESTAS_EN_MESA` y vuelve al lobby con su sesión vigente. Incluye actualización de cosméticos, reducción de publicaciones y limpieza de cierre garantizada. Nahum debe revisar el ajuste del controlador. T-09 conserva `[ ]` hasta la fusión en main.
+
 ## Hito actual
 
 **Por calendario: Hito 5 — mar 6 oct** (ensayos y ZIP probado); entrega mañana, mié 7, 13:00 CDMX.
@@ -111,3 +113,5 @@ Avance por hito: H1 11/14 (79 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 �
 | 2026-10-06 | Massimo: review de #26 atendida; PR limitado a evidencia T-06 y seguimiento, apilado sobre #23 actualizado. Capturas/medición del 5 oct: tres pestañas Chromium renderizadas muestran 3 y luego 2 en 32 ms, sobre código fusionado desde PR #3. T-06 hecha por Hector, verificada por Massimo; avance 17/57 (30 %), H1 10/14. Evidencia de integración se conserva fuera de este PR en la rama local respaldo/t06-integracion-antes-review-20261006; requiere integración/revisión aparte. |
 | 2026-10-06 | T-11 hecha por Nahum: prueba de integración con cliente real (`Conexion` + `ControladorJuego` + reductor) contra servidor autenticado y PostgreSQL 16; reinicio del servidor → `reconectando` → vuelve solo con la misma sesión vía `reanudar`, y caso de token inválido. Verificación visual en navegador con capturas en `docs/evidencia/t11/`. 236 pruebas y typecheck en verde. Avance 18/57 (32 %), H1 11/14. |
 | 2026-10-06 | Hector: revisión de T-17 atendida en PR #28; base main sin commits duplicados de #25/#27, copias de manos y pagos ligados a LIMITES_CANTIDAD. Typecheck y 250 pruebas SQL sin fallos; pendiente aprobación/fusión. |
+| 2026-10-06 | Hector: revisión de T-09 atendida en PR #22; main incorporada y #21/#24 conservadas. Traspaso, cosméticos, publicaciones y cierre corregidos; tipos y 270 pruebas PostgreSQL sin fallos. Pendiente aprobación/fusión; revisión de Nahum por cliente. |
+| 2026-10-06 | Hector: revisión de T-18 atendida en PR #29 sobre #28/#22 corregidas; conserva asientos y cierre, reduce lobby y omite cartas innecesarias del dealer. Typecheck y 301 pruebas SQL sin fallos; pendiente revisión/fusión. |

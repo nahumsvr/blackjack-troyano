@@ -275,8 +275,8 @@ export class ControladorJuego {
         this.despachar({ tipo: "sesionTerminada" });
         break;
       case "NO_ESTAS_EN_MESA":
-        // Otra pestaña del mismo usuario tomó el asiento: esta queda mirando.
-        this.despachar({ tipo: "espectador" });
+        // El servidor retiró el asiento y la suscripción; conservar la sesión permite seguir en el lobby.
+        this.despachar({ tipo: "salioDeMesa" });
         break;
     }
     this.avisar("error", error.message);

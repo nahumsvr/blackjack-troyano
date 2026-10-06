@@ -9,6 +9,8 @@
   ],
   "scripts": {
     "dev": "bun scripts/dev.ts",
+    "build": "bun run --filter @blackjack/client build",
+    "start": "bun server/src/index.ts",
     "db:reset": "bun scripts/db-reset.ts",
     "test": "bun test --pass-with-no-tests",
     "typecheck": "bun run --filter @blackjack/shared typecheck && bun run --filter @blackjack/server typecheck && bun run --filter @blackjack/client typecheck && tsc --project scripts/tsconfig.json",

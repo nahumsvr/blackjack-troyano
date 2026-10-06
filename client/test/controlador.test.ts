@@ -130,12 +130,14 @@ describe("acciones", () => {
     expect(estado.avisos.at(-1)).toMatchObject({ nivel: "error", texto: "mensaje de NO_ES_TU_TURNO" });
   });
 
-  test("NO_ESTAS_EN_MESA estando en una mesa pasa a espectador", async () => {
+  test("NO_ESTAS_EN_MESA vuelve al lobby y limpia la mesa", async () => {
     crear(() => errorServidor("NO_ESTAS_EN_MESA"));
     transporte.conectar();
     transporte.emitir({ tipo: "mensaje", mensaje: { type: "mesa.estado", ...mesa("TURNOS") } });
     await controlador.plantarse();
-    expect(estado.espectador).toBe(true);
+    expect(estado.mesa).toBeNull();
+    expect(estado.mesaId).toBeNull();
+    expect(estado.espectador).toBe(false);
   });
 
   test("cada compra de fichas lleva una clave distinta", async () => {
@@ -149,8 +151,8 @@ describe("acciones", () => {
     expect(primera).not.toBe(segunda);
   });
 
-  test("salir de la mesa solo vuelve al lobby si el servidor aceptó", async () => {
-    crear(() => errorServidor("NO_ESTAS_EN_MESA"));
+  test("salir de la mesa conserva la vista ante un rechazo ajeno al asiento", async () => {
+    crear(() => errorServidor("NO_ES_TU_TURNO"));
     transporte.conectar();
     transporte.emitir({ tipo: "mensaje", mensaje: { type: "mesa.estado", ...mesa("APUESTAS") } });
     expect(await controlador.salirDeMesa()).toBe(false);

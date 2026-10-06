@@ -1,0 +1,48 @@
+<!doctype html>
+<!-- Banco visual de T-18; solo representa snapshots y solicita pasos al servidor de prueba. -->
+<html lang="es">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T-18 · Verificación de mesa</title>
+<style>
+  body{font:16px system-ui;background:#10251f;color:#edf9f3;margin:32px;max-width:1100px}
+  button{font:inherit;padding:12px 20px;background:#adf1c7;border:0;border-radius:8px;cursor:pointer}
+  .panel{background:#19362b;border:1px solid #46725d;border-radius:12px;padding:18px;margin:16px 0}
+  pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px} li{margin:6px 0} h1{font-size:26px}
+</style>
+<h1>T-18 · Mesa del servidor</h1>
+<p>Abre esta URL en tres pestañas. El botón conduce una ronda fija desde el servidor; cada pestaña debe recibir el mismo JSON.</p>
+<p id="conexion">Conectando…</p>
+<button id="avanzar">Siguiente paso del servidor</button>
+<p id="aviso" role="status"></p>
+<section class="panel"><h2 id="fase">ESPERANDO</h2><p id="dealer"></p><p id="jugadores"></p></section>
+<section class="panel"><h2>Último frame WebSocket</h2><pre id="json"></pre></section>
+<section class="panel"><h2>Frames recibidos</h2><ol id="historial"></ol></section>
+<script>
+  const socket = new WebSocket(`ws://${location.host}/ws`);
+  const pagina = new URLSearchParams(location.search).get("pagina") || crypto.randomUUID().slice(0, 8);
+  const porId = (id) => document.getElementById(id);
+  let secuencia = 0;
+  socket.onmessage = ({ data }) => {
+    const mensaje = JSON.parse(data);
+    if (mensaje.type === "bienvenida") { porId("conexion").textContent = `Conectados: ${mensaje.conectados} · pestaña ${pagina}`; return; }
+    porId("fase").textContent = `${mensaje.fase} · turno: ${mensaje.turnoDe ?? "ninguno"}`;
+    porId("dealer").textContent = `Dealer: ${JSON.stringify(mensaje.dealer.cartas)} · total: ${mensaje.dealer.total ?? "oculto"}`;
+    porId("jugadores").textContent = mensaje.asientos.filter(Boolean).map((jugador) => `${jugador.usuario}: ${jugador.total} (${jugador.estado})`).join(" · ");
+    porId("json").textContent = data;
+    const fila = document.createElement("li");
+    fila.textContent = `${++secuencia}. ${mensaje.fase}, turno ${mensaje.turnoDe ?? "ninguno"}, dealer ${JSON.stringify(mensaje.dealer)}`;
+    porId("historial").append(fila);
+    void fetch("/recibido", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pagina, json: data }) }).catch(() => {});
+  };
+  socket.onclose = () => { porId("conexion").textContent = "Desconectado"; };
+  socket.onerror = () => { porId("aviso").textContent = "Falló la conexión WebSocket"; };
+  porId("avanzar").onclick = async () => {
+    porId("avanzar").disabled = true;
+    try {
+      const respuesta = await fetch("/paso", { method: "POST" });
+      porId("aviso").textContent = respuesta.ok ? `Paso ${(await respuesta.json()).paso}/6` : await respuesta.text();
+    } catch { porId("aviso").textContent = "Falló el paso de prueba"; }
+    finally { porId("avanzar").disabled = false; }
+  };
+</script>
+</html>

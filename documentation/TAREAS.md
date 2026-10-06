@@ -35,6 +35,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Preparación histórica — PR #19 (2026-10-05, antes de fusionar):** Argon2id, tokens persistentes de siete días, registro atómico con saldos/inventario/equipado/libro contable y revocación de sesión. Nueve pruebas SQL/WebSocket, incluida recuperación tras reiniciar. Esa preparación recibió revisión y se fusionó, como registra el cierre siguiente. Detalle en [Avance-H-02.md](Avance-H-02.md).
   - **Hecha — PR #19 (2026-10-05 CDMX):** revisión aprobada y fusión en `831dcd2`; 203 pruebas completas con PostgreSQL 16.15 sin fallos. Criterio de registro/reanudación y errores de acceso comprobado en sockets reales. La prueba del cliente y el lobby completo siguen siendo T-11/T-13.
 - [ ] T-09 · `GestorMesas` con las 3 mesas de config, `lobby.listar`, `mesa.unirse`/`mesa.salir` (solo asientos, sin juego) y publicación de `lobby` al cambiar ocupación · Hector · depende de: T-08
+  - **Revisión atendida — PR #22 (2026-10-06):** transferencia centralizada con aviso y regreso al lobby de la pestaña anterior; cosméticos actualizados, publicaciones solo ante cambios y cierre con limpieza garantizada. Conserva #21/#24, incorpora main y añade regresiones. Requiere revisión de Nahum por controlador/pruebas del cliente; sigue pendiente de fusión.
   - **Hecho cuando:** 3 usuarios distintos ven las 3 mesas; cuando uno se sienta, las otras 2 pestañas ven "1/5" en < 1 s; una sexta persona recibe `MESA_LLENA`.
 
 ### Nahum
@@ -88,6 +89,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Revisión atendida — PR #28 (2026-10-06):** rama reconstruida sobre main, sin duplicar Carta/Baraja/Mano/Dealer de #25/#27. Las pruebas comparan copias independientes y recorren los límites de shared para garantizar pagos naturales enteros. Pendiente aprobación/fusión.
   - **Hecho cuando:** tests: blackjack con apuesta 10 → pago 25; gana con 10 → 20; empate → 10; pierde → 0; blackjack vs blackjack del dealer → empate; jugador pasado pierde aunque el dealer también se pase.
 - [ ] T-18 · 🔓 `Mesa`: máquina de estados de `PLAN.md` §6, asientos, `snapshot()` que **nunca** incluye la carta oculta, publicación en `mesa:<id>` · Hector · depende de: T-09, T-16
+  - **Revisión atendida — PR #29 (2026-10-06):** reconstruida sobre #28 con #22 corregida como dependencia; conserva transferencia de asiento, cosméticos y cierre robusto. El lobby se publica solo ante cambios de fase/ocupación y el dealer omite cartas innecesarias si solo quedan naturales/pasados. Evidencia histórica de snapshots en `evidencias/T-18-navegador.json`; pendiente aprobación/fusión de las dependencias.
   - **Hecho cuando:** con 3 pestañas, las 3 reciben el mismo `mesa.estado` en < 1 s en cada transición y, en la pestaña de red del navegador, la carta oculta del dealer aparece como `{oculta:true}`. *Desbloquea a Nahum (T-28).*
 - [ ] T-19 · Relojes: 15 s apuestas (cierra antes si todos apostaron), 20 s por turno (auto-plantar), 5 s de resultados; un solo `setTimeout` por mesa · Hector · depende de: T-18
   - **Hecho cuando:** un jugador que no actúa en 20 s queda `PLANTADO` y el turno pasa al siguiente; la mesa encadena 5 rondas sin intervención y sin quedarse atorada.
@@ -143,7 +145,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 ## Hito 3 — dom 4 oct: tienda, inventario, desconexiones, validaciones. **Congelamiento 22:00**
 
 ### Hector
-- [ ] T-36 · Desconexión y reconexión (`PLAN.md` §7): auto-plantar, reserva de 60 s, `reanudar` recupera asiento, otra pestaña toma el asiento y la anterior queda espectadora · Hector · depende de: T-19, T-08
+- [ ] T-36 · Desconexión y reconexión (`PLAN.md` §7): auto-plantar, reserva de 60 s, `reanudar` recupera asiento, otra pestaña toma el asiento y la anterior vuelve al lobby · Hector · depende de: T-19, T-08
   - **Hecho cuando:** cerrar la pestaña del jugador en turno → se planta en < 1 s y la mesa sigue; reabrirla en < 60 s → vuelve a su asiento con sus cartas; abrir la mesa en una 2ª pestaña del mismo usuario → la 1ª ya no puede actuar.
 - [ ] T-37 · Endurecimiento: límite de 20 mensajes/s, acciones de espectadores rechazadas, `ERROR_INTERNO` sin tumbar el proceso, logs claros · Hector · depende de: T-07
   - **Hecho cuando:** un script que manda 1,000 mensajes basura en 1 s recibe errores y las otras pestañas siguen jugando sin retraso notable.

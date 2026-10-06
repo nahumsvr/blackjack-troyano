@@ -24,7 +24,7 @@ Todos los valores numéricos viven en `server/src/config.ts` (y los precios en `
 | Canal único | Todo (incluido login) va por **un WebSocket** en `/ws`. No hay API REST. |
 | Demo | Varias laptops en la misma red LAN. El servidor escucha en `0.0.0.0:3000` y sirve el build del cliente. También funciona con 3 pestañas en una sola máquina. |
 | Sesión | Token aleatorio de 32 bytes (hex) guardado en `sesiones` y en `localStorage`; expira en 7 días. |
-| Varias pestañas | Se permiten varias conexiones por usuario, pero **un solo asiento**. Si otra pestaña entra a la mesa, toma el asiento y la anterior pasa a espectadora. |
+| Varias pestañas | Se permiten varias conexiones por usuario, pero **un solo asiento**. Si otra pestaña entra a la mesa, toma el asiento y la anterior vuelve al lobby con su sesión vigente. |
 | Dinero inicial | $10,000 (dinero simulado) |
 | Fichas de bienvenida | 500 fichas al registrarse (para poder jugar de inmediato en la demo) |
 | Tasa | 1 $ = 1 ficha |
@@ -550,11 +550,13 @@ Reglas clave:
 
 ## 7. Desconexión y varias pestañas
 
+Revisión T-18 (6 oct, PR #29): `GestorMesas` contiene tres motores `Mesa` y publica snapshots seguros; el lobby se actualiza solo si cambia la fase o la ocupación. El dealer revela y omite nuevas cartas cuando todos los participantes están pasados o tienen natural. Se conservan las correcciones de transferencia/cierre de #22. Los relojes, acciones económicas y liquidación se incorporan en #30/#31/#32; #22 y #28 siguen pendientes de fusión, por lo que aún aparecen como dependencias del diff.
+
 1. Al cerrarse el socket: `Mesa.marcarDesconectado(usuarioId)` → `conectado = false`. Si era su turno, se planta en ese momento; si su turno llega después, se planta al llegar.
 2. En `APUESTAS` sin apuesta: no juega esa ronda. Si ya apostó, su apuesta sigue y se liquida normalmente.
 3. Si se reconecta (`reanudar` con su token) dentro de 60 s: recupera el asiento y recibe el snapshot actual.
 4. Después de 60 s desconectado, el asiento se libera al terminar la ronda en curso.
-5. Si el mismo usuario entra a la mesa desde otra pestaña, esa conexión se vuelve la dueña del asiento; la anterior queda como espectadora (recibe snapshots, pero sus acciones responden `NO_ESTAS_EN_MESA`).
+5. Si el mismo usuario entra a la mesa desde otra pestaña, esa conexión se vuelve la dueña del asiento. `GestorMesas` informa al transporte del dueño anterior; este retira su suscripción, borra su `mesaId` y envía el error existente `NO_ESTAS_EN_MESA` sin `reqId`. El controlador limpia la vista y vuelve al lobby con la sesión vigente. Un cierre tardío de la conexión anterior no afecta al nuevo dueño. No se agregan tipos ni códigos al contrato.
 
 ---
 

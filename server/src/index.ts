@@ -1,16 +1,9 @@
-/** Arranque del transporte y autenticación contra PostgreSQL (T-06/T-07/T-08). */
-import { Sesiones } from "./auth/Sesiones";
-import { crearEnrutadorAutenticado } from "./auth/manejadores";
+/** Arranque de los servicios del Hito 1 y cierre del pool PostgreSQL. */
 import { crearConexion } from "./db/conexion";
-import { BilleteraSQL } from "./store/BilleteraSQL";
-import { iniciarServidor } from "./ws/servidor";
+import { iniciarAplicacion } from "./ws/aplicacion";
 
 const conexion = crearConexion();
-const billetera = new BilleteraSQL(conexion);
-const enrutador = crearEnrutadorAutenticado(new Sesiones(conexion), {
-  "billetera.consultar": async (socket) => ({ type: "billetera", ...await billetera.consultar(socket.data.usuarioId!) }),
-});
-const servidor = iniciarServidor(undefined, enrutador);
+const servidor = iniciarAplicacion(conexion);
 console.info(`Servidor escuchando en ${servidor.url}`);
 
 async function apagar(): Promise<void> {

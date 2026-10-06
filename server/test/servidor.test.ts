@@ -1,6 +1,8 @@
 /** Verifica T-06 con sockets reales y el aislamiento del endpoint /ws. */
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import { iniciarServidor } from "../src/ws/servidor";
+import { Enrutador } from "../src/ws/Enrutador";
+import { ClienteWsPrueba } from "./soporteHito1";
 
 const servidor = iniciarServidor(0);
 const urlWs = `ws://127.0.0.1:${servidor.port}/ws`;
@@ -70,5 +72,30 @@ describe("T-06: lobby WebSocket", () => {
   test("otra ruta no habilita el transporte", async () => {
     const respuesta = await fetch(`http://127.0.0.1:${servidor.port}/otra`);
     expect(respuesta.status).toBe(404);
+  });
+
+  test("un fallo de limpieza no omite auth ni deja inflado el contador", async () => {
+    let limpiezas = 0;
+    const registro = spyOn(console, "error").mockImplementation(() => {});
+    const enrutador = new Enrutador({}, undefined, undefined, () => { limpiezas++; throw new Error("fallo auth"); });
+    const aislado = iniciarServidor(0, enrutador, () => { throw new Error("fallo mesa"); });
+    const clientes: ClienteWsPrueba[] = [];
+    try {
+      const url = `ws://127.0.0.1:${aislado.port}/ws`;
+      const primera = await ClienteWsPrueba.conectar(url);
+      const segunda = await ClienteWsPrueba.conectar(url);
+      clientes.push(primera, segunda);
+      await primera.esperar((mensaje) => mensaje.type === "bienvenida" && mensaje.conectados === 2);
+      const desde = primera.mensajes.length;
+      await segunda.cerrar();
+      await primera.esperar((mensaje) => mensaje.type === "bienvenida" && mensaje.conectados === 1, desde);
+      expect(limpiezas).toBe(1);
+      expect(registro).toHaveBeenCalledTimes(2);
+      expect(await primera.enviar({ type: "ping" })).toMatchObject({ type: "pong" });
+    } finally {
+      await Promise.all(clientes.map((cliente) => cliente.cerrar()));
+      await aislado.stop(true);
+      registro.mockRestore();
+    }
   });
 });

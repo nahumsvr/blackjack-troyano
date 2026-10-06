@@ -10,7 +10,9 @@ El repositorio ya tiene un monorepo con **Bun workspaces** (`server`, `client` y
 {"type":"bienvenida","conectados":1}
 ```
 
-El conteo se actualiza cuando alguien se conecta o desconecta. El contrato Zod, PostgreSQL y los módulos de economía están disponibles. El enrutador y la autenticación ya están conectados: registro, login, reanudación, logout y consulta de billetera funcionan contra PostgreSQL (PR #18 y #19). El lobby de mesas, las partidas y los handlers de compras e historial todavía están pendientes en `main`. La ruta HTTP `/` responde `404` (servir el cliente desde Bun es T-38).
+El conteo se actualiza cuando alguien se conecta o desconecta. Esta rama de integración compone registro, login, reanudar, logout, lobby, partidas, compras e historial reales. Conserva el cliente y las integraciones de economía y producción de los compañeros. Después de compilar, Bun sirve la página y sus assets desde `client/dist` en el mismo puerto que `/ws`.
+
+Al 6 de octubre, el lobby/motor y las integraciones de economía/producción aún esperan las PR #22 y #28–#33 para llegar a `main`. La integración local pasó typecheck, build y 326 pruebas con PostgreSQL 16.15, sin fallos ni omisiones; las pruebas LAN y la aceptación de la entrega siguen pendientes. [Estado y entrega de Hector](documentation/Entrega-Hector-2026-10-06.md).
 
 El cliente React (Vite + Tailwind) tiene:
 - acceso y lobby;
@@ -19,7 +21,7 @@ El cliente React (Vite + Tailwind) tiene:
 - billetera e historial en un menú lateral;
 - reconexión automática.
 
-Para recorrer mesa, compras e historial completos se usa el servidor falso en `http://localhost:5173/?mock=1`. En la URL sin `?mock=1`, el acceso es real; tras entrar, `lobby.listar` todavía no tiene handler y devuelve `ERROR_INTERNO`. El lobby queda vacío y muestra «Ocurrió un error interno; intenta de nuevo»; no existe un aviso específico de función pendiente.
+El modo `http://localhost:5173/?mock=1` permite recorrer la interfaz sin backend. En la URL sin `?mock=1`, esta rama usa PostgreSQL y los handlers reales de lobby, juego y economía. La comprobación de todo el recorrido en tres laptops sigue pendiente.
 
 ## Requisitos y arranque
 
@@ -54,6 +56,18 @@ Cualquier usuario válido entra. El usuario `existe` y la contraseña `incorrect
 
 Para comprobar el WebSocket manualmente, abre [`scripts/verificar-ws.html`](scripts/verificar-ws.html) como archivo local en tres pestañas y pulsa **Conectar** en cada una. Deja `127.0.0.1:3000` como servidor si haces la prueba en la misma computadora, o escribe la IP de la computadora que ejecuta Bun si pruebas desde otra en la misma red. Las tres pestañas deben mostrar `Conectados: 3`; al cerrar una, las otras deben mostrar `Conectados: 2`.
 
+## Bots para probar el juego (T-26)
+
+Con el servidor arrancado, ejecuta en otra terminal:
+
+```bash
+bun run bots 4 --mesa mesa-1
+```
+
+Registra cuatro cuentas nuevas, las sienta y juega **diez rondas por bot**: apuesta 10, pide mientras su total sea menor de 17 y se planta al llegar a 17. Solo actúa con los snapshots del servidor. Muestra resultado y pago de cada ronda, termina con código 0 y libera las conexiones; ante un rechazo, desconexión o falta de respuesta termina con código 1. Las cuentas e historial quedan en la base.
+
+Para aportar tres jugadores extra durante la demo, usa `bun run bots 3 --mesa mesa-1 --rondas 0` y detén el grupo con `Ctrl+C`. Para otra laptop añade `--url ws://IP_DEL_SERVIDOR:3000/ws`. Admite de uno a cinco bots; la mesa debe tener suficientes asientos libres. Si ya hay una ronda en curso, esperan la siguiente para apostar. Los valores por defecto están en `server/src/config.ts`.
+
 ## Verificaciones
 
 ```bash
@@ -65,7 +79,7 @@ Las pruebas del transporte cubren conexiones, validación y respuestas correlaci
 
 El entorno objetivo se verificó el 4 de octubre: Compose levanta PostgreSQL 16.15. Con Bun 1.3.13 en un clon limpio, `db:reset` crea siete tablas y 14 artículos, `typecheck` pasa y la suite completa (70 pruebas, incluida la economía) termina sin fallos. Las restricciones de saldo e inventario se comprobaron directamente en SQL.
 
-La corrida histórica del 5 oct, basada en `main` (`831dcd2`) más cambios locales del empaquetador, pasó instalación con lockfile fijo, typecheck, 203 pruebas con PostgreSQL 16.15 y build con Bun 1.4.2. Durante la revisión del PR #23 se repitieron esas comprobaciones en la misma copia extraída con **Bun 1.3.13**: 203 pruebas / 3,402 aserciones, cero fallos u omisiones, typecheck/build correctos. La rama actual, que incorpora Carta/Baraja de PR #25, pasó 208 pruebas con esa misma versión objetivo. [Evidencia de revisión](documentation/Revision-PR-23.md). Esto no acredita instalación independiente ni el ZIP final.
+La corrida histórica del 5 oct, basada en `main` (`831dcd2`) más cambios locales del empaquetador, pasó instalación con lockfile fijo, typecheck, 203 pruebas con PostgreSQL 16.15 y build con Bun 1.4.2. Durante la revisión del PR #23 se repitieron esas comprobaciones en la misma copia extraída con **Bun 1.3.13**: 203 pruebas / 3,402 aserciones, cero fallos u omisiones, typecheck/build correctos. La rama documental, después de incorporar Carta/Baraja de PR #25, pasó 208 pruebas con esa misma versión objetivo. [Evidencia histórica](documentation/Revision-PR-23.md). La integración actual tiene [su propia evidencia](documentation/Entrega-Hector-2026-10-06.md); ninguna de estas corridas acredita instalación independiente ni el ZIP final.
 
 ## Organización
 
@@ -78,6 +92,13 @@ La corrida histórica del 5 oct, basada en `main` (`831dcd2`) más cambios local
 | `docs/` | Manuales y arquitectura para la entrega. |
 | `documentation/` | Plan, convenciones, tareas y seguimiento del equipo. |
 
-`bun run empaquetar` genera `blackjack-equipo.zip` con fuentes, manuales y `.env.example`, sin dependencias, credenciales locales ni builds. El cliente compila con `bun run --filter @blackjack/client build` (genera `client/dist`). El arranque de producción en un solo puerto (`build`/`start` en la raíz) depende de T-38.
+`bun run empaquetar` genera `blackjack-equipo.zip` con fuentes, manuales y `.env.example`, sin dependencias, credenciales locales ni builds. Para producción, con `.env` y la base ya preparados:
+
+```bash
+bun run build
+bun run start
+```
+
+Abre `http://localhost:3000` o `http://<IP-del-servidor>:3000` desde otra laptop. HTTP y `/ws` usan el mismo puerto; no hace falta Vite. El ZIP omite `dist`, así que hay que compilar después de descomprimir. Si no hay build, `/` devuelve 404 con la indicación de compilar; las rutas ajenas al build también devuelven 404. La prueba LAN de producción es el criterio pendiente de T-38.
 
 El diseño previsto y las tareas pendientes están en [`PLAN.md`](documentation/PLAN.md) y [`TAREAS.md`](documentation/TAREAS.md). [`ESTADO.md`](documentation/ESTADO.md) registra el avance del equipo.
