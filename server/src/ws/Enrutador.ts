@@ -1,7 +1,7 @@
 /** Valida el contrato compartido y despacha intenciones sin depender de SQL (T-07). */
 import {
   crearErrorValidacion, ErrorJuego, MENSAJES_ERROR, MensajeClienteSchema,
-  type MensajeCliente, type MensajeServidor,
+  type Equipado, type MensajeCliente, type MensajeServidor, type UsuarioVista,
 } from "@blackjack/shared";
 import type { ServerWebSocket } from "bun";
 import { MENSAJE_MAX_BYTES } from "../config";
@@ -10,6 +10,8 @@ import { MENSAJE_MAX_BYTES } from "../config";
 export interface DatosConexion {
   usuarioId?: number;
   token?: string;
+  usuario?: UsuarioVista;
+  equipado?: Equipado;
 }
 export type SocketConexion = ServerWebSocket<DatosConexion>;
 type TipoManejado = Exclude<MensajeCliente["type"], "ping">;
@@ -22,14 +24,17 @@ export type ManejadoresEnrutador = Partial<{
 
 /** Enrutador común; los servicios de auth, mesa y economía se conectan por inyección. */
 export class Enrutador {
+  private readonly pendientes = new WeakMap<SocketConexion, Promise<void>>();
   /**
    * @param manejadores - Intenciones implementadas por las tareas siguientes.
    * @param registrarError - Registra excepciones inesperadas solo en el servidor.
+   * @param validarSesion - Comprueba vigencia/revocación antes de ejecutar intenciones protegidas.
    * @returns Enrutador con ping disponible incluso sin servicios instalados.
    */
   constructor(
     private readonly manejadores: ManejadoresEnrutador = {},
     private readonly registrarError: (error: unknown) => void = (error) => console.error("Error interno en Enrutador", error),
+    private readonly validarSesion?: (socket: SocketConexion) => Promise<void>,
   ) {}
 
   /**
@@ -38,7 +43,17 @@ export class Enrutador {
    * @param datos - Frame textual o binario recibido por Bun.
    * @returns Finalización de la respuesta; los errores de dominio no se propagan.
    */
-  async manejar(socket: SocketConexion, datos: string | Buffer): Promise<void> {
+  manejar(socket: SocketConexion, datos: string | Buffer): Promise<void> {
+    // Auth y logout de un mismo socket conservan el orden aunque hagan consultas async.
+    const anterior = this.pendientes.get(socket) ?? Promise.resolve();
+    const actual = anterior.catch(() => {}).then(() => this.procesar(socket, datos));
+    this.pendientes.set(socket, actual);
+    const limpiar = () => { if (this.pendientes.get(socket) === actual) this.pendientes.delete(socket); };
+    void actual.then(limpiar, limpiar);
+    return actual;
+  }
+
+  private async procesar(socket: SocketConexion, datos: string | Buffer): Promise<void> {
     let reqId: string | undefined;
     try {
       // No fijar maxPayloadLength a 16 KB: Bun cerraría el socket antes de responder
@@ -64,6 +79,7 @@ export class Enrutador {
       if (!esAcceso && mensaje.type !== "ping" && socket.data.usuarioId === undefined) {
         throw new ErrorJuego("NO_AUTENTICADO");
       }
+      if (!esAcceso && mensaje.type !== "ping") await this.validarSesion?.(socket);
       const respuesta = await this.despachar(socket, mensaje);
       // La correlación pertenece al transporte: un handler no puede heredar reqId de otra petición.
       this.enviar(socket, { ...respuesta, reqId });

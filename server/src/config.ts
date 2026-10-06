@@ -28,3 +28,12 @@ export const TASA_FICHAS = 1;
 /** Día natural de compra, independiente de la zona horaria del servidor. */
 export const LIMITE_DIARIO = 5_000;
 export const ZONA_HORARIA = "America/Mexico_City";
+/** Bienvenida y vigencia de sesiones de PLAN §1. */
+export const DINERO_INICIAL = 10_000;
+export const FICHAS_INICIALES = 500;
+export const TOKEN_BYTES = 32;
+export const SESION_DURACION_MS = 7 * 24 * 60 * 60 * 1000;
+/** Artículos del seed que se entregan y equipan al registrarse. */
+export const EQUIPADO_INICIAL = {
+  avatar: "avatar_basico", reverso: "reverso_clasico", tema: "tema_verde",
+} as const;
