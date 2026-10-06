@@ -8,12 +8,13 @@ import { DINERO_INICIAL, EQUIPADO_INICIAL, FICHAS_INICIALES, SESION_DURACION_MS,
 import { enTransaccion } from "../db/conexion";
 import { consultarEstado } from "../store/consultas";
 
-/** Datos públicos de sesión; el transporte incorpora mesaId sin acoplar auth al juego. */
+/** Sesión SQL; expiraEn es metadata interna y el transporte no la incluye en JSON. */
 export interface Sesion {
   token: string;
   usuario: UsuarioVista;
   billetera: BilleteraEstado;
   equipado: Equipado;
+  expiraEn: number;
 }
 
 /** Gestiona contraseñas Argon2id y tokens persistentes con vencimiento de siete días. */
@@ -121,11 +122,14 @@ export class Sesiones {
   }
 
   private async datosPublicos(sql: SQL, token: string, usuario: UsuarioVista): Promise<Sesion> {
-    const [fila] = await sql<{ avatar: string | null; reverso: string | null; tema: string | null }[]>`
-      SELECT avatar_id AS avatar, reverso_id AS reverso, tema_id AS tema FROM usuarios WHERE id = ${usuario.id}
+    const [fila] = await sql<{ avatar: string | null; reverso: string | null; tema: string | null; expira_en: Date }[]>`
+      SELECT u.avatar_id AS avatar, u.reverso_id AS reverso, u.tema_id AS tema, s.expira_en
+      FROM usuarios u JOIN sesiones s ON s.usuario_id = u.id
+      WHERE u.id = ${usuario.id} AND s.token = ${token}
     `;
-    const equipado = EquipadoSchema.safeParse(fila);
+    if (!fila) throw new ErrorJuego("SESION_INVALIDA");
+    const equipado = EquipadoSchema.safeParse({ avatar: fila.avatar, reverso: fila.reverso, tema: fila.tema });
     if (!equipado.success) throw new ErrorJuego("ERROR_INTERNO");
-    return { token, usuario, billetera: await consultarEstado(sql, usuario.id), equipado: equipado.data };
+    return { token, usuario, billetera: await consultarEstado(sql, usuario.id), equipado: equipado.data, expiraEn: fila.expira_en.getTime() };
   }
 }

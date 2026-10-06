@@ -1,6 +1,6 @@
 # Manual de instalación (borrador)
 
-Este manual describe el código disponible en `main` después del PR #19. Registro, login, reanudación, logout y consulta de billetera funcionan con PostgreSQL. El cliente React permite recorrer partidas y economía completas contra el servidor falso (`?mock=1`); mesas, compras e historial reales y arranque de producción todavía esperan integración. La comprobación independiente en otra laptop (T-14/T-48/T-55) está pendiente.
+Este manual describe esta rama de integración, que compone acceso, lobby, partidas y economía con PostgreSQL. El cliente también permite el recorrido con `?mock=1`. Bun sirve el build en producción. Typecheck, build y 326 pruebas con PostgreSQL 16.15 pasan sin fallos ni omisiones. La llegada de los cambios a `main` y la comprobación independiente en otra laptop (T-14/T-48/T-55) siguen pendientes; ver [entrega de Hector](../documentation/Entrega-Hector-2026-10-06.md).
 
 ## Requisitos
 
@@ -48,11 +48,9 @@ psql 'postgres://blackjack:blackjack_local@127.0.0.1:5432/blackjack' -c 'SELECT 
 
 ## Desarrollo y conexión desde otra laptop
 
-`bun run dev` inicia el servidor en `0.0.0.0:3000` y el cliente Vite en el puerto 5173, también abierto a la red. Desde la misma laptop abre `http://localhost:5173`; desde otra, `http://<IP-del-equipo>:5173`. Vite redirige `/ws` al servidor, así que el navegador solo necesita llegar al puerto 5173. En el servidor, el endpoint `/` devuelve `404` y `/ws` acepta conexiones WebSocket.
+`bun run dev` inicia el servidor en `0.0.0.0:3000` y el cliente Vite en el puerto 5173, también abierto a la red. Desde la misma laptop abre `http://localhost:5173`; desde otra, `http://<IP-del-equipo>:5173`. Vite redirige `/ws` al servidor, así que el navegador solo necesita llegar al puerto 5173. Bun acepta WebSocket en `/ws` y, si existe `client/dist`, sirve ese build en `/`.
 
-Abre `http://localhost:5173` para registrar una cuenta real o iniciar sesión con ella. Cerrar y reabrir recupera el token persistente; se entregan $10,000, 500 fichas y los tres cosméticos básicos al registrar. Tras acceder, `lobby.listar` no tiene handler (T-09 pendiente): el lobby vacío muestra «Ocurrió un error interno; intenta de nuevo» (`ERROR_INTERNO`). Ese aviso no indica por sí solo que la instalación de la base haya fallado.
-
-Abre `http://localhost:5173/?mock=1` para recorrer la interfaz completa con un servidor falso: la barra morada cambia de fase, fuerza resultados y simula una caída de red. Esos usuarios, saldos y rondas no se guardan en PostgreSQL.
+Para recorrer partidas y compras mientras se integra el servidor, abre `http://localhost:5173/?mock=1`. Así se usa un servidor falso: la barra morada cambia de fase, fuerza resultados y simula una caída de red. En producción puedes usar `http://localhost:3000/?mock=1`.
 
 Abre `scripts/verificar-ws.html` como archivo local en tres pestañas. Pulsa **Conectar** con `127.0.0.1:3000` si estás en la misma laptop. Desde otra laptop en la misma red, copia ese archivo y escribe la IP del equipo que ejecuta el servidor seguida de `:3000`, por ejemplo `192.168.1.42:3000`. Las tres pestañas deben mostrar `Conectados: 3`.
 
@@ -79,7 +77,20 @@ Si modificaste `.env`, ajusta las credenciales y el puerto del ejemplo. El coman
 
 El empaquetador genera `blackjack-equipo.zip` en la raíz, comprueba que mide menos de 20 MB y valida su contenido. Incluye fuentes, `README.md`, `docs/`, los documentos de seguimiento y `.env.example`. Excluye `node_modules`, `.git`, `.env`, archivos de entorno locales, `dist`, cobertura y archivos ZIP previos.
 
-Los comandos previstos `bun run build` y `bun run start` todavía no existen. T-38 incorporará el build del cliente y su servicio desde Bun; hasta entonces, usa el flujo de desarrollo y la página de comprobación del transporte.
+## Producción: un solo puerto
+
+Después de configurar `.env`, levantar PostgreSQL, instalar dependencias y preparar la base, ejecuta desde la raíz:
+
+```bash
+bun run build
+bun run start
+```
+
+El primer comando genera `client/dist` con Vite. El segundo inicia Bun en `0.0.0.0:3000` y usa el build y la base existentes. Para abrirlo en la misma máquina usa `http://localhost:3000`; desde otra laptop, `http://<IP-del-equipo>:3000`. El cliente deriva `/ws` del host de la página. En producción basta permitir TCP 3000; Vite y TCP 5173 pertenecen al flujo de desarrollo.
+
+El ZIP no contiene `dist`: compila tras cada instalación o actualización del código del cliente. Si el build falta, Bun responde «Cliente no compilado. Ejecuta bun run build.» con 404, y `/ws` sigue disponible. Un archivo desconocido devuelve 404; el servidor no lo sustituye por HTML. `Ctrl+C` detiene Bun y cierra su pool SQL.
+
+La comprobación en otra laptop por el puerto 3000 sigue pendiente.
 
 ## Problemas habituales
 

@@ -1,5 +1,6 @@
 /** Configuración central del servidor; los valores se amplían por tarea. */
 import { LIMITES_CANTIDAD } from "@blackjack/shared";
+import { fileURLToPath } from "node:url";
 
 /** Dirección LAN en la que escucha el servidor. */
 export const HOST = "0.0.0.0";
@@ -7,8 +8,34 @@ export const HOST = "0.0.0.0";
 export const PUERTO = 3000;
 /** Ruta del upgrade WebSocket descrita en documentation/PLAN.md. */
 export const RUTA_WS = "/ws";
+/** Build de Vite resuelto desde el módulo; no depende del directorio de arranque. */
+export const DIRECTORIO_CLIENTE = fileURLToPath(new URL("../../client/dist/", import.meta.url));
+/** Revalidar documentos y archivos cuyo nombre no cambia con su contenido. */
+export const CACHE_CLIENTE_REVALIDAR = "no-cache";
+/** Vite incorpora el hash de contenido al nombre; esos assets pueden durar un año. */
+export const CACHE_CLIENTE_CON_HASH = "public, max-age=31536000, immutable";
 /** Topic compartido por las conexiones del lobby. */
 export const TOPIC_LOBBY = "lobby";
+/**
+ * Construye el topic compartido por las conexiones de una mesa.
+ * @param mesaId - Identificador configurado de mesa.
+ * @returns Topic de snapshots y resultados según PLAN §2.
+ */
+export function topicMesa(mesaId: string): string { return `mesa:${mesaId}`; }
+/**
+ * Construye el topic privado que comparten las conexiones vigentes de un usuario.
+ * @param usuarioId - Identificador del usuario autenticado.
+ * @returns Topic de billetera e inventario según PLAN §2.
+ */
+export function topicUsuario(usuarioId: number): string { return `usuario:${usuarioId}`; }
+/** Mesas fijas del Hito 1; el contrato compartido establece cinco asientos. */
+export const CAPACIDAD_MESA = 5;
+/** Mesas fijas; sus identificadores determinan el topic de cada mesa. */
+export const MESAS = [
+  { id: "mesa-1", nombre: "Mesa 1" },
+  { id: "mesa-2", nombre: "Mesa 2" },
+  { id: "mesa-3", nombre: "Mesa 3" },
+] as const;
 /** Límite del protocolo medido en bytes UTF-8, antes de decodificar JSON. */
 export const MENSAJE_MAX_BYTES = 16 * 1024;
 /** Zapato de cuatro mazos; reposición entre rondas por debajo del 25 %. */

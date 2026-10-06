@@ -10,6 +10,8 @@ El cliente del PR #7 consume el contrato compartido. T-07/T-08 ya permiten acces
 
 El camino crítico **T-01 → T-03 → T-07 → T-18 → T-20 → T-31** espera ahora T-09 y la integración de T-18; T-15/T-16 ya están fusionadas.
 
+**Revisión de PR #22 (6 oct):** rama actualizada con main, #21 y #24 conservadas. Transferencia de asiento centralizada según PLAN §7.5: la pestaña anterior recibe `NO_ESTAS_EN_MESA` y conserva snapshots como espectadora. Puede salir sin liberar el asiento ajeno, incluso después de salir o cerrar la dueña. Incluye actualización de cosméticos, reducción de publicaciones y limpieza de cierre garantizada. El controlador conserva el comportamiento de main. T-09 conserva `[ ]` hasta aprobación y fusión en main.
+
 ## Hito actual
 
 **Por calendario: Hito 5 — mar 6 oct** (ensayos y ZIP probado); entrega mañana, mié 7, 13:00 CDMX.
@@ -30,16 +32,16 @@ Solo se cuentan tareas con PR fusionado en `main` y criterio de "hecho" comproba
 
 | Dev | Completadas | Total | % |
 |---|---|---|---|
-| Hector | 7 | 19 | 37 % |
+| Hector | 9 | 19 | 47 % |
 | Nahum | 4 | 17 | 24 % |
 | Massimo | 8 | 19 | 42 % |
 | Equipo | 0 | 2 | 0 % |
-| **Total** | **19** | **57** | **33 %** |
+| **Total** | **21** | **57** | **37 %** |
 
-Avance por hito: H1 11/14 (79 %) · H2 6/19 (32 %) · H3 1/10 (10 %) · H4 0/8 · H5 1/5 (20 %) · Entrega 0/1
+Avance por hito: H1 12/14 (86 %) · H2 7/19 (37 %) · H3 1/10 (10 %) · H4 0/8 · H5 1/5 (20 %) · Entrega 0/1
 
 - **Hechas:**
-  - T-01, T-02, T-06, T-07, T-08, T-15 y T-16 (Hector); enrutador/auth, Carta/Baraja y Mano/Dealer fusionados y comprobados con Bun 1.3.13 y PostgreSQL 16.15.
+  - T-01, T-02, T-06, T-07, T-08, T-09, T-15, T-16 y T-17 (Hector); mesas con asientos y espectadores (PR #22), resolver (PR #28), enrutador/auth, Carta/Baraja y Mano/Dealer fusionados y comprobados con Bun 1.3.13 y PostgreSQL 16.15.
   - T-10 (Nahum, PR #6 fusionado en `main`; marca restaurada desde `main` durante la revisión del PR #7).
   - T-12 (Nahum, PR #16): vista de tienda de solo lectura en `?mock=1`.
   - T-11 (Nahum, PR #34): reconexión con la misma sesión contra el servidor autenticado.
@@ -116,3 +118,6 @@ Avance por hito: H1 11/14 (79 %) · H2 6/19 (32 %) · H3 1/10 (10 %) · H4 0/8 �
 | 2026-10-06 | Nahum: corrección local de arranque de T-01, pendiente de PR. `server/package.json` carga explícitamente `.env` de la raíz; `bun run dev` arranca desde `server/` y desde raíz sin el error de DATABASE_URL. Typecheck correcto con Bun 1.3.8; conectividad PostgreSQL no comprobada en esta corrección. README/manual actualizados. |
 | 2026-10-06 | Hector: revisión de T-17 atendida en PR #28; base main sin commits duplicados de #25/#27, copias de manos y pagos ligados a LIMITES_CANTIDAD. Typecheck y 250 pruebas SQL sin fallos; pendiente aprobación/fusión. |
 | 2026-10-06 | Hector: segunda revisión de PR #28 atendida sobre main con #35; conflicto de ESTADO resuelto sin perder T-27. Se restauraron pruebas separadas para enlaces a archivo (Unix) y directorio/junction (Windows) en el ZIP. Typecheck y 218 pruebas pasan; 45 omitidas sin TEST_DATABASE_URL y por condiciones de plataforma. T-17 sigue pendiente de aprobación/fusión; avance en main 19/57. |
+| 2026-10-06 | Hector: primera revisión de T-09 en PR #22 (`6a93a43`); main incorporada y #21/#24 conservadas. Traspaso, cosméticos, publicaciones y cierre corregidos; tipos y 270 pruebas PostgreSQL sin fallos. Revisión posterior solicita conservar la pestaña anterior como espectadora según PLAN §7.5; pendiente aprobación/fusión. |
+| 2026-10-06 | Hector: segunda revisión de T-09 atendida en PR #22; pestaña anterior como espectadora según PLAN §7.5, salida sin liberar asiento ajeno y recuperación tras salir/cerrar la dueña. Cliente de main conservado y conflicto de ESTADO resuelto con T-27. Bun 1.3.13/PostgreSQL 16.15: typecheck correcto y suite SQL completa sin fallos. Pendiente aprobación/fusión; avance aceptado 19/57. |
+| 2026-10-06 | Massimo: PR #22 fusionado con main tras revisar la segunda corrección (`348f849`). Incluye T-09 y las integraciones de #21 (T-34 por WebSocket) y #24 (T-38). T-09 y T-17 hechas por Hector (PR #22 y #28). T-38 sigue abierta hasta jugar desde otra laptop por IP. Avance 21/57 (37 %), Hector 9/19, H1 12/14, H2 7/19. |
