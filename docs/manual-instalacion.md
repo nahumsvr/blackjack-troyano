@@ -1,6 +1,6 @@
 # Manual de instalación (borrador)
 
-Este manual describe el código disponible. La interfaz React, el registro/login, las partidas y el arranque de producción todavía dependen de tareas del equipo. La comprobación independiente en otra laptop (T-14/T-48/T-55) está pendiente.
+Este manual describe el código disponible. El cliente React ya funciona, y contra un servidor falso (`?mock=1`) se puede recorrer completo. El registro/login, las partidas en el servidor y el arranque de producción todavía dependen de tareas del equipo. La comprobación independiente en otra laptop (T-14/T-48/T-55) está pendiente.
 
 ## Requisitos
 
@@ -48,11 +48,13 @@ psql 'postgres://blackjack:blackjack_local@127.0.0.1:5432/blackjack' -c 'SELECT 
 
 ## Desarrollo y conexión desde otra laptop
 
-`bun run dev` inicia el servidor en `0.0.0.0:3000` y la entrada provisional del cliente. El cliente aún no abre una interfaz web; el endpoint `/` devuelve `404` y `/ws` acepta conexiones WebSocket.
+`bun run dev` inicia el servidor en `0.0.0.0:3000` y el cliente Vite en el puerto 5173, también abierto a la red. Desde la misma laptop abre `http://localhost:5173`; desde otra, `http://<IP-del-equipo>:5173`. Vite redirige `/ws` al servidor, así que el navegador solo necesita llegar al puerto 5173. En el servidor, el endpoint `/` devuelve `404` y `/ws` acepta conexiones WebSocket.
+
+Mientras el servidor no tenga autenticación ni partidas, abre `http://localhost:5173/?mock=1`. Así se recorre la interfaz con un servidor falso: la barra morada cambia de fase, fuerza resultados y simula una caída de red.
 
 Abre `scripts/verificar-ws.html` como archivo local en tres pestañas. Pulsa **Conectar** con `127.0.0.1:3000` si estás en la misma laptop. Desde otra laptop en la misma red, copia ese archivo y escribe la IP del equipo que ejecuta el servidor seguida de `:3000`, por ejemplo `192.168.1.42:3000`. Las tres pestañas deben mostrar `Conectados: 3`.
 
-PostgreSQL se publica únicamente en `127.0.0.1`; las otras laptops se conectan al servidor Bun. Si la red escolar aísla dispositivos, usa una red compartida o hotspot. El equipo servidor debe permitir TCP 3000 en su firewall para la prueba LAN. Detén desarrollo con `Ctrl+C`.
+PostgreSQL se publica únicamente en `127.0.0.1`; las otras laptops se conectan al servidor Bun. Si la red escolar aísla dispositivos, usa una red compartida o hotspot. El equipo servidor debe permitir TCP 3000 (WebSocket) y TCP 5173 (cliente en desarrollo) en su firewall para la prueba LAN. Detén desarrollo con `Ctrl+C`.
 
 ## Verificaciones y empaquetado
 

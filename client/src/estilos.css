@@ -1,2 +1,459 @@
-/* Estilos globales: Tailwind v4 (sin archivo de configuración). */
+/*
+ * Estilos globales: Tailwind v4 (sin archivo de configuración) más las animaciones del cliente.
+ * - Las animaciones simples se declaran en @theme y se usan como utilidades (`animate-volar-carta`…).
+ * - La pantalla de resultado usa clases propias (`resultado-*`), porque combina varias capas.
+ * - Con "reducir movimiento" del sistema operativo las animaciones duran 1 ms y los efectos
+ *   puramente decorativos (rayos, confeti) no se dibujan: la información se ve igual, sin movimiento.
+ */
 @import "tailwindcss";
+
+@theme {
+  /* Carta repartida: vuela desde el zapato del dealer (--desde-x, --desde-y) hasta su lugar. */
+  --animate-volar-carta: volar-carta 520ms cubic-bezier(0.2, 0.75, 0.3, 1) both;
+  /* Carta visible: viaja boca abajo y se descubre al llegar (dura más que el vuelo). */
+  --animate-descubrir: descubrir 900ms ease-out both;
+  /* Carta tapada que se revela: solo se descubre. */
+  --animate-voltear: voltear 520ms cubic-bezier(0.3, 1.3, 0.5, 1) both;
+  /* Texto que cambia (fase, pistas): aparece desde abajo. */
+  --animate-aparecer: aparecer 280ms ease-out both;
+  /* Total de la mano: aparece con rebote cuando la carta nueva ya se descubrió. */
+  --animate-total: total 420ms cubic-bezier(0.3, 1.6, 0.5, 1) both;
+  /* Ficha apostada: llega desde el jugador y rebota sobre el paño. */
+  --animate-ficha: ficha 420ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+  /* Halo del asiento en turno y de los botones de acción cuando te toca. */
+  --animate-latido: latido 1.4s ease-out infinite;
+  /* Segundos finales del temporizador: cada número entra grande. */
+  --animate-tic: tic 450ms ease-out both;
+  /* Saldo de fichas que sube o baja: destello verde o rojo. */
+  --animate-subio: subio 800ms ease-out both;
+  --animate-bajo: bajo 800ms ease-out both;
+  /* Diferencia de fichas que flota sobre el botón de billetera y se desvanece. */
+  --animate-flotar: flotar 1300ms ease-out both;
+  /* Aviso (toast) que entra desde la derecha. */
+  --animate-entrar-derecha: entrar-derecha 320ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+
+  @keyframes volar-carta {
+    from {
+      transform: translate(var(--desde-x), var(--desde-y)) rotate(-25deg) scale(0.8);
+    }
+  }
+  /* La misma lista de funciones en todos los pasos, para que el navegador interpole cada una. */
+  @keyframes descubrir {
+    0%,
+    58% {
+      transform: scale(1) rotateY(180deg);
+    }
+    75% {
+      transform: scale(1.1) rotateY(90deg);
+    }
+    100% {
+      transform: scale(1) rotateY(0deg);
+    }
+  }
+  @keyframes voltear {
+    0% {
+      transform: scale(1) rotateY(180deg);
+    }
+    40% {
+      transform: scale(1.12) rotateY(90deg);
+    }
+    100% {
+      transform: scale(1) rotateY(0deg);
+    }
+  }
+  @keyframes aparecer {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+  @keyframes total {
+    from {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+  }
+  @keyframes ficha {
+    from {
+      opacity: 0;
+      transform: translateY(36px) scale(0.6);
+    }
+  }
+  @keyframes latido {
+    0% {
+      box-shadow: 0 0 0 0 rgb(252 211 77 / 0.75);
+    }
+    100% {
+      box-shadow: 0 0 0 12px rgb(252 211 77 / 0);
+    }
+  }
+  @keyframes tic {
+    from {
+      transform: scale(1.45);
+    }
+  }
+  @keyframes subio {
+    from {
+      color: #6ee7b7;
+      transform: scale(1.35);
+    }
+  }
+  @keyframes bajo {
+    from {
+      color: #fca5a5;
+      transform: scale(0.8);
+    }
+  }
+  @keyframes flotar {
+    0% {
+      opacity: 0;
+      transform: translateY(4px) scale(0.8);
+    }
+    20% {
+      opacity: 1;
+      transform: translateY(-6px) scale(1.1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-28px) scale(1);
+    }
+  }
+  @keyframes entrar-derecha {
+    from {
+      opacity: 0;
+      transform: translateX(110%);
+    }
+  }
+}
+
+/* Carta con dos caras: el contenedor da la perspectiva y el interior gira con ambas caras. */
+@layer components {
+  .carta-3d {
+    position: relative;
+    perspective: 600px;
+  }
+  .carta-interior {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+  }
+  .carta-cara {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+  }
+  .carta-reverso {
+    transform: rotateY(180deg);
+  }
+}
+
+/* ───────────── Pantalla de resultado de la ronda ─────────────
+ * Variables que fija `OverlayResultado` desde TypeScript (una sola fuente de las duraciones):
+ *   --entrada, --salida  duración de la entrada y de la salida.
+ * Capas, de atrás hacia adelante: fondo translúcido → rayos → partículas → tarjeta.
+ */
+@layer components {
+  .resultado-fondo {
+    position: absolute;
+    inset: 0;
+    backdrop-filter: blur(3px);
+    animation: resultado-desvanecer var(--entrada) ease-out both;
+  }
+  .resultado-saliendo .resultado-fondo {
+    /* Otro nombre de animación: si solo cambiara la dirección, el navegador no la reiniciaría. */
+    animation: resultado-ocultar var(--salida) ease-in both;
+  }
+  .resultado-fondo-victoria {
+    background: radial-gradient(circle at 50% 50%, rgb(250 204 21 / 0.3), rgb(2 44 34 / 0.62) 70%);
+  }
+  .resultado-fondo-empate {
+    background: radial-gradient(circle at 50% 50%, rgb(56 189 248 / 0.2), rgb(2 6 23 / 0.6) 70%);
+  }
+  /* Derrota: viñeta rojiza en los bordes, sin brillo al centro. */
+  .resultado-fondo-derrota {
+    background: radial-gradient(circle at 50% 50%, rgb(0 0 0 / 0.4), rgb(127 29 29 / 0.6) 80%);
+  }
+
+  /* Rayos y partículas van juntos en una capa que se desvanece al salir. */
+  .resultado-efectos {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transition: opacity var(--salida) ease-in;
+  }
+  .resultado-saliendo .resultado-efectos {
+    opacity: 0;
+  }
+
+  .resultado-rayos {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 200vmax;
+    height: 200vmax;
+    translate: -50% -50%;
+    background: repeating-conic-gradient(var(--rayo) 0deg 6deg, transparent 6deg 15deg);
+    mask-image: radial-gradient(circle, #000 0%, rgb(0 0 0 / 0.55) 16%, transparent 42%);
+    /* `backwards`: al terminar de aparecer, la opacidad queda libre para la transición de salida. */
+    animation:
+      resultado-rayos-aparecer var(--entrada) ease-out backwards,
+      resultado-girar 30s linear infinite;
+  }
+  .resultado-rayos-victoria {
+    --rayo: rgb(253 224 71 / 0.5);
+  }
+  .resultado-rayos-empate {
+    --rayo: rgb(125 211 252 / 0.28);
+    animation-duration: var(--entrada), 70s;
+  }
+
+  /* Confeti: sale disparado del centro hasta (--dx, --dy) y luego cae girando. */
+  .resultado-confeti {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--ancho);
+    height: var(--alto);
+    background: var(--color);
+    border-radius: var(--radio);
+    opacity: 0;
+    animation: resultado-estallido 1900ms cubic-bezier(0.15, 0.7, 0.4, 1) var(--retraso) both;
+  }
+  /* Chispas del empate: suben despacio y titilan, sin estallido. */
+  .resultado-chispa {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--ancho);
+    height: var(--ancho);
+    border-radius: 9999px;
+    background: var(--color);
+    box-shadow: 0 0 8px var(--color);
+    opacity: 0;
+    animation: resultado-chispa 2600ms ease-out var(--retraso) infinite;
+  }
+
+  /* Fichas que salen volando de detrás de la tarjeta, girando como monedas, y caen. */
+  .resultado-ficha {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--ancho);
+    height: var(--ancho);
+    opacity: 0;
+    animation: resultado-ficha-vuelo 1900ms cubic-bezier(0.2, 0.75, 0.35, 1) var(--retraso) both;
+  }
+  .resultado-ficha > svg {
+    width: 100%;
+    height: 100%;
+    animation: resultado-ficha-giro var(--giro-ms) linear var(--retraso) infinite;
+  }
+
+  /* Tarjeta: entra desde abajo creciendo con un pequeño rebote; al salir hace exactamente lo inverso. */
+  .resultado-tarjeta {
+    position: relative;
+    animation: resultado-entrar var(--entrada) cubic-bezier(0.18, 0.89, 0.32, 1.28) both;
+  }
+  .resultado-saliendo .resultado-tarjeta {
+    animation: resultado-salir var(--salida) cubic-bezier(0.6, -0.28, 0.74, 0.05) both;
+  }
+
+  /* Barrido de luz sobre la tarjeta ganadora. */
+  .resultado-brillo {
+    overflow: hidden;
+  }
+  .resultado-brillo::after {
+    content: "";
+    position: absolute;
+    inset: -50%;
+    background: linear-gradient(105deg, transparent 42%, rgb(255 255 255 / 0.6) 50%, transparent 58%);
+    translate: -100% 0;
+    pointer-events: none;
+    animation: resultado-barrido 2.6s ease-in-out var(--entrada) infinite;
+  }
+
+  /* Ícono: salta (victoria), se mece (empate) o tiembla una vez (derrota) tras la entrada. */
+  .resultado-icono-victoria {
+    animation: resultado-saltar 1.1s ease-in-out var(--entrada) infinite;
+  }
+  .resultado-icono-empate {
+    animation: resultado-mecer 2.2s ease-in-out var(--entrada) infinite;
+  }
+  .resultado-icono-derrota {
+    animation: resultado-sacudir 600ms ease-in-out var(--entrada) both;
+  }
+  /* La cantidad perdida cae a su lugar, como fichas que se van. */
+  .resultado-perdida {
+    animation: resultado-escurrir 500ms ease-in calc(var(--entrada) * 0.7) both;
+  }
+
+  @keyframes resultado-desvanecer {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes resultado-escurrir {
+    from {
+      opacity: 0;
+      transform: translateY(-14px) scale(1.15);
+      filter: blur(2px);
+    }
+  }
+  @keyframes resultado-ocultar {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes resultado-entrar {
+    from {
+      opacity: 0;
+      transform: translateY(40vh) scale(0.3);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes resultado-salir {
+    from {
+      opacity: 1;
+      transform: none;
+    }
+    to {
+      opacity: 0;
+      transform: translateY(40vh) scale(0.3);
+    }
+  }
+  @keyframes resultado-rayos-aparecer {
+    from {
+      opacity: 0;
+      scale: 0.4;
+    }
+  }
+  @keyframes resultado-girar {
+    to {
+      rotate: 360deg;
+    }
+  }
+  @keyframes resultado-estallido {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.2) rotate(0deg);
+    }
+    8% {
+      opacity: 1;
+    }
+    45% {
+      transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1) rotate(calc(var(--giro) * 0.5));
+    }
+    80% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(calc(-50% + var(--dx) * 1.2), calc(-50% + var(--dy) + 45vh)) scale(1) rotate(var(--giro));
+    }
+  }
+  @keyframes resultado-ficha-vuelo {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.3) rotate(0deg);
+    }
+    8% {
+      opacity: 1;
+    }
+    40% {
+      transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.1) rotate(calc(var(--giro) * 0.4));
+    }
+    85% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(calc(-50% + var(--dx) * 1.3), calc(-50% + var(--dy) + 55vh)) scale(0.9) rotate(var(--giro));
+    }
+  }
+  /* Giro de moneda: la ficha se "aplana" y vuelve, como si diera vueltas en el aire. */
+  @keyframes resultado-ficha-giro {
+    0% {
+      transform: rotateX(0deg);
+    }
+    100% {
+      transform: rotateX(360deg);
+    }
+  }
+  @keyframes resultado-chispa {
+    0% {
+      opacity: 0;
+      transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 40px)) scale(0.4);
+    }
+    30% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) - 60px)) scale(1);
+    }
+  }
+  @keyframes resultado-barrido {
+    0% {
+      translate: -100% 0;
+    }
+    55%,
+    100% {
+      translate: 100% 0;
+    }
+  }
+  @keyframes resultado-saltar {
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    30% {
+      transform: translateY(-14px) rotate(-8deg);
+    }
+    60% {
+      transform: translateY(0) rotate(6deg);
+    }
+  }
+  @keyframes resultado-mecer {
+    0%,
+    100% {
+      transform: rotate(-8deg);
+    }
+    50% {
+      transform: rotate(8deg);
+    }
+  }
+  @keyframes resultado-sacudir {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    20%,
+    60% {
+      transform: translateX(-8px) rotate(-6deg);
+    }
+    40%,
+    80% {
+      transform: translateX(8px) rotate(6deg);
+    }
+  }
+}
+
+/* Reducir movimiento: todo llega directo a su estado final y lo decorativo no se dibuja. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+  .efecto-decorativo {
+    display: none !important;
+  }
+}

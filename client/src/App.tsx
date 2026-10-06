@@ -1,17 +1,46 @@
 /**
- * Componente raíz de la interfaz. Por ahora solo confirma que el esqueleto (T-10) funciona;
- * en T-11 y siguientes elige la pantalla (acceso, lobby, mesa…) según el estado global.
+ * Componente raíz: decide qué pantalla mostrar a partir del estado global.
+ * - Sin sesión → acceso.
+ * - Con mesa (el servidor nos sentó) → mesa.
+ * - Si no → lobby.
+ * La billetera y el historial viven en un menú lateral común, que se abre desde el botón de
+ * fichas de cualquier pantalla con sesión; T-39/T-40 pueden agregarle pestañas (tienda, inventario).
  */
-import type { ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
+import { Avisos } from "./components/Avisos";
+import { MenuLateral, type PestanaMenu } from "./components/MenuLateral";
+import { PantallaAcceso } from "./screens/PantallaAcceso";
+import { PantallaLobby } from "./screens/PantallaLobby";
+import { PantallaMesa } from "./screens/PantallaMesa";
+import { useJuego } from "./state/store";
 
 /**
- * Pantalla provisional del esqueleto del cliente.
- * @returns Elemento con el título de la app.
+ * Pantalla activa más los elementos globales (menú lateral y avisos).
+ * @returns Árbol de la app.
  */
 export function App(): ReactNode {
+  const { estado } = useJuego();
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const [pestana, setPestana] = useState<PestanaMenu>("billetera");
+
+  const abrirMenu = useCallback((destino: PestanaMenu) => {
+    setPestana(destino);
+    setMenuAbierto(true);
+  }, []);
+  const cerrarMenu = useCallback(() => setMenuAbierto(false), []);
+
+  const conSesion = estado.sesion !== null;
+  let pantalla: ReactNode;
+  if (!conSesion) pantalla = <PantallaAcceso />;
+  else if (estado.mesa !== null) pantalla = <PantallaMesa alAbrirMenu={abrirMenu} />;
+  else pantalla = <PantallaLobby alAbrirMenu={abrirMenu} />;
+
   return (
-    <main className="flex min-h-screen items-center justify-center">
-      <h1 className="text-3xl font-bold">Blackjack</h1>
-    </main>
+    <>
+      {pantalla}
+      {/* Sin sesión no hay billetera: el menú se cierra solo si la sesión termina con él abierto. */}
+      <MenuLateral abierto={menuAbierto && conSesion} pestana={pestana} alCambiarPestana={setPestana} alCerrar={cerrarMenu} />
+      <Avisos />
+    </>
   );
 }
