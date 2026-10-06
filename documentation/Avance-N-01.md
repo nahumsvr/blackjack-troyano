@@ -2,6 +2,8 @@
 
 Fecha: domingo 4 (22:13) a lunes 5 de octubre de 2026. Contexto: PLAN.md, TAREAS.md, ESTADO.md, CLAUDE.md, Avance-H-01.md, Avance-M-01.md y Avance-M-02.md. Se trabajó en las tareas de Nahum (`client/`), en el gate de T-02 (la protección de `main` requería la cuenta administradora de Nahum) y en el seguimiento del proyecto.
 
+> **Actualización (6 oct):** este informe describe el estado observado el 5 oct; los pasos de fusión que aparecen más adelante ya son históricos. PR #7 se fusionó en `main` (`ea8c33f`). T-03 queda completa porque el cliente ya importa `@blackjack/shared`; T-11 conserva su criterio pendiente de restaurar la sesión contra el `reanudar` real del servidor (T-08). La revisión final registró 187 pruebas sin fallos con PostgreSQL 16, typecheck y build del cliente. El conteo vigente está en [ESTADO.md](ESTADO.md).
+
 ## 1. Cómo encontré el proyecto (dom 4 oct, 22:13)
 
 - **`main` en GitHub** (`2f96038`) tenía fusionados los PRs #1 (T-01), #2 (T-02) y #3 (T-06). El `main` local estaba atrasado.
