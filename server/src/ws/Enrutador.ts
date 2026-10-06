@@ -8,6 +8,8 @@ import { MENSAJE_MAX_BYTES } from "../config";
 
 /** Sesión asociada por los handlers de autenticación, nunca por entrada del cliente. */
 export interface DatosConexion {
+  conexionId?: string;
+  mesaId?: string;
   usuarioId?: number;
   token?: string;
   usuario?: UsuarioVista;
@@ -54,6 +56,7 @@ export class Enrutador {
   }
 
   private async procesar(socket: SocketConexion, datos: string | Buffer): Promise<void> {
+    if (socket.readyState !== WebSocket.OPEN) return;
     let reqId: string | undefined;
     try {
       // No fijar maxPayloadLength a 16 KB: Bun cerraría el socket antes de responder
@@ -80,6 +83,8 @@ export class Enrutador {
         throw new ErrorJuego("NO_AUTENTICADO");
       }
       if (!esAcceso && mensaje.type !== "ping") await this.validarSesion?.(socket);
+      // Un cierre durante la validación SQL no puede crear un asiento huérfano.
+      if (socket.readyState !== WebSocket.OPEN) return;
       const respuesta = await this.despachar(socket, mensaje);
       // La correlación pertenece al transporte: un handler no puede heredar reqId de otra petición.
       this.enviar(socket, { ...respuesta, reqId });

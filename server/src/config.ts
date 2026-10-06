@@ -9,6 +9,13 @@ export const PUERTO = 3000;
 export const RUTA_WS = "/ws";
 /** Topic compartido por las conexiones del lobby. */
 export const TOPIC_LOBBY = "lobby";
+/** Mesas fijas del Hito 1; el contrato compartido establece cinco asientos. */
+export const CAPACIDAD_MESA = 5;
+export const MESAS = [
+  { id: "mesa-1", nombre: "Mesa 1" },
+  { id: "mesa-2", nombre: "Mesa 2" },
+  { id: "mesa-3", nombre: "Mesa 3" },
+] as const;
 /** Límite del protocolo medido en bytes UTF-8, antes de decodificar JSON. */
 export const MENSAJE_MAX_BYTES = 16 * 1024;
 /*
