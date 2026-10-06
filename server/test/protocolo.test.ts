@@ -5,6 +5,8 @@ import {
   MensajeClienteSchema, MensajeServidorSchema, MesaEstadoSchema, crearErrorValidacion, crearMensajeClienteSchema,
   type EntradaMensajeCliente, type MensajeServidor, type MesaEstado,
 } from "@blackjack/shared";
+import { LIMITES_CANTIDAD } from "@blackjack/shared";
+import { APUESTA_MAX, APUESTA_MIN, COMPRA_FICHAS_MAX, COMPRA_FICHAS_MIN, MULTIPLO_FICHAS } from "../src/config";
 
 const uuid = "9e712309-50ac-4bca-a123-8239dc54ce87";
 const token = "a".repeat(64);
@@ -90,6 +92,14 @@ describe("T-03: todos los mensajes servidor", () => {
   }
 });
 describe("T-03: fronteras de validación", () => {
+  test("config del servidor y contrato comparten los mismos límites de cantidad", () => {
+    // Si alguien vuelve a escribir literales en config.ts, cliente y servidor validarían distinto.
+    expect({ apuestaMin: APUESTA_MIN, apuestaMax: APUESTA_MAX, compraMin: COMPRA_FICHAS_MIN,
+      compraMax: COMPRA_FICHAS_MAX, multiplo: MULTIPLO_FICHAS }).toEqual(LIMITES_CANTIDAD);
+    expect(MensajeClienteSchema.safeParse({ type: "apostar", cantidad: APUESTA_MAX }).success).toBe(true);
+    expect(MensajeClienteSchema.safeParse({ type: "apostar", cantidad: APUESTA_MAX + MULTIPLO_FICHAS }).success).toBe(false);
+    expect(MensajeClienteSchema.safeParse({ type: "fichas.comprar", cantidad: COMPRA_FICHAS_MIN - MULTIPLO_FICHAS, clave: uuid }).success).toBe(false);
+  });
   test("el servidor puede usar sus límites configurables sin duplicar el contrato", () => {
     const esquema = crearMensajeClienteSchema({ apuestaMin: 20, apuestaMax: 1000, compraMin: 20, compraMax: 10000, multiplo: 20 });
     expect(esquema.safeParse({ type: "apostar", cantidad: 1000 }).success).toBe(true);

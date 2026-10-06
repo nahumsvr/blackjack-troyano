@@ -131,7 +131,7 @@ En [shared/protocolo.ts](../shared/protocolo.ts) hay 18 intenciones y 12 mensaje
 
 La validación rechaza campos desconocidos y no convierte cadenas a números. Si el único error es una `cantidad` presente de `apostar`/`fichas.comprar`, `crearErrorValidacion` devuelve `CANTIDAD_INVALIDA`; los errores de estructura, cantidad faltante y tipos desconocidos devuelven `MENSAJE_INVALIDO`. `ErrorJuego(codigo)` proporciona el mensaje español para fallos de dominio. El transporte debe convertir excepciones inesperadas a `ERROR_INTERNO` y registrar sus detalles sin exponerlos al cliente.
 
-El esquema entrante por defecto usa los límites del PLAN. El enrutador debe llamar a `crearMensajeClienteSchema` con `APUESTA_MIN`, `APUESTA_MAX`, `COMPRA_FICHAS_MIN`, `COMPRA_FICHAS_MAX` y `MULTIPLO_FICHAS` para respetar cambios de configuración. El esquema no implementa los controles de tamaño 16 KB, ritmo 20/s, autenticación o permisos: corresponden a T-07/T-37.
+Los límites de apuesta y compra se definen una sola vez en `LIMITES_CANTIDAD` (`shared/protocolo.ts`). `MensajeClienteSchema` los aplica, el cliente los usa en sus formularios y `server/src/config.ts` los re-exporta para `BilleteraSQL`, así que el enrutador usa `MensajeClienteSchema` directamente. El esquema no implementa los controles de tamaño 16 KB, ritmo 20/s, autenticación o permisos: corresponden a T-07/T-37.
 
 Los snapshots `mesa.estado` contienen los campos de `MesaEstado` directamente en la raíz. Los cinco asientos tienen índice coincidente con su posición. La carta oculta solo puede contener `{oculta:true}`, con total del dealer `null`; antes de `DEALER` hay como máximo una carta visible y en `DEALER/PAGOS` todas están reveladas.
 
