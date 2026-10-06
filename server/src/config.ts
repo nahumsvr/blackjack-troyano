@@ -17,6 +17,12 @@ export const CACHE_CLIENTE_CON_HASH = "public, max-age=31536000, immutable";
 /** Topic compartido por las conexiones del lobby. */
 export const TOPIC_LOBBY = "lobby";
 /**
+ * Construye el topic compartido por las conexiones de una mesa.
+ * @param mesaId - Identificador configurado de mesa.
+ * @returns Topic de snapshots y resultados según PLAN §2.
+ */
+export function topicMesa(mesaId: string): string { return `mesa:${mesaId}`; }
+/**
  * Construye el topic privado que comparten las conexiones vigentes de un usuario.
  * @param usuarioId - Identificador del usuario autenticado.
  * @returns Topic de billetera e inventario según PLAN §2.
@@ -24,6 +30,7 @@ export const TOPIC_LOBBY = "lobby";
 export function topicUsuario(usuarioId: number): string { return `usuario:${usuarioId}`; }
 /** Mesas fijas del Hito 1; el contrato compartido establece cinco asientos. */
 export const CAPACIDAD_MESA = 5;
+/** Mesas fijas; sus identificadores determinan el topic de cada mesa. */
 export const MESAS = [
   { id: "mesa-1", nombre: "Mesa 1" },
   { id: "mesa-2", nombre: "Mesa 2" },
@@ -31,6 +38,11 @@ export const MESAS = [
 ] as const;
 /** Límite del protocolo medido en bytes UTF-8, antes de decodificar JSON. */
 export const MENSAJE_MAX_BYTES = 16 * 1024;
+/** Zapato de cuatro mazos; reposición entre rondas por debajo del 25 %. */
+export const NUM_MAZOS = 4;
+export const UMBRAL_REBARAJAR = 0.25;
+/** El dealer se planta también si el total objetivo es blando. */
+export const DEALER_PLANTARSE_EN = 17;
 /*
  * Los límites de cantidad se definen una sola vez en `LIMITES_CANTIDAD` (shared/protocolo.ts)
  * porque el cliente los necesita para validar formularios y `shared/` no puede importar

@@ -3,7 +3,7 @@ import type { SQL, Server } from "bun";
 import { ErrorJuego } from "@blackjack/shared";
 import { Sesiones } from "../auth/Sesiones";
 import { crearEnrutadorAutenticado } from "../auth/manejadores";
-import { PUERTO } from "../config";
+import { PUERTO, topicMesa } from "../config";
 import { GestorMesas } from "../game/GestorMesas";
 import { BilleteraSQL } from "../store/BilleteraSQL";
 import { Tienda } from "../store/Tienda";
@@ -12,23 +12,34 @@ import type { DatosConexion, SocketConexion } from "./Enrutador";
 import { iniciarServidor } from "./servidor";
 
 /**
+ * Compone sesiones persistentes, economía y asientos sobre el transporte compartido.
  * @param conexion - Pool SQL persistente que el llamador debe cerrar al apagar.
  * @param puerto - Puerto público; cero asigna uno libre para las pruebas.
  * @returns Servidor del Hito 1 con publicaciones nativas Bun.
- * @throws Propaga errores de inicio del transporte.
+ * @throws Error Si el puerto no está disponible; los errores de dominio se responden por WS.
  */
 export function iniciarAplicacion(conexion: SQL, puerto = PUERTO): Server<DatosConexion> {
   let servidor: Server<DatosConexion>;
-  const gestor = new GestorMesas((topic, mensaje) => servidor.publish(topic, JSON.stringify(mensaje)));
+  const conexiones = new Map<string, SocketConexion>();
+  const gestor = new GestorMesas((topic, mensaje) => servidor.publish(topic, JSON.stringify(mensaje)), (conexionId) => {
+    const anterior = conexiones.get(conexionId);
+    if (!anterior) return;
+    desuscribirMesa(anterior);
+    anterior.send(JSON.stringify({ type: "error", codigo: "NO_ESTAS_EN_MESA", mensaje: "Otra pestaña tomó tu asiento. Volviste al lobby." }));
+  });
   const billetera = new BilleteraSQL(conexion);
+  function desuscribirMesa(socket: SocketConexion): void {
+    if (socket.data.mesaId !== undefined) socket.unsubscribe(topicMesa(socket.data.mesaId));
+    delete socket.data.mesaId;
+  }
   function suscribirMesa(socket: SocketConexion, mesaId: string): void {
-    if (socket.data.mesaId !== undefined) socket.unsubscribe(`mesa:${socket.data.mesaId}`);
-    socket.subscribe(`mesa:${mesaId}`);
+    desuscribirMesa(socket);
+    socket.subscribe(topicMesa(mesaId));
     socket.data.mesaId = mesaId;
   }
   function limpiarMesa(socket: SocketConexion): void {
-    if (socket.data.mesaId !== undefined) socket.unsubscribe(`mesa:${socket.data.mesaId}`);
-    delete socket.data.mesaId;
+    conexiones.delete(socket.data.conexionId!);
+    desuscribirMesa(socket);
     if (socket.data.usuarioId === undefined) return;
     gestor.desconectar(socket.data.usuarioId, socket.data.conexionId!);
   }
@@ -44,14 +55,14 @@ export function iniciarAplicacion(conexion: SQL, puerto = PUERTO): Server<DatosC
       return { type: "mesa.estado", ...snapshot };
     },
     "mesa.salir": (socket) => {
-      const mesaId = gestor.salir(socket.data.usuarioId!, socket.data.conexionId!);
-      socket.unsubscribe(`mesa:${mesaId}`);
-      delete socket.data.mesaId;
+      gestor.salir(socket.data.usuarioId!, socket.data.conexionId!);
+      desuscribirMesa(socket);
       return { type: "ok" };
     },
   }, {
     mesaDeUsuario: (usuarioId) => gestor.mesaDeUsuario(usuarioId),
     alAutenticar: (socket, sesion) => {
+      conexiones.set(socket.data.conexionId!, socket);
       const mesaId = gestor.mesaDeUsuario(sesion.usuario.id);
       if (mesaId === null) return;
       const snapshot = gestor.unirse(mesaId, sesion.usuario, sesion.equipado, socket.data.conexionId!);

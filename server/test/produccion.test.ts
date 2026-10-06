@@ -28,8 +28,10 @@ describe("T-38: cliente y WebSocket en un puerto", () => {
     await Bun.write(join(dist, "assets/logo-final.svg"), "<svg></svg>");
     await Bun.write(join(dist, "manual-A1b2C3d4.html"), "Manual");
     await Bun.write(join(temporal, ".env"), "secreto-fuera-del-build");
-    await symlink(join(temporal, ".env"), join(dist, "enlace.env"));
-    await symlink(temporal, join(dist, "externo"));
+    // Windows comprueba la fuga del mismo archivo por una junction, sin requerir
+    // privilegios globales de symlink. En POSIX se comprueba además el enlace de archivo.
+    if (process.platform !== "win32") await symlink(join(temporal, ".env"), join(dist, "enlace.env"));
+    await symlink(temporal, join(dist, "externo"), process.platform === "win32" ? "junction" : "dir");
     servidor = iniciarServidor(0, undefined, () => { cierres += 1; cierre.resolve(); }, dist);
     sinBuild = iniciarServidor(0, undefined, undefined, join(temporal, "ausente"));
     url = `http://127.0.0.1:${servidor.port}`;
@@ -91,7 +93,8 @@ describe("T-38: cliente y WebSocket en un puerto", () => {
 
   test("traversal codificado y symlinks no exponen archivos fuera del build", async () => {
     for (const ruta of ["/%2e%2e%2f.env", "/assets/%2e%2e%2f%2e%2e%2f.env",
-      "/%5c..%5c.env", "/%00.env", "/enlace.env", "/externo/.env"]) {
+      "/%5c..%5c.env", "/%00.env", "/externo/.env",
+      ...(process.platform === "win32" ? [] : ["/enlace.env"])]) {
       const respuesta = await fetch(`${url}${ruta}`);
       expect(respuesta.status).toBe(404);
       expect(await respuesta.text()).not.toContain("secreto-fuera-del-build");

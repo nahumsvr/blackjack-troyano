@@ -1,10 +1,10 @@
 # Manual de instalación (borrador)
 
-Este manual describe el código disponible. Registro, login, reanudación y consulta de billetera funcionan con PostgreSQL; lobby, partidas y compras reales esperan integración. El cliente permite el recorrido completo con `?mock=1`. Bun sirve el build en producción; la comprobación independiente en otra laptop (T-14/T-48/T-55) está pendiente.
+Este manual describe esta rama de integración, que compone acceso, lobby, partidas y economía con PostgreSQL. El cliente también permite el recorrido con `?mock=1`. Bun sirve el build en producción. Typecheck, build y 326 pruebas con PostgreSQL 16.15 pasan sin fallos ni omisiones. La llegada de los cambios a `main` y la comprobación independiente en otra laptop (T-14/T-48/T-55) siguen pendientes; ver [entrega de Hector](../documentation/Entrega-Hector-2026-10-06.md).
 
 ## Requisitos
 
-- Bun 1.3.13, indicado en `package.json` y verificado con este manual; Bun 1.4.2 también funciona.
+- Bun 1.3.13, fijado en `package.json` y usado en la verificación actual. La corrida histórica también pasó con Bun 1.4.2.
 - Docker Engine y Docker Compose v2 o compatible (`docker compose version`). El servicio usa la imagen `postgres:16`.
 - Git para clonar, o un descompresor ZIP si recibiste `blackjack-equipo.zip`.
 - Opcional: `psql` para consultas SQL desde el anfitrión. También puedes usar el cliente incluido en el contenedor.
@@ -64,16 +64,16 @@ bun run test
 bun run empaquetar
 ```
 
-Las pruebas de economía necesitan una **base exclusiva de pruebas**, configurada con `TEST_DATABASE_URL`. La suite crea un esquema aleatorio, aplica `schema.sql` y `seed.sql` y elimina únicamente ese esquema al terminar. El usuario necesita permiso `CREATE SCHEMA`. Sin esa variable, esas pruebas aparecen explícitamente como omitidas.
+Las pruebas de economía y autenticación necesitan una **base exclusiva de pruebas**, configurada con `TEST_DATABASE_URL`. Cada suite crea un esquema aleatorio, aplica `schema.sql` y `seed.sql` y elimina únicamente ese esquema al terminar. El usuario necesita permiso `CREATE SCHEMA`. Sin esa variable, esas pruebas aparecen explícitamente como omitidas.
 
 Con las credenciales predeterminadas, crea la base de pruebas una vez y ejecuta:
 
 ```bash
 docker compose exec postgres createdb -U blackjack blackjack_pruebas
-TEST_DATABASE_URL=postgres://blackjack:blackjack_local@127.0.0.1:5432/blackjack_pruebas bun test server/test/economia.test.ts
+TEST_DATABASE_URL=postgres://blackjack:blackjack_local@127.0.0.1:5432/blackjack_pruebas bun run test
 ```
 
-Si modificaste `.env`, ajusta las credenciales y el puerto del ejemplo. Esta suite prepara sus propios datos; no requiere `db:reset`. Nunca apuntes pruebas a una base con datos que necesites conservar.
+Si modificaste `.env`, ajusta las credenciales y el puerto del ejemplo. El comando ejecuta todas las suites del proyecto; las suites SQL preparan sus propios datos y no requieren `db:reset`. Nunca apuntes pruebas a una base con datos que necesites conservar.
 
 El empaquetador genera `blackjack-equipo.zip` en la raíz, comprueba que mide menos de 20 MB y valida su contenido. Incluye fuentes, `README.md`, `docs/`, los documentos de seguimiento y `.env.example`. Excluye `node_modules`, `.git`, `.env`, archivos de entorno locales, `dist`, cobertura y archivos ZIP previos.
 
@@ -111,3 +111,5 @@ El esquema, el catálogo y el reinicio se verificaron en una instancia temporal 
 **Entorno objetivo (4 oct):** `docker compose up -d --wait` levantó PostgreSQL **16.15** sano y `psql $DATABASE_URL -c 'select 1'` respondió. Con **Bun 1.3.13** en un clon limpio, `db:reset` creó siete tablas y 14 artículos, y `typecheck` y la suite completa con `TEST_DATABASE_URL` (70 pruebas, 381 aserciones) pasaron sin fallos. El puerto 5432 estaba ocupado por otro PostgreSQL, así que se usó `POSTGRES_PORT=5433` como se indica en *Problemas habituales*.
 
 Este manual todavía no acredita instalación independiente en otra laptop ni juego con tres usuarios.
+
+**Después de T-08 (5 oct CDMX):** la corrida histórica de fuentes basada en `main` (`831dcd2`) más cambios locales del empaquetador se extrajo en una carpeta nueva. Instalación con lockfile fijo, typecheck, 203 pruebas SQL y build pasaron con Bun 1.4.2. Durante la revisión se repitieron en la misma copia extraída con **Bun 1.3.13 y PostgreSQL 16.15**: 203 pruebas / 3,402 aserciones, cero fallos/omisiones, typecheck/build correctos. Después de incorporar Carta/Baraja de PR #25, la rama documental pasó 208 pruebas / 3,438 aserciones con Bun 1.3.13. [Evidencia detallada](../documentation/Revision-PR-23.md). Los esquemas de prueba se eliminaron; el ZIP final, la instalación independiente y el juego completo siguen pendientes.

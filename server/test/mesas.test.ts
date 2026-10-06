@@ -20,6 +20,23 @@ test("los snapshots no permiten modificar los asientos autoritativos", () => {
 });
 
 const destino = process.env.TEST_DATABASE_URL;
+
+test("repetir la unión no publica; retomar refresca cosméticos sin cambiar ocupación", () => {
+  const mensajes: { topic: string; mensaje: MensajeServidor }[] = [];
+  const reemplazadas: string[] = [];
+  const gestor = new GestorMesas((topic, mensaje) => mensajes.push({ topic, mensaje }), (id) => reemplazadas.push(id));
+  const usuario = { id: 1, usuario: "jugador" };
+  gestor.unirse("mesa-1", usuario, EQUIPADO_INICIAL, "primera");
+  mensajes.length = 0;
+  gestor.unirse("mesa-1", usuario, EQUIPADO_INICIAL, "primera");
+  expect(mensajes).toHaveLength(0);
+  const snapshot = gestor.unirse("mesa-1", usuario, { ...EQUIPADO_INICIAL, avatar: "avatar_robot", reverso: "reverso_rojo" }, "segunda");
+  expect(snapshot.asientos[0]).toMatchObject({ avatar: "avatar_robot", reverso: "reverso_rojo", conectado: true });
+  expect(reemplazadas).toEqual(["primera"]);
+  expect(mensajes.map(({ topic }) => topic)).toEqual(["mesa:mesa-1"]);
+  gestor.desconectar(1, "primera");
+  expect(gestor.listar()[0]?.ocupados).toBe(1);
+});
 describe.skipIf(!destino)("GestorMesas con servidor completo", () => {
   let base: Awaited<ReturnType<typeof crearBasePruebas>>;
   let servidor: Server<DatosConexion>;
@@ -94,23 +111,44 @@ describe.skipIf(!destino)("GestorMesas con servidor completo", () => {
     expect(await cliente.enviar({ type: "lobby.listar" })).toMatchObject({ mesas: [{ ocupados: 1 }, { ocupados: 0 }, { ocupados: 0 }] });
   });
 
-  test("otra pestaña toma el asiento; la anterior recibe snapshots pero su cierre no libera al nuevo dueño", async () => {
+  test("otra pestaña toma el asiento; avisa y desuscribe a la anterior sin perder al nuevo dueño", async () => {
     const primera = await registrar();
     await primera.cliente.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
     const segunda = await conectar();
+    const reemplazo = primera.cliente.esperar((mensaje) => mensaje.type === "error" && mensaje.codigo === "NO_ESTAS_EN_MESA", primera.cliente.mensajes.length);
     const reanudada = await segunda.enviar({ type: "reanudar", token: primera.sesion.token });
+    const aviso = await reemplazo;
+    expect(aviso).toMatchObject({ type: "error", codigo: "NO_ESTAS_EN_MESA" });
+    expect(aviso.reqId).toBeUndefined();
     expect(reanudada).toMatchObject({ type: "sesion", mesaId: "mesa-1", usuario: primera.sesion.usuario });
     expect(segunda.mensajes.some((mensaje) => mensaje.type === "mesa.estado" && mensaje.reqId === undefined)).toBe(true);
     await segunda.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
     expect(await primera.cliente.enviar({ type: "mesa.salir" })).toMatchObject({ codigo: "NO_ESTAS_EN_MESA" });
     const desde = primera.cliente.mensajes.length;
     const tercero = await registrar();
-    const publicado = primera.cliente.esperar((mensaje) => mensaje.type === "mesa.estado" && mensaje.reqId === undefined && mensaje.asientos.filter(Boolean).length === 2, desde);
     await tercero.cliente.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
-    await publicado;
+    await primera.cliente.enviar({ type: "ping" });
+    expect(primera.cliente.mensajes.slice(desde).some((mensaje) => mensaje.type === "mesa.estado")).toBe(false);
     await primera.cliente.cerrar();
     expect(await segunda.enviar({ type: "lobby.listar" })).toMatchObject({ mesas: [{ ocupados: 2 }, { ocupados: 0 }, { ocupados: 0 }] });
     expect(await segunda.enviar({ type: "mesa.salir" })).toMatchObject({ type: "ok" });
+  });
+
+  test.each(["salir", "cerrar"] as const)("la pestaña reemplazada no recibe estados después de %s la dueña", async (modo) => {
+    const primera = await registrar();
+    await primera.cliente.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
+    const duena = await conectar();
+    const aviso = primera.cliente.esperar((mensaje) => mensaje.type === "error" && mensaje.codigo === "NO_ESTAS_EN_MESA", primera.cliente.mensajes.length);
+    await duena.enviar({ type: "login", usuario: primera.sesion.usuario.usuario, contrasena: "secreto09" });
+    await aviso;
+    const desde = primera.cliente.mensajes.length;
+    if (modo === "salir") await duena.enviar({ type: "mesa.salir" });
+    else await duena.cerrar();
+    const siguiente = await registrar();
+    await siguiente.cliente.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
+    await primera.cliente.enviar({ type: "ping" });
+    expect(primera.cliente.mensajes.slice(desde).some((mensaje) => mensaje.type === "mesa.estado")).toBe(false);
+    expect(await siguiente.cliente.enviar({ type: "lobby.listar" })).toMatchObject({ mesas: [{ ocupados: 1 }, { ocupados: 0 }, { ocupados: 0 }] });
   });
 
   test("logout y cierre del dueño liberan el asiento y publican lobby", async () => {

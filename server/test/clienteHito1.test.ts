@@ -6,10 +6,50 @@ import type { AlmacenToken } from "../../client/src/net/almacenToken";
 import { ControladorJuego } from "../../client/src/state/controlador";
 import { ESTADO_INICIAL, reducir, type EstadoJuego } from "../../client/src/state/reductor";
 import { iniciarAplicacion } from "../src/ws/aplicacion";
-import { crearBasePruebas } from "./soporteHito1";
+import { ClienteWsPrueba, crearBasePruebas } from "./soporteHito1";
 
 const destino = process.env.TEST_DATABASE_URL;
 describe.skipIf(!destino)("Cliente real del Hito 1", () => {
+  test("una segunda pestaña devuelve al cliente real al lobby y conserva su sesión", async () => {
+    const base = await crearBasePruebas(destino!);
+    const servidor = iniciarAplicacion(base.conexion, 0);
+    const modelo = { estado: ESTADO_INICIAL as EstadoJuego };
+    let token: string | null = null;
+    const almacen: AlmacenToken = { leer: () => token, guardar: (valor) => { token = valor; }, borrar: () => { token = null; } };
+    const url = `ws://127.0.0.1:${servidor.port}/ws`;
+    const controlador = new ControladorJuego(new Conexion({ url }), (evento) => { modelo.estado = reducir(modelo.estado, evento); }, almacen);
+    let segunda: ClienteWsPrueba | undefined;
+    async function esperar(condicion: () => boolean) {
+      const hasta = performance.now() + 8000;
+      while (!condicion()) {
+        if (performance.now() > hasta) throw new Error("El cliente no volvió al lobby");
+        await Bun.sleep(10);
+      }
+    }
+    try {
+      controlador.iniciar();
+      await esperar(() => modelo.estado.conexion === "conectado");
+      expect(await controlador.registrar("cliente_traspaso", "secreto09")).toBe(true);
+      expect(await controlador.unirseAMesa("mesa-1")).toBe(true);
+      const sesion = modelo.estado.sesion;
+      segunda = await ClienteWsPrueba.conectar(url);
+      await segunda.enviar({ type: "login", usuario: "cliente_traspaso", contrasena: "secreto09" });
+      await esperar(() => modelo.estado.mesaId === null && modelo.estado.avisos.length > 0);
+      expect(modelo.estado.mesa).toBeNull();
+      expect(modelo.estado.sesion).toEqual(sesion);
+      expect(almacen.leer()).toBe(sesion?.token ?? null);
+      await segunda.enviar({ type: "mesa.salir" });
+      expect(await controlador.listarLobby()).toBe(true);
+      expect(modelo.estado.mesaId).toBeNull();
+      expect(modelo.estado.lobby[0]?.ocupados).toBe(0);
+    } finally {
+      controlador.detener();
+      await segunda?.cerrar();
+      await servidor.stop(true);
+      await base.cerrar();
+    }
+  });
+
   test("tres clientes ven ocupación y reanudan las mismas sesiones al reiniciar servidor", async () => {
     const base = await crearBasePruebas(destino!);
     let servidor = iniciarAplicacion(base.conexion, 0);

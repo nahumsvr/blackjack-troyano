@@ -1,6 +1,6 @@
 /** Asientos autoritativos del lobby; T-18 incorporará el motor de cada mesa. */
 import { ErrorJuego, type Asiento, type Equipado, type MesaEstado, type MesaResumen, type MensajeServidor, type UsuarioVista } from "@blackjack/shared";
-import { CAPACIDAD_MESA, MESAS, TOPIC_LOBBY } from "../config";
+import { CAPACIDAD_MESA, MESAS, TOPIC_LOBBY, topicMesa } from "../config";
 
 /** Mantiene un solo asiento por usuario y una sola conexión propietaria del asiento. */
 export class GestorMesas {
@@ -11,12 +11,15 @@ export class GestorMesas {
   private readonly propietarios = new Map<number, string>();
 
   /**
+   * Construye las mesas e informa al transporte cuando otra conexión toma un asiento.
    * @param publicar - Transporte pub/sub; recibe mensajes del contrato sin reqId.
+   * @param alReemplazar - Retira la suscripción y avisa a la conexión anterior.
    * @returns Gestor en memoria, sin acceso a SQL o billeteras.
    */
-  constructor(private readonly publicar: (topic: string, mensaje: MensajeServidor) => void) {}
+  constructor(private readonly publicar: (topic: string, mensaje: MensajeServidor) => void,
+    private readonly alReemplazar: (conexionId: string) => void = () => {}) {}
 
-  /** @returns Resumen independiente de las tres mesas configuradas. */
+  /** Resume ocupación y capacidad para el lobby. @returns Copia de las tres mesas. */
   listar(): MesaResumen[] {
     return [...this.mesas].map(([id, mesa]) => ({
       id, nombre: mesa.nombre, ocupados: mesa.asientos.filter((asiento) => asiento !== null).length,
@@ -24,12 +27,13 @@ export class GestorMesas {
     }));
   }
 
-  /** @param usuarioId - Identidad autenticada. @returns Mesa ocupada o null. */
+  /** Localiza el asiento autoritativo. @param usuarioId - Identidad autenticada. @returns Mesa ocupada o null. */
   mesaDeUsuario(usuarioId: number): string | null {
     return this.ubicaciones.get(usuarioId) ?? null;
   }
 
   /**
+   * Obtiene una vista pública sin exponer los asientos internos.
    * @param mesaId - Mesa configurada.
    * @returns Copia pública; modificarla no altera asientos del servidor.
    * @throws ErrorJuego MESA_NO_EXISTE.
@@ -55,6 +59,7 @@ export class GestorMesas {
     const mesa = this.obtener(mesaId);
     const actual = this.mesaDeUsuario(usuario.id);
     if (actual !== null && actual !== mesaId) throw new ErrorJuego("YA_EN_OTRA_MESA");
+    let cambiado = false;
     if (actual === null) {
       const indice = mesa.asientos.findIndex((asiento) => asiento === null);
       if (indice < 0) throw new ErrorJuego("MESA_LLENA");
@@ -64,14 +69,24 @@ export class GestorMesas {
         apuesta: 0, cartas: [], total: 0, estado: "ESPERANDO_RONDA",
       };
       this.ubicaciones.set(usuario.id, mesaId);
+      cambiado = true;
+    } else {
+      const asiento = mesa.asientos.find((asiento) => asiento?.usuarioId === usuario.id)!;
+      cambiado = asiento.avatar !== equipado.avatar || asiento.reverso !== equipado.reverso || !asiento.conectado;
+      asiento.avatar = equipado.avatar;
+      asiento.reverso = equipado.reverso;
+      asiento.conectado = true;
     }
-    // Una pestaña reemplazada conserva la suscripción, pero pierde permiso para salir/actuar.
+    const anterior = this.propietarios.get(usuario.id);
+    // El gestor decide la transferencia; el transporte solo retira la conexión anterior.
     this.propietarios.set(usuario.id, conexionId);
-    this.publicarCambios(mesaId);
+    if (anterior !== undefined && anterior !== conexionId) this.alReemplazar(anterior);
+    if (cambiado) this.publicarCambios(mesaId, actual === null);
     return this.snapshot(mesaId);
   }
 
   /**
+   * Libera el asiento únicamente cuando la conexión que sale todavía es propietaria.
    * @param usuarioId - Usuario que solicita salir.
    * @param conexionId - Debe ser la conexión dueña, no una pestaña espectadora.
    * @returns Mesa cuyo asiento se liberó.
@@ -111,8 +126,9 @@ export class GestorMesas {
     this.publicarCambios(mesaId);
   }
 
-  private publicarCambios(mesaId: string): void {
-    this.publicar(`mesa:${mesaId}`, { type: "mesa.estado", ...this.snapshot(mesaId) });
-    this.publicar(TOPIC_LOBBY, { type: "lobby", mesas: this.listar() });
+  private publicarCambios(mesaId: string, ocupacionCambio = true): void {
+    this.publicar(topicMesa(mesaId), { type: "mesa.estado", ...this.snapshot(mesaId) });
+    // Transferir propiedad o refrescar cosméticos no cambia el resumen del lobby.
+    if (ocupacionCambio) this.publicar(TOPIC_LOBBY, { type: "lobby", mesas: this.listar() });
   }
 }

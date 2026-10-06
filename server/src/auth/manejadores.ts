@@ -6,8 +6,11 @@ import { Sesiones, type Sesion } from "./Sesiones";
 
 /** Integración opcional; auth conserva independencia del gestor de mesas. */
 export interface IntegracionSesion {
+  /** Localiza el asiento antes de enviar sesion; la identidad siempre proviene de SQL. */
   mesaDeUsuario?: (usuarioId: number) => string | null;
+  /** Vincula mesa y suscripciones tras autenticar, con la identidad ya disponible. */
   alAutenticar?: (socket: SocketConexion, sesion: Sesion) => void;
+  /** Libera recursos antes de borrar identidad al cerrar, revocar o caducar la sesión. */
   alCerrar?: (socket: SocketConexion) => void;
 }
 

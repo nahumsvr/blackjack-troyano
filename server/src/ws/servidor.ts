@@ -36,11 +36,23 @@ export function iniciarServidor(
         servidor.publish(TOPIC_LOBBY, JSON.stringify({ type: "bienvenida", conectados }));
       },
       close(socket) {
-        alCerrar?.(socket);
-        enrutador.cerrar(socket);
-        socket.unsubscribe(TOPIC_LOBBY);
-        conectados -= 1;
-        servidor.publish(TOPIC_LOBBY, JSON.stringify({ type: "bienvenida", conectados }));
+        try {
+          alCerrar?.(socket);
+        } catch (error) {
+          console.error("Error al limpiar la mesa", error);
+        } finally {
+          try {
+            enrutador.cerrar(socket);
+          } catch (error) {
+            console.error("Error al limpiar la sesion", error);
+          } finally {
+            // Ambos hooks deben ejecutarse: un fallo de mesa no conserva una sesión
+            // privada ni impide descontar la conexión que ya cerró el transporte.
+            socket.unsubscribe(TOPIC_LOBBY);
+            conectados -= 1;
+            servidor.publish(TOPIC_LOBBY, JSON.stringify({ type: "bienvenida", conectados }));
+          }
+        }
       },
       message(socket, datos) {
         return enrutador.manejar(socket, datos);
