@@ -21,6 +21,15 @@ export function crearEnrutadorAutenticado(
   sesiones: Sesiones, adicionales: ManejadoresEnrutador = {}, integracion: IntegracionSesion = {},
 ): Enrutador {
   const conexionesPorToken = new Map<string, Set<SocketConexion>>();
+  const pendientesPorToken = new Map<string, Promise<void>>();
+  async function conToken<T>(token: string, operacion: () => Promise<T>): Promise<T> {
+    const anterior = pendientesPorToken.get(token) ?? Promise.resolve();
+    const actual = anterior.catch(() => {}).then(operacion);
+    const fin = actual.then(() => {}, () => {});
+    pendientesPorToken.set(token, fin);
+    try { return await actual; }
+    finally { if (pendientesPorToken.get(token) === fin) pendientesPorToken.delete(token); }
+  }
   function limpiarSesion(socket: SocketConexion): void {
     if (socket.data.usuarioId !== undefined) socket.unsubscribe(`usuario:${socket.data.usuarioId}`);
     if (socket.data.token) {
@@ -50,18 +59,22 @@ export function crearEnrutadorAutenticado(
     ...adicionales,
     registro: async (socket, mensaje) => vincular(socket, await sesiones.registrar(mensaje.usuario, mensaje.contrasena)),
     login: async (socket, mensaje) => vincular(socket, await sesiones.login(mensaje.usuario, mensaje.contrasena)),
-    reanudar: async (socket, mensaje) => vincular(socket, await sesiones.validar(mensaje.token)),
+    // Validar y vincular son indivisibles frente a logout del mismo token en otra pestaña.
+    reanudar: (socket, mensaje) => conToken(mensaje.token.toLowerCase(), async () =>
+      vincular(socket, await sesiones.validar(mensaje.token))),
     logout: async (socket) => {
       if (!socket.data.token) throw new ErrorJuego("NO_AUTENTICADO");
       const token = socket.data.token;
-      await sesiones.cerrar(token);
-      // Un token reanudado en otra pestaña también deja de recibir eventos privados.
-      for (const conexion of [...conexionesPorToken.get(token) ?? []]) {
-        integracion.alCerrar?.(conexion);
-        if (conexion === socket) limpiarSesion(conexion);
-        else conexion.unsubscribe(`usuario:${conexion.data.usuarioId}`);
-      }
-      return { type: "ok" };
+      return conToken(token, async () => {
+        await sesiones.cerrar(token);
+        // Un token reanudado en otra pestaña también deja de recibir eventos privados.
+        for (const conexion of [...conexionesPorToken.get(token) ?? []]) {
+          integracion.alCerrar?.(conexion);
+          if (conexion === socket) limpiarSesion(conexion);
+          else conexion.unsubscribe(`usuario:${conexion.data.usuarioId}`);
+        }
+        return { type: "ok" };
+      });
     },
   }, undefined, async (socket) => {
     try {
