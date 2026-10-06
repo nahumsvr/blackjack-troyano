@@ -132,6 +132,90 @@ erDiagram
 
 El libro contable se trata como solo inserciones en la aplicación. El esquema no incluye un trigger que impida editarlo mediante acceso SQL administrativo; `db:reset` sí lo borra para preparar una base de desarrollo.
 
+### Diccionario de columnas
+
+Los tipos y restricciones siguientes corresponden a `server/db/schema.sql`. `PK` identifica la clave primaria; `FK`, una referencia a otra tabla. Las fechas usan `timestamptz`.
+
+**articulos**
+
+| Columna | Tipo | Uso y restricciones |
+|---|---|---|
+| `id` | varchar(40) | PK; identificador estable del catálogo |
+| `tipo` | varchar(10) | Obligatorio; avatar, reverso o tema |
+| `nombre` | varchar(60) | Nombre visible obligatorio |
+| `precio` | integer | Fichas requeridas, obligatorio y no negativo |
+| `activo` | boolean | Disponible para venta; obligatorio, true por defecto |
+
+**usuarios**
+
+| Columna | Tipo | Uso y restricciones |
+|---|---|---|
+| `id` | serial | PK; identidad interna generada |
+| `usuario` | varchar(20) | Obligatorio y único; 3–20 letras ASCII, dígitos o guion bajo |
+| `hash` | text | Hash Argon2id obligatorio; nunca se envía al cliente |
+| `dinero` | bigint | Dinero simulado; obligatorio, no negativo, 10000 por defecto |
+| `fichas` | bigint | Saldo disponible; obligatorio, no negativo, cero por defecto SQL; registro asigna 500 |
+| `avatar_id` | varchar(40) | FK a articulos; avatar equipado |
+| `reverso_id` | varchar(40) | FK a articulos; reverso equipado |
+| `tema_id` | varchar(40) | FK a articulos; tema local equipado |
+| `creado_en` | timestamptz | Fecha obligatoria; now() por defecto |
+
+**sesiones**
+
+| Columna | Tipo | Uso y restricciones |
+|---|---|---|
+| `token` | char(64) | PK; 32 bytes aleatorios codificados en hexadecimal por auth |
+| `usuario_id` | integer | FK obligatoria a usuarios; se elimina la sesión al borrar el usuario |
+| `creado_en` | timestamptz | Fecha obligatoria; now() por defecto |
+| `expira_en` | timestamptz | Vencimiento obligatorio; auth asigna siete días |
+
+**inventario**
+
+| Columna | Tipo | Uso y restricciones |
+|---|---|---|
+| `usuario_id` | integer | FK a usuarios; parte de PK; posesiones eliminadas con el usuario |
+| `articulo_id` | varchar(40) | FK a articulos; parte de PK; un artículo por usuario |
+| `adquirido_en` | timestamptz | Fecha obligatoria; now() por defecto |
+
+**movimientos**
+
+| Columna | Tipo | Uso y restricciones |
+|---|---|---|
+| `id` | bigserial | PK; orden del historial; se transmite como string |
+| `usuario_id` | integer | FK obligatoria al dueño del saldo |
+| `tipo` | varchar(20) | Obligatorio; registro, compra_fichas, apuesta, pago o compra_articulo |
+| `delta_dinero` | bigint | Cambio de dinero obligatorio; cero por defecto |
+| `delta_fichas` | bigint | Cambio de fichas obligatorio; cero por defecto; ambos deltas no pueden ser cero |
+| `dinero_despues` | bigint | Saldo de dinero posterior obligatorio y no negativo |
+| `fichas_despues` | bigint | Saldo de fichas posterior obligatorio y no negativo |
+| `referencia` | varchar(80) | Ronda o artículo asociado; puede ser null |
+| `clave` | varchar(64) | Compra idempotente; única por usuario cuando no es null |
+| `creado_en` | timestamptz | Fecha obligatoria; now() por defecto; compras fijan el reloj usado para el límite |
+
+**rondas** (persistencia preparada para T-21)
+
+| Columna | Tipo | Uso y restricciones |
+|---|---|---|
+| `id` | uuid | PK; identificador generado por el motor |
+| `mesa_id` | varchar(20) | Identificador obligatorio de mesa en memoria; no hay FK a una tabla de mesas |
+| `iniciada_en` | timestamptz | Inicio obligatorio |
+| `terminada_en` | timestamptz | Fin obligatorio; solo se guardan rondas terminadas |
+| `cartas_dealer` | jsonb | Mano final obligatoria; formato de cartas validado por el código |
+| `total_dealer` | smallint | Total final obligatorio |
+
+**rondas_jugadores** (persistencia preparada para T-21)
+
+| Columna | Tipo | Uso y restricciones |
+|---|---|---|
+| `ronda_id` | uuid | FK a rondas y parte de PK |
+| `usuario_id` | integer | FK a usuarios y parte de PK; una fila por jugador/ronda |
+| `asiento` | smallint | Obligatorio; entre 0 y 4 |
+| `apuesta` | integer | Obligatoria y mayor que cero |
+| `cartas` | jsonb | Mano final obligatoria |
+| `total` | smallint | Total final obligatorio |
+| `resultado` | varchar(10) | Obligatorio; blackjack, gana, empate, pierde o pasado |
+| `pago` | integer | Total devuelto, incluida la apuesta; obligatorio y no negativo |
+
 ## Transacciones y cantidades
 
 Toda operación monetaria bloquea `usuarios` con `SELECT ... FOR UPDATE`, valida los saldos y guarda saldo/movimiento en el mismo commit. Compras simultáneas del mismo usuario se serializan. Un fallo propaga el error después de rollback; ni saldo ni movimiento parcial quedan confirmados.
@@ -150,7 +234,7 @@ La transacción de `Sesiones.registrar` crea usuario con dinero inicial 10000 y 
 
 Las contraseñas se guardan como Argon2id; los tokens contienen 32 bytes aleatorios y expiran en siete días. El adaptador asocia identidad al socket después de validar SQL y comprueba la vigencia antes de cada intención protegida. La cola del enrutador conserva el orden de registro/login/logout en una conexión. `mesaId` sigue siendo null hasta integrar las mesas.
 
-Las pruebas crean sus propios usuarios y movimientos iniciales; no representan una implementación de registro ni sesiones.
+La suite de economía prepara usuarios y movimientos propios en su esquema aislado; la suite de autenticación ejercita el registro y las sesiones reales mediante SQL y sockets.
 
 ## Contrato WebSocket e integración
 
