@@ -104,6 +104,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Avance integrado en PR #7 (original #10, 2026-10-05):** billetera en un menú lateral accesible desde lobby y mesa; compra con validación previa (contrato y `disponibleHoy`), `clave` nueva por clic y botón deshabilitado mientras espera. En el mock: 1,000 actualiza saldo y disponible, el doble clic cobra una vez y 0, -10, 10.5, 15 y 1e9 no se envían. Falta probar contra T-24 por WebSocket (requiere T-07).
 - [ ] T-33 · Guion de exposición v1 (`docs/exposicion.md`): estructura, quién dice qué y tiempos (≈3 min cada uno), guion de la demo en vivo · Nahum · depende de: —
   - **Hecho cuando:** los 3 aprobaron el guion en el grupo y suma ≤ 9 min en papel.
+  - **v1 en PR #17, pendiente aprobación del grupo (2026-10-06):** `docs/exposicion.md` con bloques y tiempos (9:00), guion de la demo alineado con CHECKLIST §2, plan B, preguntas probables y checklist previo. Hector y Massimo ajustan sus bloques en el PR. Se marca al aprobarlo los 3; desbloquea T-51.
 
 ### Massimo
 - [ ] T-22 · 🔓 `server/src/db` (conexión `sql` de Bun, helper `enTransaccion`) + **interfaz `Billetera`** con JSDoc y firmas definitivas · Massimo · depende de: T-05
