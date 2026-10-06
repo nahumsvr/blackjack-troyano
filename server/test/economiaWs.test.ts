@@ -14,6 +14,7 @@ const destino = process.env.TEST_DATABASE_URL;
 (destino ? describe : describe.skip)("Economía por WebSocket con PostgreSQL real", () => {
   let base: Awaited<ReturnType<typeof crearBasePruebas>>;
   let servidor: Server<DatosConexion>;
+  let sesiones: Sesiones;
   const clientes: ClienteWsPrueba[] = [];
   async function conectar() {
     const cliente = await ClienteWsPrueba.conectar(`ws://127.0.0.1:${servidor.port}/ws`);
@@ -45,7 +46,8 @@ const destino = process.env.TEST_DATABASE_URL;
     base = await crearBasePruebas(destino!);
     const manejadores = crearManejadoresEconomia(new BilleteraSQL(base.conexion), new Tienda(base.conexion),
       (topic, mensaje) => servidor.publish(topic, JSON.stringify(mensaje)));
-    servidor = iniciarServidor(0, crearEnrutadorAutenticado(new Sesiones(base.conexion), manejadores));
+    sesiones = new Sesiones(base.conexion);
+    servidor = iniciarServidor(0, crearEnrutadorAutenticado(sesiones, manejadores));
   });
   afterEach(async () => { await Promise.all(clientes.splice(0).map((cliente) => cliente.cerrar())); });
   afterAll(async () => { servidor?.stop(true); if (base) await base.cerrar(); });
@@ -174,5 +176,55 @@ const destino = process.env.TEST_DATABASE_URL;
       expect(pestana.mensajes.slice(inicio).some((mensaje) => mensaje.type === "billetera")).toBe(false);
     }
     expect(await compartida.enviar({ type: "billetera.consultar" })).toMatchObject({ codigo: "SESION_INVALIDA" });
+  });
+
+  test("reanudar en vuelo termina de vincular antes de que logout revoque sus publicaciones", async () => {
+    const { cliente, sesion } = await registrar();
+    const reanudada = await conectar();
+    const independiente = await conectar();
+    await independiente.enviar({ type: "login", usuario: sesion.usuario.usuario, contrasena: "economia34" });
+    const validar = sesiones.validar.bind(sesiones);
+    const cerrar = sesiones.cerrar.bind(sesiones);
+    const leida = Promise.withResolvers<void>();
+    const liberar = Promise.withResolvers<void>();
+    const logoutValidado = Promise.withResolvers<void>();
+    let pausada = false;
+    let vincularLiberado = false;
+    let cerroAntes = false;
+    // Detiene la respuesta SQL ya leída para reproducir la ventana validar → vincular.
+    sesiones.validar = async (token) => {
+      const resultado = await validar(token);
+      if (token === sesion.token && !pausada) {
+        pausada = true;
+        leida.resolve();
+        await liberar.promise;
+      } else if (token === sesion.token) logoutValidado.resolve();
+      return resultado;
+    };
+    sesiones.cerrar = async (token) => {
+      if (!vincularLiberado) cerroAntes = true;
+      await cerrar(token);
+    };
+    try {
+      const entrada = reanudada.enviar({ type: "reanudar", token: sesion.token });
+      await leida.promise;
+      const salida = cliente.enviar({ type: "logout" });
+      await logoutValidado.promise;
+      await Bun.sleep(0);
+      expect(cerroAntes).toBe(false);
+      vincularLiberado = true;
+      liberar.resolve();
+      expect(await entrada).toMatchObject({ type: "sesion" });
+      expect(await salida).toMatchObject({ type: "ok" });
+      const desde = reanudada.mensajes.length;
+      await independiente.enviar({ type: "fichas.comprar", cantidad: 10, clave: crypto.randomUUID() });
+      await reanudada.enviar({ type: "ping" });
+      expect(reanudada.mensajes.slice(desde).some((mensaje) => mensaje.type === "billetera")).toBe(false);
+      expect(await reanudada.enviar({ type: "billetera.consultar" })).toMatchObject({ codigo: "SESION_INVALIDA" });
+    } finally {
+      liberar.resolve();
+      sesiones.validar = validar;
+      sesiones.cerrar = cerrar;
+    }
   });
 });
