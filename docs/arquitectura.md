@@ -1,6 +1,6 @@
 # Arquitectura de Blackjack Troyano
 
-Documento de implementación, actualizado el 5 de octubre de 2026 CDMX tras fusionar T-07/T-08 (PR #18/#19). El diseño completo está en [PLAN.md](../documentation/PLAN.md); las tareas y sus criterios de aceptación están en [TAREAS.md](../documentation/TAREAS.md). El cliente, el contrato y la autenticación están en `main`; faltan el motor de juego y la revisión final de Hector.
+Documento de implementación, actualizado el 5 de octubre de 2026 CDMX sobre `main` en `83165c6`, con T-07/T-08/T-15 fusionadas (PR #18/#19/#25). El diseño completo está en [PLAN.md](../documentation/PLAN.md); las tareas y sus criterios de aceptación están en [TAREAS.md](../documentation/TAREAS.md). El cliente, el contrato, la autenticación y Carta/Baraja están en `main`; faltan el motor de mesa y la revisión final de Hector.
 
 ## Módulos disponibles y pendientes
 
@@ -14,7 +14,7 @@ Documento de implementación, actualizado el 5 de octubre de 2026 CDMX tras fusi
 | `scripts/db-reset.ts` | Recreación atómica de tablas del proyecto con confirmación de destino | Instalación independiente según manual |
 | `client/` | Vite/React/Tailwind, red/reconexión/reqId, pantallas y mock; catálogo de solo lectura en mock (T-12) | Lobby y partidas reales, verificación de reconexión cliente, compras/historial e inventario completos |
 | `server/src/auth/` | `Sesiones` y adaptador autenticado: registro atómico, login, reanudar, logout, vigencia/revocación antes de cada intención protegida | Recuperación de asiento cuando exista el juego |
-| `server/src/game/` | Diseño documentado | GestorMesas, clases del juego y máquina de estados |
+| `server/src/game/` | `Carta` inmutable y `Baraja` de cuatro mazos con Fisher–Yates criptográfico (T-15) | GestorMesas, Mano/Dealer/Mesa y máquina de estados |
 
 El servidor disponible en `main` permite autenticar y consultar la billetera por WebSocket. Compras, inventario e historial tienen servicios SQL probados y esperan sus handlers; el lobby y las partidas requieren `GestorMesas` y el motor. El cliente cubre la interfaz completa con el mock. Las instrucciones disponibles están en [manual-instalacion.md](manual-instalacion.md).
 
@@ -30,7 +30,7 @@ flowchart LR
   WS --> ROUTER["ws/Enrutador"]
   SH["shared/: Zod, tipos y errores"]
   ROUTER --> SH
-  ROUTER -.->|handlers inyectados| AUTH
+  AUTH -->|construye e inyecta handlers| ROUTER
   AUTH --> SH
   AUTH --> TX
   AUTH --> Q
@@ -49,6 +49,8 @@ flowchart LR
   Q --> PG
   RESET["scripts/db-reset.ts"] --> PG
   RESET --> SQL["schema.sql + seed.sql"]
+  GAME["game/Baraja y Carta"] --> SH
+  GAME --> CFG
 ```
 
 `shared/` no depende de Bun ni del servidor; se importa desde ambos workspaces como `@blackjack/shared`. Los tipos de mensajes se infieren de Zod. La interfaz `Billetera` solo importa tipos compartidos; permite que el juego reciba una implementación falsa en memoria para sus pruebas.
@@ -91,17 +93,31 @@ classDiagram
   class Enrutador {
     +manejar(socket, datos) Promise~void~
   }
+  class Carta {
+    +palo string
+    +rango string
+    +valorBase() number
+    +aVista() CartaVisible
+  }
+  class Baraja {
+    +constructor(numMazos)
+    +restantes number
+    +barajar() void
+    +sacar() Carta
+    +necesitaRebarajar() boolean
+  }
   BilleteraSQL ..|> Billetera
   BilleteraSQL ..> ErrorJuego
   Tienda ..> ErrorJuego
   Sesiones ..> ErrorJuego
   Enrutador ..> ErrorJuego
-  Enrutador ..> Sesiones : adaptador auth inyectado
+  Baraja *-- Carta
+  Baraja ..> ErrorJuego
 ```
 
 `CompraArticulo` contiene `{inventario, billetera}`; `PaginaMovimientos`, `{items, hayMas}`. `Tienda` y `BilleteraSQL` comparten consultas y transacciones, sin que una clase invoque a la otra. `equipar` aún requiere a `GestorMesas` para validar la fase y publicar el nuevo snapshot; no se declara como método implementado.
 
-Las clases previstas `Carta`, `Baraja`, `Mano`, `Jugador`, `Dealer`, `Mesa` y `GestorMesas` se describen en PLAN §5. Todavía no existen en el código y deben incorporarse a este diagrama conforme se implementen. Auth y enrutador se comunican mediante handlers inyectados; el enrutador no importa SQL ni clases de autenticación.
+`Carta` y `Baraja` están implementadas desde PR #25; las firmas del diagrama corresponden a sus archivos reales. Las clases previstas `Mano`, `Jugador`, `Dealer`, `Mesa` y `GestorMesas` se describen en PLAN §5 y se incorporarán cuando se fusionen. La dependencia de autenticación hacia el enrutador está en la función `crearEnrutadorAutenticado` de `auth/manejadores.ts`, que importa y construye `Enrutador`. La clase `Sesiones` no depende de `Enrutador`, y `Enrutador` no importa SQL ni clases de autenticación.
 
 ## Persistencia
 
@@ -242,7 +258,7 @@ En [shared/protocolo.ts](../shared/protocolo.ts) hay 18 intenciones y 12 mensaje
 
 La validación rechaza campos desconocidos y no convierte cadenas a números. Si el único error es una `cantidad` presente de `apostar`/`fichas.comprar`, `crearErrorValidacion` devuelve `CANTIDAD_INVALIDA`; los errores de estructura, cantidad faltante y tipos desconocidos devuelven `MENSAJE_INVALIDO`. `ErrorJuego(codigo)` proporciona el mensaje español para fallos de dominio. El enrutador convierte excepciones inesperadas a `ERROR_INTERNO` y registra sus detalles sin exponerlos al cliente.
 
-Los límites de apuesta y compra se definen una sola vez en `LIMITES_CANTIDAD` (`shared/protocolo.ts`). `MensajeClienteSchema` los aplica, el cliente los usa en sus formularios y `server/src/config.ts` los re-exporta para `BilleteraSQL`, así que el enrutador usa `MensajeClienteSchema` directamente. El esquema no implementa los controles de tamaño 16 KB, ritmo 20/s, autenticación o permisos: corresponden a T-07/T-37.
+Los límites de apuesta y compra se definen una sola vez en `LIMITES_CANTIDAD` (`shared/protocolo.ts`). `MensajeClienteSchema` los aplica, el cliente los usa en sus formularios y `server/src/config.ts` los re-exporta para `BilleteraSQL`, así que el enrutador usa `MensajeClienteSchema` directamente. El tamaño de 16 KB ya se controla en `Enrutador` (T-07), y el adaptador de auth valida la sesión antes de cada intención protegida (T-08). Los permisos de fase/turno esperan el motor; el límite de ritmo de 20/s sigue pendiente en T-37. Esos controles pertenecen al servidor, fuera del esquema Zod.
 
 Los snapshots `mesa.estado` contienen los campos de `MesaEstado` directamente en la raíz. Los cinco asientos tienen índice coincidente con su posición. La carta oculta solo puede contener `{oculta:true}`, con total del dealer `null`; antes de `DEALER` hay como máximo una carta visible y en `DEALER/PAGOS` todas están reveladas.
 
@@ -283,6 +299,6 @@ stateDiagram-v2
 
 ## Verificación y cierre pendiente
 
-`server/test/protocolo.test.ts` verifica un ejemplo válido/inválido por mensaje, tipos desconocidos, cantidades, errores públicos, IDs sin pérdida de precisión y protección del snapshot. `server/test/servidor.test.ts` comprueba conteos con tres conexiones WebSocket reales. Las pruebas de economía están en `server/test/economia.test.ts` y requieren una base PostgreSQL exclusiva de pruebas, según el manual.
+`server/test/protocolo.test.ts` verifica un ejemplo válido/inválido por mensaje, tipos desconocidos, cantidades, errores públicos, IDs sin pérdida de precisión y protección del snapshot. `server/test/servidor.test.ts` comprueba conteos con tres conexiones WebSocket reales. `enrutador.test.ts` cubre mensajes malformados, tamaño UTF-8, correlación y continuidad del servidor; `autenticacion.test.ts`, registro atómico, credenciales, revocación y recuperación de sesiones persistentes. `baraja.test.ts` verifica Carta/Baraja, extracción sin reemplazo y el umbral de 52/51. Las pruebas de economía están en `economia.test.ts`; economía/auth requieren PostgreSQL de pruebas, según el manual.
 
-Antes de cerrar T-32/T-50: agregar las clases reales del juego/auth/router, confirmar publicación de eventos y dependencias del cliente, completar equipamiento/persistencia de rondas, renderizar los diagramas en GitHub y obtener revisión de Hector. El juego desde tres laptops, los manuales independientes y el paquete final mantienen sus propios criterios de aceptación.
+Antes de cerrar T-32/T-50: incorporar las clases reales de mesa/mano/dealer y su integración cuando se fusionen, confirmar publicación de eventos y dependencias del cliente, completar equipamiento/persistencia de rondas, renderizar los diagramas en GitHub y obtener revisión de Hector. Auth, router y Carta/Baraja ya se describen aquí. El juego desde tres laptops, los manuales independientes y el paquete final mantienen sus propios criterios de aceptación.

@@ -19,7 +19,7 @@ El cliente React (Vite + Tailwind) tiene:
 - billetera e historial en un menú lateral;
 - reconexión automática.
 
-Para recorrer mesa, compras e historial completos se usa el servidor falso en `http://localhost:5173/?mock=1`. En la URL sin `?mock=1`, el acceso es real; tras entrar, el lobby aún no puede listar mesas y muestra un aviso por esa operación pendiente.
+Para recorrer mesa, compras e historial completos se usa el servidor falso en `http://localhost:5173/?mock=1`. En la URL sin `?mock=1`, el acceso es real; tras entrar, `lobby.listar` todavía no tiene handler y devuelve `ERROR_INTERNO`. El lobby queda vacío y muestra «Ocurrió un error interno; intenta de nuevo»; no existe un aviso específico de función pendiente.
 
 ## Requisitos y arranque
 
@@ -65,7 +65,7 @@ Las pruebas del transporte cubren conexiones, validación y respuestas correlaci
 
 El entorno objetivo se verificó el 4 de octubre: Compose levanta PostgreSQL 16.15. Con Bun 1.3.13 en un clon limpio, `db:reset` crea siete tablas y 14 artículos, `typecheck` pasa y la suite completa (70 pruebas, incluida la economía) termina sin fallos. Las restricciones de saldo e inventario se comprobaron directamente en SQL.
 
-Después de integrar T-08, una copia extraída del ZIP de fuentes de `main` (`831dcd2`) pasó instalación con lockfile fijo, typecheck, 203 pruebas con PostgreSQL 16.15 y build del cliente. Esta comprobación con Bun 1.4.2 no sustituye la instalación independiente ni las pruebas del juego completo.
+La corrida histórica del 5 oct, basada en `main` (`831dcd2`) más cambios locales del empaquetador, pasó instalación con lockfile fijo, typecheck, 203 pruebas con PostgreSQL 16.15 y build con Bun 1.4.2. Durante la revisión del PR #23 se repitieron esas comprobaciones en la misma copia extraída con **Bun 1.3.13**: 203 pruebas / 3,402 aserciones, cero fallos u omisiones, typecheck/build correctos. La rama actual, que incorpora Carta/Baraja de PR #25, pasó 208 pruebas con esa misma versión objetivo. [Evidencia de revisión](documentation/Revision-PR-23.md). Esto no acredita instalación independiente ni el ZIP final.
 
 ## Organización
 
