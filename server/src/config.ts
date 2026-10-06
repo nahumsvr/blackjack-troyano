@@ -9,6 +9,8 @@ export const PUERTO = 3000;
 export const RUTA_WS = "/ws";
 /** Topic compartido por las conexiones del lobby. */
 export const TOPIC_LOBBY = "lobby";
+/** Límite del protocolo medido en bytes UTF-8, antes de decodificar JSON. */
+export const MENSAJE_MAX_BYTES = 16 * 1024;
 /*
  * Los límites de cantidad se definen una sola vez en `LIMITES_CANTIDAD` (shared/protocolo.ts)
  * porque el cliente los necesita para validar formularios y `shared/` no puede importar
