@@ -3,8 +3,9 @@
  * - Sin sesión → acceso.
  * - Con mesa (el servidor nos sentó) → mesa.
  * - Si no → lobby.
- * La billetera y el historial viven en un menú lateral común, que se abre desde el botón de
- * fichas de cualquier pantalla con sesión; T-39/T-40 pueden agregarle pestañas (tienda, inventario).
+ * La billetera, el historial y la tienda (solo lectura) viven en un menú lateral común, que se
+ * abre desde el botón de fichas de cualquier pantalla con sesión; T-39/T-40 agregarán la compra
+ * y el inventario.
  */
 import { useCallback, useState, type ReactNode } from "react";
 import { Avisos } from "./components/Avisos";

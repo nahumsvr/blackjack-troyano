@@ -152,6 +152,15 @@ export class ControladorJuego {
   }
 
   /**
+   * Pide el catálogo de la tienda; la respuesta `catalogo` llega por `alEvento` y el reductor
+   * la guarda en `estado.catalogo`. Por ahora solo se consulta (la compra es T-39).
+   * @returns `true` si se recibió el catálogo.
+   */
+  cargarCatalogo(): Promise<boolean> {
+    return this.ejecutar({ type: "tienda.catalogo" });
+  }
+
+  /**
    * Carga el historial de movimientos.
    * @param antesDe - Id del último movimiento visible para "ver más"; sin él se carga la primera página.
    * @returns `true` si se recibió la página.

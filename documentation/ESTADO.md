@@ -29,16 +29,17 @@ Solo se cuentan tareas con PR fusionado en `main` y criterio de "hecho" comproba
 | Dev | Completadas | Total | % |
 |---|---|---|---|
 | Hector | 2 | 19 | 11 % |
-| Nahum | 1 | 17 | 6 % |
+| Nahum | 2 | 17 | 12 % |
 | Massimo | 7 | 19 | 37 % |
 | Equipo | 0 | 2 | 0 % |
-| **Total** | **10** | **57** | **18 %** |
+| **Total** | **11** | **57** | **19 %** |
 
-Avance por hito: H1 6/14 (43 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 · H5 0/5 · Entrega 0/1
+Avance por hito: H1 7/14 (50 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 · H5 0/5 · Entrega 0/1
 
 - **Hechas:**
   - T-01 y T-02 (Hector); la protección de `main` se aplicó y verificó hoy.
   - T-10 (Nahum, PR #6 fusionado en `main`; marca restaurada desde `main` durante la revisión del PR #7).
+  - T-12 (Nahum, PR #16): vista de tienda de solo lectura en `?mock=1`.
   - T-04, T-05, T-23, T-24, T-25 y T-34 (Massimo). Su criterio está verificado con PostgreSQL 16 en Avance-M-02, que indicaba marcarlas al fusionarse el PR #4.
 - **Fusionadas con un gate pendiente** (no cuentan):
   - T-06: prueba visual.
@@ -48,11 +49,11 @@ Avance por hito: H1 6/14 (43 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 ·
 
 ## Bloqueos activos
 
-- **T-07 (enrutador) sin publicar:** bloquea T-08, T-09, T-18 y las pruebas reales del cliente:
+- **T-07 implementada en PR #18 (borrador), pendiente revisión/fusión:** validación y despacho comprobados; los handlers de T-08, T-09 y T-18 siguen pendientes para las pruebas reales del cliente:
   - T-13 espera T-08 y T-09;
   - T-28 y T-29 esperan T-18 y T-20;
   - T-30 y T-41 esperan los handlers de T-24/T-34 conectados al enrutador.
-- **Cliente integrado (PR #7):** T-11 sigue pendiente de recuperar la misma sesión con `reanudar` real (T-08); T-12 requiere mostrar el catálogo en una vista accesible desde el mock.
+- **Cliente integrado (PR #7):** T-11 sigue pendiente de recuperar la misma sesión con `reanudar` real (T-08).
 - **T-06 — prueba visual:** falta abrir `scripts/verificar-ws.html` en tres pestañas.
 - **T-42** espera T-36. **T-35** espera `GestorMesas` (T-09/T-18). **T-31** espera T-20, T-21, T-28 y T-24.
 
@@ -62,8 +63,8 @@ Avance por hito: H1 6/14 (43 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 ·
   - T-07 enrutador → T-08/T-09 (desbloquean T-13) → T-15 y T-18.
   - Prueba visual de T-06.
 - **Nahum:**
-  - **Siguiente paso inmediato: T-12** — agregar a `?mock=1` una vista de tienda que muestre el catálogo de ejemplo de `tienda.catalogo`. La vista de lectura cumple el criterio de T-12; la compra y confirmación de T-39 siguen pospuestas.
-  - T-27: página de prueba con las 52 cartas → T-33 guion → borradores de T-49 (manual) y T-51 (diapositivas) con capturas del mock.
+  - T-33 guion de exposición (PR abierto, pendiente de aprobación del grupo).
+  - T-27 (desbloqueada por T-12): página de prueba con las 52 cartas → borradores de T-49 (manual) y T-51 (diapositivas) con capturas del mock.
   - En cuanto existan T-08 y T-09, verificar T-13 contra el servidor real.
 - **Massimo:**
   - Preparar la verificación de checklist T-44 cuando el equipo acuerde el corte.
@@ -74,6 +75,7 @@ Avance por hito: H1 6/14 (43 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 ·
 
 | Fecha | Nota |
 |---|---|
+| 2026-10-05 | Hector: T-07 implementada desde main con el contrato de PR #14 y cliente de PR #7 revisados; PR #18 en borrador. Typecheck correcto, 166 pruebas sin fallos (29 SQL omitidas por falta de TEST_DATABASE_URL) y build del cliente correcto. Seis pruebas nuevas con sockets reales cubren ataques, UTF-8, reqId, autorización y fallos async. T-06 visual sigue pendiente: el navegador no inició por fallo de ACL del entorno. |
 | 2026-09-29 | Plan aprobado: `PLAN.md`, `TAREAS.md`, `ESTADO.md`, `CHECKLIST_ENTREGA.md`, `CLAUDE.md` creados. 57 tareas, 0 % completado. |
 | 2026-10-01 | Hector: T-01 preparada localmente en t-01-monorepo-bun. bun install en clon limpio y typecheck correctos. Sin tests aun. PR #1 abierto; no se contabiliza como fusionada. |
 | 2026-10-01 | Hector: plantilla T-02 publicada en PR #2 (borrador). Nahum aplicara la proteccion de main; pendiente comprobar rechazos. |
@@ -97,3 +99,4 @@ Avance por hito: H1 6/14 (43 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 ·
 | 2026-10-05 | Auditoría documental: `origin/main` contiene PR #14 (`7bf4e89`), con límites únicos desde `shared`; se revisaron README, ESTADO y arquitectura. |
 | 2026-10-06 | PR #7 fusionado en `main` (`ea8c33f`); revisión aprobada verificó consumo del contrato, 187 pruebas, typecheck y build. T-03 marcada hecha; T-11 sigue pendiente de `reanudar` real (T-08) y T-12 de mostrar el catálogo en el mock. Avance 10/57 (18 %). |
 | 2026-10-06 | Nahum: T-33 v1 en PR #17 (`docs/exposicion.md`, 9:00 en papel); pendiente aprobación de los 3. |
+| 2026-10-06 | T-12 hecha por Nahum (PR #16): pestaña «Tienda» de solo lectura en el menú lateral con el catálogo del mock; desbloquea T-27. Avance 11/57 (19 %). |
