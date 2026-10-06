@@ -28,4 +28,14 @@ Se descargó Bun 1.3.13 aislado, sin modificar la versión global. Las pruebas u
 
 Estas comprobaciones resuelven la diferencia de versiones señalada. No convierten la copia histórica en el ZIP final ni acreditan instalación independiente o juego con tres laptops. T-15/T-16 sí se marcan: su código está fusionado y sus pruebas verifican cartas únicas/umbral de rebarajado y dieciséis casos de manos/dealer del criterio.
 
-Antes de integrar la documentación, actualizar PR #26 sobre esta rama y conservar sus capturas/criterios sin reintroducir los textos anteriores. La nueva cuenta base es 15/57 (Hector 6/19, H1 9/14, H2 5/19); la evidencia T-06 de #26 añade una tarea más al incorporarse.
+En la primera revisión, la base era 15/57 (Hector 6/19, H1 9/14, H2 5/19). PR #26 conserva sus capturas y añade T-06 al incorporarse; la cuenta actual se registra en la segunda revisión siguiente.
+
+## Segunda revisión — 6 oct 2026 CDMX
+
+Se conservaron los cambios remotos que integran `main` en `c2daf78` (PR #20). Se elimina la duplicación de filas T-07/T-15/T-16, se ordena todo el registro por fecha local y se incluye PR #20 en el resumen. Verificación directa: las filas de datos son únicas y sus fechas no decrecen.
+
+Hoy corresponde H5, martes 6; la conversión UTC de la revisión anterior del lunes permanece como dato histórico. El encabezado de pendientes se actualiza a la fecha actual.
+
+T-54 se marca por su código fusionado y criterio comprobado: Bun 1.3.13 generó `blackjack-equipo.zip`, 124 archivos/272,903 bytes, y `unzip -t` del sistema pasó. La base documental cuenta16/57 (28 %), Massimo8/19 (42 %), H5 1/5. T-06 añade una tarea en su PR de evidencia; T-48/T-55 no se cierran.
+
+Gate de la rama actual con PR #20: Bun 1.3.13/PostgreSQL 16.15, typecheck y **234 pruebas /3,526 aserciones**, cero fallos/omisiones. El build del cliente ya fue comprobado sobre `af772d8`; PR #20 solo añade empaquetado/seguimiento, sin modificar el cliente.
