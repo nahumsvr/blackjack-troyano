@@ -8,6 +8,7 @@ import { Tienda } from "../src/store/Tienda";
 import { crearManejadoresEconomia } from "../src/store/manejadores";
 import type { DatosConexion, SocketConexion } from "../src/ws/Enrutador";
 import { iniciarServidor } from "../src/ws/servidor";
+import { iniciarAplicacion } from "../src/ws/aplicacion";
 import { ClienteWsPrueba, crearBasePruebas } from "./soporteHito1";
 
 const destino = process.env.TEST_DATABASE_URL;
@@ -206,5 +207,43 @@ const destino = process.env.TEST_DATABASE_URL;
     await cliente.cerrar();
     await cierre.promise;
     expect(identidadAlCerrar).toBe(sesion.usuario.id);
+  });
+
+  test("composición de mesas libera al dueño compartido en logout y en caducidad SQL inactiva", async () => {
+    const servidor = iniciarAplicacion(base.conexion, 0);
+    servidores.push(servidor);
+    async function conectar() {
+      const cliente = await ClienteWsPrueba.conectar(`ws://127.0.0.1:${servidor.port}/ws`);
+      clientes.push(cliente);
+      return cliente;
+    }
+    const original = await conectar();
+    const par = await conectar();
+    const observador = await conectar();
+    const usuario = `mesa_${crypto.randomUUID().replaceAll("-", "").slice(0, 12)}`;
+    const sesion = await original.enviar({ type: "registro", usuario, contrasena: "revision21" });
+    if (sesion.type !== "sesion") throw new Error("Falló registro de composición");
+    const registroObservador = await observador.enviar({ type: "registro", usuario: `obs_${usuario.slice(-12)}`, contrasena: "revision21" });
+    expect(registroObservador).toMatchObject({ type: "sesion" });
+    await original.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
+    await par.enviar({ type: "reanudar", token: sesion.token });
+    await original.enviar({ type: "logout" });
+    const libre = await observador.enviar({ type: "lobby.listar" });
+    if (libre.type !== "lobby") throw new Error("Falló lobby tras logout");
+    expect(libre.mesas[0]?.ocupados).toBe(0);
+    const nueva = await par.enviar({ type: "login", usuario, contrasena: "revision21" });
+    if (nueva.type !== "sesion") throw new Error("La pestaña revocada no pudo iniciar sesión");
+    await original.enviar({ type: "reanudar", token: nueva.token });
+    // Adelanta únicamente la expiración de este token en el schema de prueba.
+    await base.conexion`UPDATE sesiones SET expira_en = clock_timestamp() + INTERVAL '1 second' WHERE token = ${nueva.token}`;
+    await par.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
+    const desde = par.mensajes.length;
+    const originalDesde = original.mensajes.length;
+    await Promise.all(([[par, desde], [original, originalDesde]] as const).map(([pestana, inicio]) =>
+      pestana.esperar((mensaje) => mensaje.type === "error" && mensaje.reqId === undefined, inicio, 2000)));
+    const trasCaducidad = await observador.enviar({ type: "lobby.listar" });
+    if (trasCaducidad.type !== "lobby") throw new Error("Falló lobby tras caducidad");
+    expect(trasCaducidad.mesas[0]?.ocupados).toBe(0);
+    expect(await par.enviar({ type: "login", usuario, contrasena: "revision21" })).toMatchObject({ type: "sesion" });
   });
 });
