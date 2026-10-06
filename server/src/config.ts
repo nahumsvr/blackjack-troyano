@@ -14,6 +14,8 @@ export const MENSAJE_MAX_BYTES = 16 * 1024;
 /** Zapato de cuatro mazos; reposición entre rondas por debajo del 25 %. */
 export const NUM_MAZOS = 4;
 export const UMBRAL_REBARAJAR = 0.25;
+/** El dealer se planta también si el total objetivo es blando. */
+export const DEALER_PLANTARSE_EN = 17;
 /*
  * Los límites de cantidad se definen una sola vez en `LIMITES_CANTIDAD` (shared/protocolo.ts)
  * porque el cliente los necesita para validar formularios y `shared/` no puede importar
