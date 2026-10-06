@@ -14,6 +14,7 @@ export interface DatosConexion {
   token?: string;
   usuario?: UsuarioVista;
   equipado?: Equipado;
+  alCerrar?: () => void;
 }
 export type SocketConexion = ServerWebSocket<DatosConexion>;
 type TipoManejado = Exclude<MensajeCliente["type"], "ping">;

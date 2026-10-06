@@ -34,6 +34,7 @@ export function iniciarServidor(
       },
       close(socket) {
         alCerrar?.(socket);
+        socket.data.alCerrar?.();
         socket.unsubscribe(TOPIC_LOBBY);
         conectados -= 1;
         servidor.publish(TOPIC_LOBBY, JSON.stringify({ type: "bienvenida", conectados }));
