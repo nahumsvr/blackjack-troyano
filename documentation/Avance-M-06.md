@@ -6,8 +6,8 @@ Auditoría de `main` en `04802be` (actualizada tras fusionar #35, #28 y #22 en `
 
 | Ubicación | Trabajo disponible | Límite de aceptación |
 |---|---|---|
-| `main` | Contrato, BD y servicios SQL; cliente/mock; enrutador/auth; Carta/Baraja/Mano/Dealer; ZIP; arquitectura y evidencia T-06/T-11 | Lobby, compras WS, producción y motor todavía no están integrados |
-| `main` (`42b5b65`) | Tres mesas/asientos (#22, con #21 y #24), resolución de resultados y pagos (#28) y muestrario (#35) | T-38 abierta hasta jugar desde otra laptop; no hay rondas reales hasta integrar la cadena #29–#33 |
+| `main` (`04802be`) | Contrato, BD y servicios SQL; cliente/mock; enrutador/auth; Carta/Baraja/Mano/Dealer; ZIP; arquitectura y evidencia T-06/T-11 | Base de la auditoría; lobby, compras WS y producción llegaron después con #22 (fila siguiente) |
+| `main` (`42b5b65`) | Tres mesas/asientos y lobby (#22), economía, compras e historial por WebSocket (#21), producción en un puerto (#24), resolución de resultados y pagos (#28) y muestrario (#35) | Solo falta integrar el motor (cadena #29–#33) para tener rondas reales; T-38 abierta hasta jugar desde otra laptop |
 | Cadena #29 → #30 → #31 → #32 → #33 | Resolución de manos, Mesa, relojes, acciones/billetera, liquidación SQL e historial, bots | Revisiones/rebases y aceptación final pendientes; conservar las correcciones nuevas de economía/auth/producción |
 
 Avance: **21/57 (37 %)**. Hector 9/19 (47 %), Nahum 4/17 (24 %), Massimo 8/19 (42 %). H1 12/14, H2 7/19, H3 1/10, H4 0/8, H5 1/5. Semáforo rojo por hitos incumplidos; no existe `v0.9-congelado`.

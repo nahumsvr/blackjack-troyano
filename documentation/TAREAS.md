@@ -154,7 +154,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 - [ ] T-37 · Endurecimiento: límite de 20 mensajes/s, acciones de espectadores rechazadas, `ERROR_INTERNO` sin tumbar el proceso, logs claros · Hector · depende de: T-07
   - **Hecho cuando:** un script que manda 1,000 mensajes basura en 1 s recibe errores y las otras pestañas siguen jugando sin retraso notable.
 - [ ] T-38 · En producción el servidor sirve `client/dist` (un solo puerto 3000) y el cliente usa el mismo host para `/ws` · Hector · depende de: T-10
-  - **Estado auditado (2026-10-06):** PR #24 aprobado/fusionado dentro de la rama de #22, todavía fuera de main. Código de estáticos/caché y scripts preparado; falta integración, juego y prueba desde otra laptop para cerrar.
+  - **Estado auditado (2026-10-06):** PR #24 se fusionó en la rama de #22 y llegó a `main` con el squash de #22 (`42b5b65`): estáticos/caché y scripts `build`/`start` disponibles. Faltan la revisión de Hector posterior a la fusión y jugar desde otra laptop por IP para cerrar.
   - **Hecho cuando:** `bun run build && bun run start` y otra laptop abre `http://<ip>:3000` y juega.
   - **Desbloqueada (2026-10-05):** T-10 ya está en `main` (PR #6). El cliente construye la URL de `/ws` con el mismo host, así que funciona servido por Bun sin cambios.
 
@@ -208,7 +208,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Preparación local (2026-10-04):** Los nuevos archivos shared/db/store incluyen comentarios de propósito y documentación de APIs. Revisión final de Hector y gate T-43 pendientes. Incluido en PR #4 (abierto).
   - **Hecho cuando:** ninguna función exportada queda sin JSDoc (revisado por Hector).
 - [ ] T-48 · `docs/manual-instalacion.md`: requisitos con versiones, clonar/descomprimir, `.env`, Docker, `db:reset`, `build`, `start`, cómo conectarse desde otra laptop, problemas comunes (puerto ocupado, firewall) · Massimo · depende de: T-38
-  - **Avance — PR #23 fusionado (2026-10-06):** documentación corregida y entorno Bun 1.3.13/PostgreSQL 16 comprobado. Producción de #24 espera #22; la instalación desde cero por Nahum siguiendo únicamente el manual continúa pendiente.
+  - **Avance — PR #23 fusionado (2026-10-06):** documentación corregida y entorno Bun 1.3.13/PostgreSQL 16 comprobado. Producción de #24 ya está en `main` (con #22); la instalación desde cero por Nahum siguiendo únicamente el manual continúa pendiente.
   - **Preparación local (2026-10-04):** Borrador docs/manual-instalacion.md disponible; build/start, PostgreSQL 16 y prueba independiente de Nahum pendientes. Incluido en PR #4 (abierto).
   - **Hecho cuando:** Nahum instala desde cero en su laptop siguiendo solo el manual.
 - [ ] T-50 · `docs/arquitectura.md` final: descripción de cada tabla + `schema.sql`/`seed.sql` referenciados, diagrama de clases, diagrama de dependencias, protocolo, máquina de estados, decisiones de diseño · Massimo · depende de: T-32, T-45
