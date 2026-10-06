@@ -4,6 +4,7 @@ import type { MensajeServidor } from "@blackjack/shared";
 import type { AlmacenToken } from "../src/net/almacenToken";
 import { ErrorPeticion } from "../src/net/erroresLocales";
 import type { Intencion } from "../src/net/transporte";
+import { ServidorFalso } from "../src/mock/servidorFalso";
 import { ControladorJuego } from "../src/state/controlador";
 import { ESTADO_INICIAL, reducir, type EstadoJuego, type EventoJuego } from "../src/state/reductor";
 import { RelojManual, SESION, TOKEN, TransporteFalso, mesa, vaciarPromesas } from "./apoyo";
@@ -179,6 +180,21 @@ describe("acciones", () => {
     await controlador.listarMovimientos();
     await controlador.listarMovimientos("2");
     expect(estado.movimientos?.items.map((item) => item.id)).toEqual(["2", "1"]);
+  });
+
+  test("cargar el catálogo con el mock deja los 14 artículos y los gratuitos como poseídos", async () => {
+    const servidor = new ServidorFalso({ latenciaMs: 0 });
+    estado = ESTADO_INICIAL;
+    controlador = new ControladorJuego(servidor, (evento) => (estado = reducir(estado, evento)), new AlmacenMemoria());
+    controlador.iniciar();
+    await Bun.sleep(1);
+    expect(await controlador.iniciarSesion("demo", "secreta")).toBe(true);
+    expect(await controlador.cargarCatalogo()).toBe(true);
+    expect(estado.catalogo).toHaveLength(14);
+    const poseidos = estado.catalogo?.filter((articulo) => articulo.poseido) ?? [];
+    expect(poseidos.map((articulo) => articulo.id).sort()).toEqual(["avatar_basico", "reverso_clasico", "tema_verde"]);
+    expect(poseidos.every((articulo) => articulo.precio === 0)).toBe(true);
+    controlador.detener();
   });
 
   test("un error espontáneo del servidor (sin reqId) se muestra como aviso", () => {

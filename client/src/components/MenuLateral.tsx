@@ -1,5 +1,5 @@
 /**
- * Menú lateral (cajón que se desliza desde la derecha) con la billetera y el historial.
+ * Menú lateral (cajón que se desliza desde la derecha) con la billetera, el historial y la tienda.
  * Se abre desde el botón de fichas de cualquier pantalla, también desde la mesa, para comprar
  * fichas o revisar movimientos sin perder de vista la partida (la mesa sigue actualizándose detrás).
  *
@@ -7,14 +7,22 @@
  * y al abrirse el foco pasa al botón de cerrar.
  */
 import { useEffect, useRef, type ReactNode } from "react";
+import { CatalogoTienda } from "./CatalogoTienda";
 import { HistorialMovimientos } from "./HistorialMovimientos";
 import { PanelBilletera } from "./PanelBilletera";
 
 /** Pestañas del menú lateral. */
-export type PestanaMenu = "billetera" | "historial";
+export type PestanaMenu = "billetera" | "historial" | "tienda";
 
 /** Título visible de cada pestaña. */
-const TITULO_PESTANA: Record<PestanaMenu, string> = { billetera: "Billetera", historial: "Historial" };
+const TITULO_PESTANA: Record<PestanaMenu, string> = { billetera: "Billetera", historial: "Historial", tienda: "Tienda" };
+
+/** Contenido de cada pestaña. */
+const CONTENIDO_PESTANA: Record<PestanaMenu, () => ReactNode> = {
+  billetera: () => <PanelBilletera />,
+  historial: () => <HistorialMovimientos />,
+  tienda: () => <CatalogoTienda />,
+};
 
 /** Props del menú lateral. */
 interface PropsMenuLateral {
@@ -25,7 +33,7 @@ interface PropsMenuLateral {
 }
 
 /**
- * Cajón lateral con pestañas de billetera e historial.
+ * Cajón lateral con pestañas de billetera, historial y tienda.
  * @param props - Estado de apertura, pestaña activa y manejadores.
  * @returns Fondo oscuro y cajón (ocultos e inertes cuando está cerrado).
  */
@@ -66,7 +74,7 @@ export function MenuLateral({ abierto, pestana, alCambiarPestana, alCerrar }: Pr
             ✕
           </button>
         </header>
-        <div role="tablist" className="grid grid-cols-2 border-b border-emerald-800">
+        <div role="tablist" className="grid grid-cols-3 border-b border-emerald-800">
           {(Object.keys(TITULO_PESTANA) as PestanaMenu[]).map((opcion) => (
             <button
               key={opcion}
@@ -80,9 +88,9 @@ export function MenuLateral({ abierto, pestana, alCambiarPestana, alCerrar }: Pr
             </button>
           ))}
         </div>
-        {/* El contenido solo se monta abierto: así el historial se recarga cada vez que se consulta. */}
+        {/* El contenido solo se monta abierto: así el historial y el catálogo se recargan cada vez que se consulta. */}
         <div role="tabpanel" className="flex-1 overflow-y-auto p-4">
-          {abierto && (pestana === "billetera" ? <PanelBilletera /> : <HistorialMovimientos />)}
+          {abierto && CONTENIDO_PESTANA[pestana]()}
         </div>
       </aside>
     </>
