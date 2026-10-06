@@ -47,6 +47,8 @@ El [manual de instalación](docs/manual-instalacion.md) detalla los requisitos, 
 
 `bun run dev` inicia el servidor en `0.0.0.0:3000` y el cliente en `http://localhost:5173`. Vite redirige `/ws` al servidor y también acepta conexiones desde otra laptop por la IP de la máquina. Para detener ambos procesos, usa `Ctrl+C`.
 
+Para iniciar solo el servidor, ejecuta `cd server` y `bun run dev`. El comando carga explícitamente el `.env` de la raíz del repositorio, donde se configura `DATABASE_URL`.
+
 Para recorrer la interfaz sin backend, abre `http://localhost:5173/?mock=1`. La barra morada de arriba permite:
 - recorrer las 6 fases de la mesa;
 - forzar cada resultado de la ronda;
