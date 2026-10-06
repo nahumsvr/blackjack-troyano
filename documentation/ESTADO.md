@@ -48,7 +48,7 @@ Avance por hito: H1 6/14 (43 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 ·
 
 ## Bloqueos activos
 
-- **T-07 implementada en `t-07-enrutador`, pendiente revisión/fusión:** validación y despacho comprobados; los handlers de T-08, T-09 y T-18 siguen pendientes para las pruebas reales del cliente:
+- **T-07 implementada en PR #18 (borrador), pendiente revisión/fusión:** validación y despacho comprobados; los handlers de T-08, T-09 y T-18 siguen pendientes para las pruebas reales del cliente:
   - T-13 espera T-08 y T-09;
   - T-28 y T-29 esperan T-18 y T-20;
   - T-30 y T-41 esperan los handlers de T-24/T-34 conectados al enrutador.
@@ -74,7 +74,7 @@ Avance por hito: H1 6/14 (43 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 ·
 
 | Fecha | Nota |
 |---|---|
-| 2026-10-05 | Hector: T-07 implementada desde main con el contrato de PR #14 y cliente de PR #7 revisados; PR en preparación. Typecheck correcto, 166 pruebas sin fallos (29 SQL omitidas por falta de TEST_DATABASE_URL) y build del cliente correcto. Seis pruebas nuevas con sockets reales cubren ataques, UTF-8, reqId, autorización y fallos async. T-06 visual sigue pendiente: el navegador no inició por fallo de ACL del entorno. |
+| 2026-10-05 | Hector: T-07 implementada desde main con el contrato de PR #14 y cliente de PR #7 revisados; PR #18 en borrador. Typecheck correcto, 166 pruebas sin fallos (29 SQL omitidas por falta de TEST_DATABASE_URL) y build del cliente correcto. Seis pruebas nuevas con sockets reales cubren ataques, UTF-8, reqId, autorización y fallos async. T-06 visual sigue pendiente: el navegador no inició por fallo de ACL del entorno. |
 | 2026-09-29 | Plan aprobado: `PLAN.md`, `TAREAS.md`, `ESTADO.md`, `CHECKLIST_ENTREGA.md`, `CLAUDE.md` creados. 57 tareas, 0 % completado. |
 | 2026-10-01 | Hector: T-01 preparada localmente en t-01-monorepo-bun. bun install en clon limpio y typecheck correctos. Sin tests aun. PR #1 abierto; no se contabiliza como fusionada. |
 | 2026-10-01 | Hector: plantilla T-02 publicada en PR #2 (borrador). Nahum aplicara la proteccion de main; pendiente comprobar rechazos. |
