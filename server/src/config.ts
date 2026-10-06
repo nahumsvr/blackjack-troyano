@@ -16,6 +16,10 @@ export const NUM_MAZOS = 4;
 export const UMBRAL_REBARAJAR = 0.25;
 /** El dealer se planta también si el total objetivo es blando. */
 export const DEALER_PLANTARSE_EN = 17;
+/** Pagos totales, incluida la apuesta: victoria 2x y natural 5/2 (ganancia 3:2). */
+export const PAGO_GANADOR = 2;
+export const PAGO_BLACKJACK_NUMERADOR = 5;
+export const PAGO_BLACKJACK_DENOMINADOR = 2;
 /*
  * Los límites de cantidad se definen una sola vez en `LIMITES_CANTIDAD` (shared/protocolo.ts)
  * porque el cliente los necesita para validar formularios y `shared/` no puede importar
