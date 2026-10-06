@@ -1,10 +1,10 @@
 # Manual de instalación (borrador)
 
-Este manual describe el código disponible. El cliente React ya funciona, y contra un servidor falso (`?mock=1`) se puede recorrer completo. El registro/login, las partidas en el servidor y el arranque de producción todavía dependen de tareas del equipo. La comprobación independiente en otra laptop (T-14/T-48/T-55) está pendiente.
+Este manual describe el código disponible en `main` después del PR #19. Registro, login, reanudación, logout y consulta de billetera funcionan con PostgreSQL. El cliente React permite recorrer partidas y economía completas contra el servidor falso (`?mock=1`); mesas, compras e historial reales y arranque de producción todavía esperan integración. La comprobación independiente en otra laptop (T-14/T-48/T-55) está pendiente.
 
 ## Requisitos
 
-- Bun 1.3.13, indicado en `package.json` y verificado con este manual; Bun 1.4.2 también funciona.
+- Bun 1.3.13, fijado en `package.json` y usado en la verificación actual. La corrida histórica también pasó con Bun 1.4.2.
 - Docker Engine y Docker Compose v2 o compatible (`docker compose version`). El servicio usa la imagen `postgres:16`.
 - Git para clonar, o un descompresor ZIP si recibiste `blackjack-equipo.zip`.
 - Opcional: `psql` para consultas SQL desde el anfitrión. También puedes usar el cliente incluido en el contenedor.
@@ -50,7 +50,9 @@ psql 'postgres://blackjack:blackjack_local@127.0.0.1:5432/blackjack' -c 'SELECT 
 
 `bun run dev` inicia el servidor en `0.0.0.0:3000` y el cliente Vite en el puerto 5173, también abierto a la red. Desde la misma laptop abre `http://localhost:5173`; desde otra, `http://<IP-del-equipo>:5173`. Vite redirige `/ws` al servidor, así que el navegador solo necesita llegar al puerto 5173. En el servidor, el endpoint `/` devuelve `404` y `/ws` acepta conexiones WebSocket.
 
-Mientras el servidor no tenga autenticación ni partidas, abre `http://localhost:5173/?mock=1`. Así se recorre la interfaz con un servidor falso: la barra morada cambia de fase, fuerza resultados y simula una caída de red.
+Abre `http://localhost:5173` para registrar una cuenta real o iniciar sesión con ella. Cerrar y reabrir recupera el token persistente; se entregan $10,000, 500 fichas y los tres cosméticos básicos al registrar. Tras acceder, `lobby.listar` no tiene handler (T-09 pendiente): el lobby vacío muestra «Ocurrió un error interno; intenta de nuevo» (`ERROR_INTERNO`). Ese aviso no indica por sí solo que la instalación de la base haya fallado.
+
+Abre `http://localhost:5173/?mock=1` para recorrer la interfaz completa con un servidor falso: la barra morada cambia de fase, fuerza resultados y simula una caída de red. Esos usuarios, saldos y rondas no se guardan en PostgreSQL.
 
 Abre `scripts/verificar-ws.html` como archivo local en tres pestañas. Pulsa **Conectar** con `127.0.0.1:3000` si estás en la misma laptop. Desde otra laptop en la misma red, copia ese archivo y escribe la IP del equipo que ejecuta el servidor seguida de `:3000`, por ejemplo `192.168.1.42:3000`. Las tres pestañas deben mostrar `Conectados: 3`.
 
@@ -64,16 +66,16 @@ bun run test
 bun run empaquetar
 ```
 
-Las pruebas de economía necesitan una **base exclusiva de pruebas**, configurada con `TEST_DATABASE_URL`. La suite crea un esquema aleatorio, aplica `schema.sql` y `seed.sql` y elimina únicamente ese esquema al terminar. El usuario necesita permiso `CREATE SCHEMA`. Sin esa variable, esas pruebas aparecen explícitamente como omitidas.
+Las pruebas de economía y autenticación necesitan una **base exclusiva de pruebas**, configurada con `TEST_DATABASE_URL`. Cada suite crea un esquema aleatorio, aplica `schema.sql` y `seed.sql` y elimina únicamente ese esquema al terminar. El usuario necesita permiso `CREATE SCHEMA`. Sin esa variable, esas pruebas aparecen explícitamente como omitidas.
 
 Con las credenciales predeterminadas, crea la base de pruebas una vez y ejecuta:
 
 ```bash
 docker compose exec postgres createdb -U blackjack blackjack_pruebas
-TEST_DATABASE_URL=postgres://blackjack:blackjack_local@127.0.0.1:5432/blackjack_pruebas bun test server/test/economia.test.ts
+TEST_DATABASE_URL=postgres://blackjack:blackjack_local@127.0.0.1:5432/blackjack_pruebas bun run test
 ```
 
-Si modificaste `.env`, ajusta las credenciales y el puerto del ejemplo. Esta suite prepara sus propios datos; no requiere `db:reset`. Nunca apuntes pruebas a una base con datos que necesites conservar.
+Si modificaste `.env`, ajusta las credenciales y el puerto del ejemplo. El comando ejecuta todas las suites del proyecto; las suites SQL preparan sus propios datos y no requieren `db:reset`. Nunca apuntes pruebas a una base con datos que necesites conservar.
 
 El empaquetador genera `blackjack-equipo.zip` en la raíz, comprueba que mide menos de 20 MB y valida su contenido. Incluye fuentes, `README.md`, `docs/`, los documentos de seguimiento y `.env.example`. Excluye `node_modules`, `.git`, `.env`, archivos de entorno locales, `dist`, cobertura y archivos ZIP previos.
 
@@ -98,3 +100,5 @@ El esquema, el catálogo y el reinicio se verificaron en una instancia temporal 
 **Entorno objetivo (4 oct):** `docker compose up -d --wait` levantó PostgreSQL **16.15** sano y `psql $DATABASE_URL -c 'select 1'` respondió. Con **Bun 1.3.13** en un clon limpio, `db:reset` creó siete tablas y 14 artículos, y `typecheck` y la suite completa con `TEST_DATABASE_URL` (70 pruebas, 381 aserciones) pasaron sin fallos. El puerto 5432 estaba ocupado por otro PostgreSQL, así que se usó `POSTGRES_PORT=5433` como se indica en *Problemas habituales*.
 
 Este manual todavía no acredita instalación independiente en otra laptop ni juego con tres usuarios.
+
+**Después de T-08 (5 oct CDMX):** la corrida histórica de fuentes basada en `main` (`831dcd2`) más cambios locales del empaquetador se extrajo en una carpeta nueva. Instalación con lockfile fijo, typecheck, 203 pruebas SQL y build pasaron con Bun 1.4.2. Durante la revisión se repitieron en la misma copia extraída con **Bun 1.3.13 y PostgreSQL 16.15**: 203 pruebas / 3,402 aserciones, cero fallos/omisiones, typecheck/build correctos. Después de incorporar Carta/Baraja de PR #25, la rama documental pasó 208 pruebas / 3,438 aserciones con Bun 1.3.13. [Evidencia detallada](../documentation/Revision-PR-23.md). Los esquemas de prueba se eliminaron; el ZIP final, la instalación independiente y el juego completo siguen pendientes.
