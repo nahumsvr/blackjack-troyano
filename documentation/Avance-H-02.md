@@ -10,4 +10,6 @@ Validación inicial: `bun run typecheck` correcto y `bun test` con `TEST_DATABAS
 
 Docker Desktop se recuperó renombrando únicamente sus directorios temporales de sockets con respaldo. El contenedor de pruebas `blackjack-hito1-postgres-1` usa puerto 55432 y una base aislada. No se aplicó restablecimiento de fábrica ni se eliminaron volúmenes.
 
+Tras incorporar PR #16, la suite completa pasa con 203 pruebas y 0 fallos/omisiones. PR #17 solo añade el guion y seguimiento documental; se conserva en la base. T-08 publicada en [PR #19](https://github.com/nahumsvr/blackjack-troyano/pull/19).
+
 Pendientes del hito: T-09 (asientos y publicaciones del lobby); prueba visual de T-06 y checkpoint de T-13 con tres pestañas del cliente. T-08 permanece sin marcar hasta revisión y fusión en main.

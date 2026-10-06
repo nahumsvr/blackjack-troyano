@@ -101,3 +101,4 @@ Avance por hito: H1 8/14 (57 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 ·
 | 2026-10-06 | Nahum: T-33 v1 en PR #17 (`docs/exposicion.md`, 9:00 en papel); pendiente aprobación de los 3. |
 | 2026-10-06 | T-12 hecha por Nahum (PR #16): pestaña «Tienda» de solo lectura en el menú lateral con el catálogo del mock; desbloquea T-27. Avance 11/57 (19 %). |
 | 2026-10-05 | Hector: T-07 hecha, PR #18 fusionado. T-08 implementada con nueve pruebas PostgreSQL/WebSocket, registro atómico y sesiones persistentes; pendiente revisión/fusión. Docker recuperado conservando respaldos y datos. Avance fusionado: 12/57 (21 %), H1 8/14. |
+| 2026-10-05 | T-08 publicada por Hector en PR #19 sobre main actualizado con PR #16 y #17. Suite SQL completa: 203 pruebas, cero fallos/omisiones; typecheck correcto. Pendiente revisión/fusión. |
