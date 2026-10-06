@@ -11,7 +11,7 @@ import {
 export const ReqIdSchema = z.string().max(36);
 export const TokenSchema = z.string().regex(/^[a-fA-F0-9]{64}$/);
 export const UuidSchema = z.uuid();
-/** Límites de referencia del protocolo; el servidor pasa su config al crear el esquema. */
+/** Forma y coherencia de un conjunto de límites de cantidad. */
 export const LimitesCantidadSchema = z.strictObject({
   apuestaMin: z.number().int().positive(), apuestaMax: z.number().int().positive(),
   compraMin: z.number().int().positive(), compraMax: z.number().int().positive(),
@@ -19,6 +19,10 @@ export const LimitesCantidadSchema = z.strictObject({
 }).refine((limites) => limites.apuestaMin <= limites.apuestaMax && limites.compraMin <= limites.compraMax,
   { message: "Los mínimos no pueden superar los máximos" });
 export type LimitesCantidad = z.infer<typeof LimitesCantidadSchema>;
+/**
+ * Fuente única de los límites de apuesta y compra (PLAN §1). El cliente los usa para validar
+ * formularios y `server/src/config.ts` los re-exporta; no deben repetirse como literales.
+ */
 export const LIMITES_CANTIDAD = {
   apuestaMin: 10, apuestaMax: 500, compraMin: 10, compraMax: 5000, multiplo: 10,
 } as const satisfies LimitesCantidad;
@@ -30,8 +34,9 @@ const peticion = { reqId: ReqIdSchema.optional() };
 const credenciales = { usuario: UsuarioNombreSchema, contrasena: z.string().min(6).max(72) };
 
 /**
- * Construye el contrato entrante con los límites centrales del servidor.
- * @param limites - Configuración de apuestas/compras; por defecto los valores del PLAN.
+ * Construye el contrato entrante con otros límites. El enrutador usa `MensajeClienteSchema`,
+ * que ya aplica `LIMITES_CANTIDAD`; esta función queda para pruebas o variantes explícitas.
+ * @param limites - Configuración de apuestas/compras; por defecto `LIMITES_CANTIDAD`.
  * @returns Unión discriminada sin dependencias de código del servidor o del navegador.
  * @throws ZodError Si la configuración no contiene límites enteros positivos coherentes.
  */
