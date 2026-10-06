@@ -24,4 +24,6 @@ Validación final: **212 pruebas, 0 fallos y 0 omisiones**, `bun run typecheck` 
 
 La mesa permanece en ESPERANDO y no maneja apuestas ni rondas. La reserva del asiento por 60 s durante una partida corresponde a T-36; en Hito 1 un cierre libera el asiento. T-18 añadirá el motor de cada mesa sin importar store desde game.
 
+T-09 publicada en [PR #22](https://github.com/nahumsvr/blackjack-troyano/pull/22). Se revisaron los nuevos PR #20 (empaquetado, sin solapamiento de lógica) y #21 (economía WS). #21 modifica auth/arranque/close de WS: al integrar ambos se debe conservar su cola por token, suscripciones de usuario y handlers de economía junto con los hooks de mesas de #22. Si #21 se fusiona primero, actualizar #22 sobre main, componer `crearManejadoresEconomia` en `iniciarAplicacion` y volver a verificar las suites de economía/auth/mesas; no sustituir un arranque por el otro. No hay cambios de contrato/esquema en #21.
+
 Pendientes del hito: revisión/fusión de T-09; prueba visual de T-06 y checkpoint de T-13 con tres pestañas. La automatización del navegador no estuvo disponible por el fallo de ACL ya registrado; la evidencia automatizada del cliente y sockets no se presenta como verificación visual. Para Hito 2, el siguiente trabajo de Hector es T-15/T-16/T-17 y después T-18; no se implementó en esta sesión.
