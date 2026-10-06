@@ -10,7 +10,7 @@ El repositorio ya tiene un monorepo con **Bun workspaces** (`server`, `client` y
 {"type":"bienvenida","conectados":1}
 ```
 
-El conteo se actualiza cuando alguien se conecta o desconecta. El contrato Zod, PostgreSQL con esquema y catálogo inicial, y módulos de economía están disponibles; la economía aún no está conectada al enrutador. El cliente completo se integró en `main` con PR #7, pero sus pantallas de juego y economía se recorren con `?mock=1`: autenticación, lobby de mesas, partidas y compras reales en el servidor siguen pendientes. La ruta HTTP `/` responde `404` (servir el cliente desde Bun es T-38).
+El conteo se actualiza cuando alguien se conecta o desconecta. El contrato Zod, PostgreSQL y los módulos de economía están disponibles. El enrutador y la autenticación ya están conectados: registro, login, reanudación, logout y consulta de billetera funcionan contra PostgreSQL (PR #18 y #19). El lobby de mesas, las partidas y los handlers de compras e historial todavía están pendientes en `main`. La ruta HTTP `/` responde `404` (servir el cliente desde Bun es T-38).
 
 El cliente React (Vite + Tailwind) tiene:
 - acceso y lobby;
@@ -19,7 +19,7 @@ El cliente React (Vite + Tailwind) tiene:
 - billetera e historial en un menú lateral;
 - reconexión automática.
 
-Mientras el servidor no tenga esas partes, se prueba con un servidor falso en `http://localhost:5173/?mock=1`.
+Para recorrer mesa, compras e historial completos se usa el servidor falso en `http://localhost:5173/?mock=1`. En la URL sin `?mock=1`, el acceso es real; tras entrar, el lobby aún no puede listar mesas y muestra un aviso por esa operación pendiente.
 
 ## Requisitos y arranque
 
@@ -61,9 +61,11 @@ bun run typecheck
 bun run test
 ```
 
-Las pruebas del transporte cubren el conteo de conexiones WebSocket y las respuestas HTTP de `/ws` y de una ruta inexistente. El protocolo tiene ejemplos válidos e inválidos; las pruebas de economía requieren una base de pruebas separada (consulta el manual). Las pruebas del cliente (`client/test/`) cubren la conexión y la reconexión, el reloj, el estado, las validaciones, el servidor falso y la lógica de las animaciones.
+Las pruebas del transporte cubren conexiones, validación y respuestas correlacionadas. El protocolo tiene ejemplos válidos e inválidos; economía y autenticación se prueban contra una base separada configurada con `TEST_DATABASE_URL` (consulta el manual). Sin esa variable, sus pruebas SQL se omiten. Las pruebas del cliente (`client/test/`) cubren conexión, reloj, estado, validaciones, mock y animaciones.
 
 El entorno objetivo se verificó el 4 de octubre: Compose levanta PostgreSQL 16.15. Con Bun 1.3.13 en un clon limpio, `db:reset` crea siete tablas y 14 artículos, `typecheck` pasa y la suite completa (70 pruebas, incluida la economía) termina sin fallos. Las restricciones de saldo e inventario se comprobaron directamente en SQL.
+
+Después de integrar T-08, una copia extraída del ZIP de fuentes de `main` (`831dcd2`) pasó instalación con lockfile fijo, typecheck, 203 pruebas con PostgreSQL 16.15 y build del cliente. Esta comprobación con Bun 1.4.2 no sustituye la instalación independiente ni las pruebas del juego completo.
 
 ## Organización
 

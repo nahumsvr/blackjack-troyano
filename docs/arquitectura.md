@@ -1,28 +1,41 @@
 # Arquitectura de Blackjack Troyano
 
-Documento de implementación, actualizado el 6 de octubre de 2026. El diseño completo está en [PLAN.md](../documentation/PLAN.md); las tareas y sus criterios de aceptación están en [TAREAS.md](../documentation/TAREAS.md). El cliente del PR #7 y los límites únicos del PR #14 ya están en `main`; falta actualizar este documento cuando se integre el motor de juego y tras la revisión de Hector.
+Documento de implementación, actualizado el 5 de octubre de 2026 CDMX tras fusionar T-07/T-08 (PR #18/#19). El diseño completo está en [PLAN.md](../documentation/PLAN.md); las tareas y sus criterios de aceptación están en [TAREAS.md](../documentation/TAREAS.md). El cliente, el contrato y la autenticación están en `main`; faltan el motor de juego y la revisión final de Hector.
 
 ## Módulos disponibles y pendientes
 
 | Módulo | Implementación disponible | Integración pendiente |
 |---|---|---|
-| `shared/` | Esquemas Zod, tipos inferidos, códigos/mensajes españoles, `ErrorJuego` y límites únicos `LIMITES_CANTIDAD` (PR #14) | Uso por el enrutador; el cliente ya consume el contrato en `main` (PR #7) |
-| `server/src/ws/servidor.ts` | `Bun.serve`, `/ws`, topic `lobby`, conteo `bienvenida` | Enrutamiento, sesión, límite de tamaño/ritmo y acciones |
-| `server/src/db/conexion.ts` | Pool PostgreSQL de Bun y `enTransaccion` | Inicialización y cierre desde el servidor |
+| `shared/` | Esquemas Zod, tipos inferidos, errores y límites únicos, consumidos por cliente y enrutador | Contratos del juego listos para sus handlers |
+| `server/src/ws/` | `Bun.serve`, `/ws`, `bienvenida`, `Enrutador`, validación UTF-8 de 16 KB, reqId, errores y cola por conexión | Límite de ritmo, handlers de mesas y compras |
+| `server/src/db/conexion.ts` | Pool PostgreSQL de Bun y `enTransaccion`; creado en index y cerrado al detener el servidor | Instalación independiente |
 | `server/src/store/` | Interfaz `Billetera`, `BilleteraSQL`, `Tienda` y consultas de saldo/historial | Handlers WebSocket, publicación de respuestas y equipamiento |
-| `server/db/` | Siete tablas e índices, catálogo de 14 artículos | Uso por autenticación y persistencia de rondas |
+| `server/db/` | Siete tablas e índices, catálogo de 14 artículos; usuarios/sesiones/inventario/ledger usados por auth | Persistencia de rondas |
 | `scripts/db-reset.ts` | Recreación atómica de tablas del proyecto con confirmación de destino | Instalación independiente según manual |
-| `client/` | Vite/React/Tailwind; capa de red con reconexión, `reqId` y validación Zod; store; pantallas de acceso, lobby y mesa; resultado; billetera e historial; servidor falso `?mock=1` (PR #6 y #7) | Integración con servidor real (T-13, T-28–T-30, T-41); vista de tienda en mock para completar T-12; tienda/inventario completos T-39/T-40, pospuestas |
-| `server/src/auth/`, `server/src/game/` | Diseño documentado | Sesiones, clases del juego y máquina de estados |
+| `client/` | Vite/React/Tailwind, red/reconexión/reqId, pantallas y mock; catálogo de solo lectura en mock (T-12) | Lobby y partidas reales, verificación de reconexión cliente, compras/historial e inventario completos |
+| `server/src/auth/` | `Sesiones` y adaptador autenticado: registro atómico, login, reanudar, logout, vigencia/revocación antes de cada intención protegida | Recuperación de asiento cuando exista el juego |
+| `server/src/game/` | Diseño documentado | GestorMesas, clases del juego y máquina de estados |
 
-Los servicios de economía se pueden invocar y probar directamente contra PostgreSQL; su integración WebSocket está pendiente de T-07. El servidor disponible en `main` publica `bienvenida`, pero todavía no permite comprar ni jugar desde un navegador. El cliente del PR #7 cubre la interfaz con el servidor falso; su integración real espera el enrutador, autenticación y motor. Las instrucciones disponibles están en [manual-instalacion.md](manual-instalacion.md).
+El servidor disponible en `main` permite autenticar y consultar la billetera por WebSocket. Compras, inventario e historial tienen servicios SQL probados y esperan sus handlers; el lobby y las partidas requieren `GestorMesas` y el motor. El cliente cubre la interfaz completa con el mock. Las instrucciones disponibles están en [manual-instalacion.md](manual-instalacion.md).
 
 ## Dependencias implementadas
 
 ```mermaid
 flowchart LR
+  INDEX["index.ts: composición y apagado"] --> WS
+  INDEX --> AUTH["auth/Sesiones y manejadores"]
+  INDEX --> WAL
+  INDEX --> TX
   WS["ws/servidor.ts: Bun.serve"] --> CFG["config.ts"]
+  WS --> ROUTER["ws/Enrutador"]
   SH["shared/: Zod, tipos y errores"]
+  ROUTER --> SH
+  ROUTER -.->|handlers inyectados| AUTH
+  AUTH --> SH
+  AUTH --> TX
+  AUTH --> Q
+  CLIENT["client/: red y validación"] --> SH
+  CLIENT --> WS
   WAL["store/BilleteraSQL"] --> SH
   STORE["store/Tienda"] --> SH
   WAL --> Q["store/consultas.ts"]
@@ -69,14 +82,26 @@ classDiagram
     +codigo CodigoError
     +constructor(codigo)
   }
+  class Sesiones {
+    +registrar(usuario, contrasena) Promise~Sesion~
+    +login(usuario, contrasena) Promise~Sesion~
+    +validar(token) Promise~Sesion~
+    +cerrar(token) Promise~void~
+  }
+  class Enrutador {
+    +manejar(socket, datos) Promise~void~
+  }
   BilleteraSQL ..|> Billetera
   BilleteraSQL ..> ErrorJuego
   Tienda ..> ErrorJuego
+  Sesiones ..> ErrorJuego
+  Enrutador ..> ErrorJuego
+  Enrutador ..> Sesiones : adaptador auth inyectado
 ```
 
 `CompraArticulo` contiene `{inventario, billetera}`; `PaginaMovimientos`, `{items, hayMas}`. `Tienda` y `BilleteraSQL` comparten consultas y transacciones, sin que una clase invoque a la otra. `equipar` aún requiere a `GestorMesas` para validar la fase y publicar el nuevo snapshot; no se declara como método implementado.
 
-Las clases previstas `Carta`, `Baraja`, `Mano`, `Jugador`, `Dealer`, `Mesa`, `GestorMesas`, `Sesiones` y `Enrutador` se describen en PLAN §5. Todavía no existen en el código y deben incorporarse a este diagrama conforme se implementen.
+Las clases previstas `Carta`, `Baraja`, `Mano`, `Jugador`, `Dealer`, `Mesa` y `GestorMesas` se describen en PLAN §5. Todavía no existen en el código y deben incorporarse a este diagrama conforme se implementen. Auth y enrutador se comunican mediante handlers inyectados; el enrutador no importa SQL ni clases de autenticación.
 
 ## Persistencia
 
@@ -119,23 +144,25 @@ El día natural se calcula en PostgreSQL usando `America/Mexico_City`. El servic
 
 Saldos y deltas SQL `bigint` se leen como texto y solo se convierten a números si `Number.isSafeInteger` permite representarlos exactamente. Los ID `bigserial` del historial se conservan como strings decimales hasta `9223372036854775807`. Las cantidades de compra/apuesta siguen los límites de `server/src/config.ts`.
 
-### Contrato para el registro pendiente (T-08)
+### Registro atómico implementado (T-08)
 
-La transacción de `Sesiones.registrar` debe crear usuario con dinero inicial 10000 y fichas 500, entregar los tres artículos gratuitos, equiparlos, crear sesión e insertar un movimiento `registro` con `delta_dinero=10000`, `delta_fichas=500` y saldos posteriores iguales. Esto permite reconciliar la suma de movimientos con el saldo desde el origen. El default SQL de fichas es cero; los 500 de bienvenida deben establecerse explícitamente dentro del registro. `Tienda.inventario` rechaza con `ERROR_INTERNO` a un usuario que no tenga los tres cosméticos equipados.
+La transacción de `Sesiones.registrar` crea usuario con dinero inicial 10000 y fichas 500, entrega los tres artículos gratuitos, los equipa, crea sesión e inserta un movimiento `registro` con `delta_dinero=10000`, `delta_fichas=500` y saldos posteriores iguales. Esto permite reconciliar la suma de movimientos con el saldo desde el origen. El default SQL de fichas es cero; el registro establece explícitamente los 500 de bienvenida. `Tienda.inventario` rechaza con `ERROR_INTERNO` a un usuario que no tenga los tres cosméticos equipados.
+
+Las contraseñas se guardan como Argon2id; los tokens contienen 32 bytes aleatorios y expiran en siete días. El adaptador asocia identidad al socket después de validar SQL y comprueba la vigencia antes de cada intención protegida. La cola del enrutador conserva el orden de registro/login/logout en una conexión. `mesaId` sigue siendo null hasta integrar las mesas.
 
 Las pruebas crean sus propios usuarios y movimientos iniciales; no representan una implementación de registro ni sesiones.
 
-## Contrato WebSocket y conexión pendiente
+## Contrato WebSocket e integración
 
 En [shared/protocolo.ts](../shared/protocolo.ts) hay 18 intenciones y 12 mensajes del servidor, incluidas `bienvenida`, `sesion`, snapshots, economía e historial. Todos se discriminan por `type`; `reqId?` correlaciona respuestas directas. Las publicaciones a topics omiten `reqId`.
 
-La validación rechaza campos desconocidos y no convierte cadenas a números. Si el único error es una `cantidad` presente de `apostar`/`fichas.comprar`, `crearErrorValidacion` devuelve `CANTIDAD_INVALIDA`; los errores de estructura, cantidad faltante y tipos desconocidos devuelven `MENSAJE_INVALIDO`. `ErrorJuego(codigo)` proporciona el mensaje español para fallos de dominio. El transporte debe convertir excepciones inesperadas a `ERROR_INTERNO` y registrar sus detalles sin exponerlos al cliente.
+La validación rechaza campos desconocidos y no convierte cadenas a números. Si el único error es una `cantidad` presente de `apostar`/`fichas.comprar`, `crearErrorValidacion` devuelve `CANTIDAD_INVALIDA`; los errores de estructura, cantidad faltante y tipos desconocidos devuelven `MENSAJE_INVALIDO`. `ErrorJuego(codigo)` proporciona el mensaje español para fallos de dominio. El enrutador convierte excepciones inesperadas a `ERROR_INTERNO` y registra sus detalles sin exponerlos al cliente.
 
 Los límites de apuesta y compra se definen una sola vez en `LIMITES_CANTIDAD` (`shared/protocolo.ts`). `MensajeClienteSchema` los aplica, el cliente los usa en sus formularios y `server/src/config.ts` los re-exporta para `BilleteraSQL`, así que el enrutador usa `MensajeClienteSchema` directamente. El esquema no implementa los controles de tamaño 16 KB, ritmo 20/s, autenticación o permisos: corresponden a T-07/T-37.
 
 Los snapshots `mesa.estado` contienen los campos de `MesaEstado` directamente en la raíz. Los cinco asientos tienen índice coincidente con su posición. La carta oculta solo puede contener `{oculta:true}`, con total del dealer `null`; antes de `DEALER` hay como máximo una carta visible y en `DEALER/PAGOS` todas están reveladas.
 
-Integración prevista de servicios:
+Integración de servicios (consulta de billetera disponible en `main`; demás handlers pendientes):
 
 | Intención | Llamada | Respuesta que construye el handler |
 |---|---|---|

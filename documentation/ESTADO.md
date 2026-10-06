@@ -1,18 +1,18 @@
 # ESTADO — ¿Dónde vamos?
 
-_Última actualización: mar 6 oct 2026 CDMX (PR #7 integrado en `main`; detalle del cliente en [Avance-N-01.md](Avance-N-01.md))_
+_Última actualización: lun 5 oct 2026 CDMX, tras fusionar T-08 en PR #19. Algunas entradas históricas usan la fecha UTC del 6 oct._
 
 ## Resumen
 
-Ya están en `main` los PR #4 (contrato, BD y economía), #6 (base del cliente), #7 (cliente y mock) y #14 (límites únicos). `main` está protegida: un push directo es rechazado, cada PR necesita 1 aprobación de otro dev, el historial es lineal y solo se permite fusionar con squash (la rama se borra al fusionar).
+Ya están en `main` los PR #4 (contrato, BD y economía), #6/#7 (cliente y mock), #14 (límites únicos), #18 (enrutador) y #19 (autenticación). `main` está protegida: un push directo es rechazado, cada PR necesita 1 aprobación de otro dev, el historial es lineal y solo se permite fusionar con squash (la rama se borra al fusionar).
 
-El PR #7 se fusionó en `main` el 6 oct a las 00:51 UTC (5 oct 18:51 CDMX), integrando el cliente y los cambios de #8–#12. La revisión aprobada verificó 187 pruebas sin fallos con PostgreSQL 16, `typecheck` en los 3 paquetes y build del cliente. El flujo completo sigue usando el mock: la prueba contra el servidor real depende de T-07, T-08 y T-18. PR #14 también está fusionado (`7bf4e89`).
+El cliente del PR #7 consume el contrato compartido. T-07/T-08 ya permiten acceso real y consulta de billetera; las pantallas de mesa y el recorrido completo de economía siguen usando el mock hasta integrar sus servicios. Tras T-08, una copia extraída del ZIP de fuentes pasó instalación con lockfile fijo, typecheck, 203 pruebas con PostgreSQL 16.15 y build del cliente.
 
-T-07 ya está fusionada en PR #18. El camino crítico **T-01 → T-03 → T-07 → T-18 → T-20 → T-31** espera ahora T-09 y el motor de mesa de T-18. T-08 está implementada y comprobada con PostgreSQL 16; pendiente revisión/fusión.
+El camino crítico **T-01 → T-03 → T-07 → T-18 → T-20 → T-31** espera ahora T-09 y las clases T-15/T-16 necesarias para T-18.
 
 ## Hito actual
 
-**Por calendario: Hito 5 — mar 6 oct** (ensayos y ZIP probado). La entrega es mié 7, 13:00.
+**Por calendario: Hito 4 — lun 5 oct** (pruebas y documentación). Mañana corresponde Hito 5 (ensayos y ZIP probado); entrega mié 7, 13:00.
 
 Estado: 🔴 **Atrasados**. No se cumplieron el Hito 1 (30 sep), el Hito 2 (3 oct) ni el Hito 3/congelamiento (4 oct 22:00); no existe el tag `v0.9-congelado`.
 
@@ -28,16 +28,16 @@ Solo se cuentan tareas con PR fusionado en `main` y criterio de "hecho" comproba
 
 | Dev | Completadas | Total | % |
 |---|---|---|---|
-| Hector | 3 | 19 | 16 % |
+| Hector | 4 | 19 | 21 % |
 | Nahum | 2 | 17 | 12 % |
 | Massimo | 7 | 19 | 37 % |
 | Equipo | 0 | 2 | 0 % |
-| **Total** | **12** | **57** | **21 %** |
+| **Total** | **13** | **57** | **23 %** |
 
-Avance por hito: H1 8/14 (57 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 · H5 0/5 · Entrega 0/1
+Avance por hito: H1 9/14 (64 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 · H5 0/5 · Entrega 0/1
 
 - **Hechas:**
-  - T-01, T-02 y T-07 (Hector); PR #18 fusionado con validación de los ataques y continuidad de tres conexiones.
+  - T-01, T-02, T-07 y T-08 (Hector); enrutador/auth fusionados y probados con sockets reales y PostgreSQL 16.
   - T-10 (Nahum, PR #6 fusionado en `main`; marca restaurada desde `main` durante la revisión del PR #7).
   - T-12 (Nahum, PR #16): vista de tienda de solo lectura en `?mock=1`.
   - T-04, T-05, T-23, T-24, T-25 y T-34 (Massimo). Su criterio está verificado con PostgreSQL 16 en Avance-M-02, que indicaba marcarlas al fusionarse el PR #4.
@@ -49,27 +49,27 @@ Avance por hito: H1 8/14 (57 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 ·
 
 ## Bloqueos activos
 
-- **T-08 implementada; T-07 fusionada en PR #18:** autenticación y consulta de billetera comprobadas contra PostgreSQL 16; falta revisar/fusionar T-08 y completar T-09/T-18:
-  - T-13 espera T-08 y T-09;
+- **T-07/T-08 fusionadas:** autenticación y consulta de billetera disponibles; faltan T-09/T-18 y conexión de compras/historial:
+  - T-13 espera T-09;
   - T-28 y T-29 esperan T-18 y T-20;
   - T-30 y T-41 esperan los handlers de T-24/T-34 conectados al enrutador.
-- **Cliente integrado (PR #7):** T-11 sigue pendiente de recuperar la misma sesión con `reanudar` real (T-08).
+- **Cliente integrado (PR #7):** T-11 ya puede verificar recuperación de la misma sesión con T-08; falta documentar esa prueba del cliente real.
 - **T-06 — prueba visual:** falta abrir `scripts/verificar-ws.html` en tres pestañas.
 - **T-42** espera T-36. **T-35** espera `GestorMesas` (T-09/T-18). **T-31** espera T-20, T-21, T-28 y T-24.
 
-## Hoy le toca a… (mar 6 oct)
+## Hoy le toca a… (lun 5 oct, después de T-08)
 
 - **Hector:**
   - Continuar Hito 2 hasta T-18: T-15 → T-16 → T-17 → máquina de estados. Alcance autorizado el 5 oct; T-19 y posteriores se retoman en otro chat. T-09 (PR #22) sigue pendiente de revisión/fusión.
   - Prueba visual de T-06.
 - **Nahum:**
-  - T-33 guion de exposición (PR abierto, pendiente de aprobación del grupo).
+  - T-33 guion de exposición (PR #17 fusionado, pendiente de aprobación del grupo).
   - T-27 (desbloqueada por T-12): página de prueba con las 52 cartas → borradores de T-49 (manual) y T-51 (diapositivas) con capturas del mock.
-  - En cuanto existan T-08 y T-09, verificar T-13 contra el servidor real.
+  - Verificar reconexión cliente de T-11 con T-08; al llegar T-09, verificar T-13 contra el servidor real.
 - **Massimo:**
   - Preparar la verificación de checklist T-44 cuando el equipo acuerde el corte.
   - Handlers de economía para el enrutador de T-07 y coordinación con Hector.
-  - Coordinar la decisión de corte.
+  - Adelantar empaquetado y documentación; las decisiones de alcance permanecen con el líder.
 
 ## Registro diario
 
@@ -104,3 +104,5 @@ Avance por hito: H1 8/14 (57 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 ·
 | 2026-10-06 | T-12 hecha por Nahum (PR #16): pestaña «Tienda» de solo lectura en el menú lateral con el catálogo del mock; desbloquea T-27. Avance 11/57 (19 %). |
 | 2026-10-05 | Hector: T-07 hecha, PR #18 fusionado. T-08 implementada con nueve pruebas PostgreSQL/WebSocket, registro atómico y sesiones persistentes; pendiente revisión/fusión. Docker recuperado conservando respaldos y datos. Avance fusionado: 12/57 (21 %), H1 8/14. |
 | 2026-10-05 | T-08 publicada por Hector en PR #19 sobre main actualizado con PR #16 y #17. Suite SQL completa: 203 pruebas, cero fallos/omisiones; typecheck correcto. Pendiente revisión/fusión. |
+| 2026-10-05 | T-08 hecha por Hector (PR #19 fusionado). Auditoría de Massimo: documentación ajustada a main 831dcd2, 203 pruebas PostgreSQL 16.15 en copia extraída, typecheck/build correctos. Contadores 13/57 (23 %), H1 9/14; las casillas de pruebas independientes y motor continúan pendientes. |
+| 2026-10-05 | Massimo: integración de T-24/T-34 por WebSocket preparada en PR #21; 210 pruebas y typecheck con PostgreSQL 16.15, revisión/fusión pendientes. T-35 espera GestorMesas. Empaquetado verificado en PR #20; T-48/T-55 siguen abiertos. |
