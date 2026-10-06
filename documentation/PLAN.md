@@ -550,6 +550,8 @@ Reglas clave:
 
 ## 7. Desconexión y varias pestañas
 
+Revisión T-20 (6 oct, PR #31): las acciones validan propiedad, fase, plazo, cantidad y turno dentro de la cola de la mesa. La billetera inyectada comparte la cola por usuario de los handlers económicos hasta publicar cada saldo, evitando que una compra adelante una publicación anterior del juego. Se conserva la revocación de #21: limpiar todas las identidades del token y avisar `SESION_INVALIDA` a sus pares. El contrato `Billetera` vive en `game/` y se re-exporta desde `store/`; requiere revisión de Massimo. No cambian mensajes ni tablas.
+
 Revisión T-18 (6 oct, PR #29): `GestorMesas` contiene tres motores `Mesa` y publica snapshots seguros; el lobby se actualiza solo si cambia la fase o la ocupación. El dealer revela y omite nuevas cartas cuando todos los participantes están pasados o tienen natural. Se conservan las correcciones de transferencia/cierre de #22. Los relojes, acciones económicas y liquidación se incorporan en #30/#31/#32; #22 y #28 siguen pendientes de fusión, por lo que aún aparecen como dependencias del diff.
 
 1. Al cerrarse el socket: `Mesa.marcarDesconectado(usuarioId)` → `conectado = false`. Si era su turno, se planta en ese momento; si su turno llega después, se planta al llegar.

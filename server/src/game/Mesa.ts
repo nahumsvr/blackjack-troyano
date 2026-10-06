@@ -1,14 +1,21 @@
 /** Máquina de estados y relojes autoritativos; el transporte inyecta dinero y persistencia. */
-import { CantidadApuestaSchema, ErrorJuego, type Asiento, type Equipado, type FaseMesa, type MesaEstado, type MensajeServidor, type UsuarioVista } from "@blackjack/shared";
+import { CantidadApuestaSchema, ErrorJuego, type Asiento, type BilleteraEstado, type Equipado, type FaseMesa, type MesaEstado, type MensajeServidor, type UsuarioVista } from "@blackjack/shared";
 import { CAPACIDAD_MESA, TIEMPO_APUESTAS_MS, TIEMPO_TURNO_MS, TIEMPO_RESULTADOS_MS } from "../config";
 import { Baraja } from "./Baraja";
 import { Dealer } from "./Dealer";
 import { Jugador } from "./Jugador";
 import { Mano } from "./Mano";
 import { RelojMesa } from "./RelojMesa";
+import type { Billetera } from "./Billetera";
 
 /** Superficie mínima del zapato, inyectable sin añadir controles al protocolo del cliente. */
 export type ZapatoMesa = Pick<Baraja, "sacar" | "barajar" | "necesitaRebarajar">;
+
+/** Dependencias del motor; ninguna implementación SQL ni transporte vive en game/. */
+export interface ServiciosMesa {
+  billetera?: Billetera;
+  publicarBilletera?: (usuarioId: number, estado: BilleteraEstado) => void;
+}
 
 /** Mesa en memoria; sus pasos internos solo los invoca el servidor, nunca el cliente. */
 export class Mesa {
@@ -17,15 +24,18 @@ export class Mesa {
   private faseActual: FaseMesa = "ESPERANDO";
   private turno: number | null = null;
   private rondaActual: string | null = null;
+  private pendientes: Promise<void> = Promise.resolve();
+  private readonly apuestasPendientes = new Set<number>();
   private detenida = false;
 
   /**
-   * Crea una mesa vacía con publicaciones independientes de su estado interno.
+   * Crea una mesa con reloj y billetera inyectables, sin dependencias de transporte ni SQL.
    * @param id - Identificador configurado de mesa.
    * @param nombre - Nombre público.
    * @param publicar - Recibe snapshots independientes tras cada cambio.
    * @param baraja - Zapato real por defecto; se inyecta uno fijo para pruebas.
    * @param reloj - Único temporizador de la mesa; sustituible en pruebas.
+   * @param servicios - Billetera y publicaciones privadas confirmadas.
    * @returns Mesa vacía; al sentarse el primer jugador abre el reloj de apuestas.
    */
   constructor(
@@ -33,6 +43,7 @@ export class Mesa {
     private readonly publicar: (mensaje: Extract<MensajeServidor, { type: "mesa.estado" }>) => void,
     private readonly baraja: ZapatoMesa = new Baraja(),
     private readonly reloj = new RelojMesa(),
+    private readonly servicios: ServiciosMesa = {},
   ) {}
 
   /** @returns Fase autoritativa para validar acciones y equipamiento. */
@@ -78,7 +89,7 @@ export class Mesa {
    */
   salir(usuarioId: number): void {
     const jugador = this.obtenerJugador(usuarioId);
-    if (jugador.apuesta === 0) {
+    if (jugador.apuesta === 0 && !this.apuestasPendientes.has(usuarioId)) {
       this.asientos[jugador.indice] = null;
       if (this.asientos.every((asiento) => asiento === null)) {
         this.faseActual = "ESPERANDO";
@@ -93,6 +104,69 @@ export class Mesa {
     if (this.fase === "APUESTAS") this.cerrarSiTodosApostaron();
     this.publicarEstado();
   }
+
+  /**
+   * Serializa el débito y el reloj para conservar una apuesta aceptada antes del vencimiento.
+   * @param usuarioId - Jugador autenticado y dueño del asiento.
+   * @param cantidad - Entero de 10 a 500, múltiplo de 10.
+   * @param autorizar - Revalida el dueño al ejecutar la acción, después de esperar la cola.
+   * @returns Apuesta registrada solo después de confirmar el débito SQL.
+   * @throws ErrorJuego FASE_INCORRECTA | NO_ESTAS_EN_MESA | YA_APOSTASTE | CANTIDAD_INVALIDA | FICHAS_INSUFICIENTES | ERROR_INTERNO.
+   */
+  apostar(usuarioId: number, cantidad: number, autorizar: () => void = () => {}): Promise<void> {
+    return this.encolar(async () => {
+      autorizar();
+      this.exigirPlazo("APUESTAS");
+      const jugador = this.obtenerJugador(usuarioId);
+      if (jugador.apuesta !== 0) throw new ErrorJuego("YA_APOSTASTE");
+      if (!CantidadApuestaSchema.safeParse(cantidad).success) throw new ErrorJuego("CANTIDAD_INVALIDA");
+      if (!jugador.conectado || jugador.salidaPendiente) throw new ErrorJuego("NO_ESTAS_EN_MESA");
+      if (!this.servicios.billetera || !this.rondaActual) throw new ErrorJuego("ERROR_INTERNO");
+      this.apuestasPendientes.add(usuarioId);
+      try {
+        const saldo = await this.servicios.billetera.debitarApuesta(usuarioId, cantidad, this.rondaActual);
+        // Una salida durante SQL conserva este asiento: el débito aceptado tiene que jugarse/pagarse.
+        jugador.apuesta = cantidad;
+        jugador.estado = "APOSTADO";
+        this.servicios.publicarBilletera?.(usuarioId, saldo);
+        this.cerrarSiTodosApostaron();
+        this.publicarEstado();
+      } finally {
+        this.apuestasPendientes.delete(usuarioId);
+        if (jugador.salidaPendiente && jugador.apuesta === 0) this.salir(usuarioId);
+      }
+    });
+  }
+
+  /**
+   * @param usuarioId - Dueño del turno vigente.
+   * @param autorizar - Revalidación del socket propietario al ejecutar.
+   * @returns Añade una carta; con 21 se planta y al superar 21 queda PASADO.
+   * @throws ErrorJuego FASE_INCORRECTA | NO_ESTAS_EN_MESA | NO_ES_TU_TURNO | ERROR_INTERNO.
+   */
+  pedir(usuarioId: number, autorizar: () => void = () => {}): Promise<void> {
+    return this.encolar(() => {
+      autorizar();
+      const jugador = this.exigirTurno(usuarioId);
+      jugador.mano.agregar(this.baraja.sacar());
+      if (jugador.mano.estaPasada()) jugador.estado = "PASADO";
+      if (jugador.mano.total() >= 21) this.avanzarTurno();
+      else this.publicarEstado();
+    });
+  }
+
+  /**
+   * @param usuarioId - Dueño del turno vigente.
+   * @param autorizar - Revalidación del socket propietario al ejecutar.
+   * @returns Planta al jugador y selecciona el siguiente turno elegible.
+   * @throws ErrorJuego FASE_INCORRECTA | NO_ESTAS_EN_MESA | NO_ES_TU_TURNO.
+   */
+  plantarse(usuarioId: number, autorizar: () => void = () => {}): Promise<void> {
+    return this.encolar(() => { autorizar(); this.exigirTurno(usuarioId); this.avanzarTurno(); });
+  }
+
+  /** @returns Espera las acciones en vuelo; útil para cierre y ensayos con reloj manual. */
+  esperarOperaciones(): Promise<void> { return this.pendientes; }
 
   /**
    * Paso interno posterior al débito confirmado; no implementa la intención WS apostar.
@@ -181,7 +255,7 @@ export class Mesa {
     };
   }
 
-  /** Impide nuevos relojes durante el cierre del transporte. @returns Sin valor. */
+  /** @returns Cancela el reloj al detener el servidor o el banco de pruebas. */
   detener(): void { this.detenida = true; this.reloj.cancelar(); }
 
   private abrirApuestas(): void {
@@ -250,10 +324,36 @@ export class Mesa {
 
   private programar(demora: number, accion: () => void): void {
     if (this.detenida) return;
+    const fase = this.fase, ronda = this.rondaActual, turno = this.turno;
     this.reloj.programar(demora, () => {
-      if (this.detenida) return;
-      try { accion(); }
-      catch (error) { console.error(`Error en reloj de ${this.id}`, error); }
+      const paso = () => {
+        if (!this.detenida && this.fase === fase && this.rondaActual === ronda && this.turno === turno) accion();
+      };
+      if (this.servicios.billetera) {
+        void this.encolar(paso).catch((error: unknown) => console.error(`Error en reloj de ${this.id}`, error));
+      } else {
+        try { paso(); } catch (error) { console.error(`Error en reloj de ${this.id}`, error); }
+      }
     });
+  }
+
+  private encolar<T>(accion: () => T | Promise<T>): Promise<T> {
+    const actual = this.pendientes.then(accion);
+    this.pendientes = actual.then(() => {}, () => {});
+    return actual;
+  }
+
+  private exigirPlazo(fase: FaseMesa): void {
+    this.exigirFase(fase);
+    if (this.detenida || (this.reloj.finEn !== null && this.reloj.ahora() >= this.reloj.finEn)) {
+      throw new ErrorJuego("FASE_INCORRECTA");
+    }
+  }
+
+  private exigirTurno(usuarioId: number): Jugador {
+    this.exigirPlazo("TURNOS");
+    const jugador = this.obtenerJugador(usuarioId);
+    if (this.turno !== jugador.indice || jugador.estado !== "JUGANDO") throw new ErrorJuego("NO_ES_TU_TURNO");
+    return jugador;
   }
 }

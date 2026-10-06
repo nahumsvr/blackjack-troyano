@@ -5,6 +5,18 @@ import { topicUsuario } from "../config";
 import type { Billetera } from "./Billetera";
 import type { Tienda } from "./Tienda";
 
+/** Permite que las operaciones del motor compartan la cola económica del usuario. */
+export type ManejadoresEconomia = ManejadoresEnrutador & {
+  /**
+   * Conserva el orden de commit y publicación entre juego y compras de todas las pestañas.
+   * @param usuarioId - Identidad autoritativa del usuario.
+   * @param accion - Operación y envío de su estado confirmado, dentro de la misma exclusión.
+   * @returns Resultado de la operación.
+   * @throws Propaga el error de la acción, sin bloquear las operaciones siguientes.
+   */
+  serializarUsuario: <T>(usuarioId: number, accion: () => Promise<T>) => Promise<T>;
+};
+
 /**
  * Conecta consultas y compras con el enrutador sin acoplar los servicios a Bun.serve.
  * @param billetera - Economía persistente que confirma compras antes de devolver saldos.
@@ -17,7 +29,7 @@ export function crearManejadoresEconomia(
   billetera: Billetera,
   tienda: Tienda,
   publicar: (topic: string, mensaje: MensajeServidor) => void,
-): ManejadoresEnrutador {
+): ManejadoresEconomia {
   const pendientes = new Map<number, Promise<void>>();
   const tiposEconomia = new Set(["billetera.consultar", "fichas.comprar", "tienda.catalogo",
     "tienda.comprar", "inventario.listar", "movimientos.listar"]);
@@ -29,20 +41,24 @@ export function crearManejadoresEconomia(
     if (socket.readyState === WebSocket.OPEN) socket.publish(topicUsuario(usuarioId), JSON.stringify(respuesta));
     else publicar(topicUsuario(usuarioId), respuesta);
   }
+  async function serializarUsuario<T>(usuarioId: number, accion: () => Promise<T>): Promise<T> {
+    const anterior = pendientes.get(usuarioId) ?? Promise.resolve();
+    const actual = anterior.catch(() => {}).then(accion);
+    const fin = actual.then(() => {}, () => {});
+    pendientes.set(usuarioId, fin);
+    try { return await actual; }
+    finally { if (pendientes.get(usuarioId) === fin) pendientes.delete(usuarioId); }
+  }
   return {
+    serializarUsuario,
     serializar: async (socket, mensaje, responder) => {
       if (!tiposEconomia.has(mensaje.type)) return responder();
       const usuarioId = usuarioDe(socket);
-      const anterior = pendientes.get(usuarioId) ?? Promise.resolve();
-      const actual = anterior.catch(() => {}).then(async () => {
+      await serializarUsuario(usuarioId, async () => {
         // Si se revocó mientras esperaba la cola, la operación todavía no comenzó.
         if (socket.data.usuarioId !== usuarioId) throw new ErrorJuego("NO_AUTENTICADO");
         await responder();
       });
-      const fin = actual.then(() => {}, () => {});
-      pendientes.set(usuarioId, fin);
-      try { await actual; }
-      finally { if (pendientes.get(usuarioId) === fin) pendientes.delete(usuarioId); }
     },
     "billetera.consultar": async (socket) => ({ type: "billetera", ...await billetera.consultar(usuarioDe(socket)) }),
     "fichas.comprar": async (socket, mensaje) => {

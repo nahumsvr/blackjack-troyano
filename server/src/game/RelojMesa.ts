@@ -32,19 +32,21 @@ export class RelojMesa {
    * Sustituye el timeout; la versión impide ejecutar callbacks ya despachados al cancelar.
    * @param demora - Milisegundos desde ahora.
    * @param accion - Paso interno de la mesa, que debe contener sus propios errores.
+   * @param mostrarVencimiento - false para reintentos internos que no son una cuenta regresiva pública.
    * @returns Vencimiento absoluto para todos los clientes.
    */
-  programar(demora: number, accion: () => void): number {
+  programar(demora: number, accion: () => void, mostrarVencimiento = true): number {
     this.cancelar();
     const version = this.version;
-    this.vencimiento = this.ahora() + demora;
+    const finEn = this.ahora() + demora;
+    this.vencimiento = mostrarVencimiento ? finEn : null;
     this.id = this.temporizador.programar(() => {
       if (version !== this.version) return;
       this.id = null;
-      this.vencimiento = null;
+      // Conservar el plazo vencido mientras el paso espera un commit SQL en la cola.
       accion();
     }, demora);
-    return this.vencimiento;
+    return finEn;
   }
 
   /** @returns Cancela el timeout y borra finEn; también invalida callbacks en vuelo. */
