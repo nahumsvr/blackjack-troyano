@@ -31,17 +31,18 @@ Solo se cuentan tareas con PR fusionado en `main` y criterio de "hecho" comproba
 | Dev | Completadas | Total | % |
 |---|---|---|---|
 | Hector | 7 | 19 | 37 % |
-| Nahum | 2 | 17 | 12 % |
+| Nahum | 3 | 17 | 18 % |
 | Massimo | 8 | 19 | 42 % |
 | Equipo | 0 | 2 | 0 % |
-| **Total** | **17** | **57** | **30 %** |
+| **Total** | **18** | **57** | **32 %** |
 
-Avance por hito: H1 10/14 (71 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 · H5 1/5 (20 %) · Entrega 0/1
+Avance por hito: H1 10/14 (71 %) · H2 6/19 (32 %) · H3 1/10 (10 %) · H4 0/8 · H5 1/5 (20 %) · Entrega 0/1
 
 - **Hechas:**
   - T-01, T-02, T-06, T-07, T-08, T-15 y T-16 (Hector); enrutador/auth, Carta/Baraja y Mano/Dealer fusionados y comprobados con Bun 1.3.13 y PostgreSQL 16.15.
   - T-10 (Nahum, PR #6 fusionado en `main`; marca restaurada desde `main` durante la revisión del PR #7).
   - T-12 (Nahum, PR #16): vista de tienda de solo lectura en `?mock=1`.
+  - T-27 (Nahum, PR #NN): muestrario con las 52 cartas y los 5 reversos del catálogo en `?mock=1&muestrario`.
   - T-04, T-05, T-23, T-24, T-25, T-34 y T-54 (Massimo). Su criterio está verificado con PostgreSQL 16 en Avance-M-02, que indicaba marcarlas al fusionarse el PR #4.
 - **T-03 hecha:** PR #4 aporta contrato y pruebas; PR #14 centraliza límites; PR #7 integró el cliente que consume `@blackjack/shared`.
 - **T-14 y T-22:** README/manual e interfaz `Billetera` están en `main`, pero sus criterios (instalación independiente e importación por Hector) carecen de evidencia de cierre; siguen pendientes.
@@ -62,7 +63,7 @@ Avance por hito: H1 10/14 (71 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 �
   - T-15/T-16 hechas; T-09/T-17/T-18 publicadas en PR #22/#28/#29, pendientes de revisión/fusión. T-19/T-20/T-21/T-26 también están publicadas en PR #30–#33 y aún no cuentan. Las prioridades y el alcance corresponden al líder.
 - **Nahum:**
   - T-33 guion de exposición (PR #17 fusionado, pendiente de aprobación del grupo).
-  - T-27 (desbloqueada por T-12): página de prueba con las 52 cartas → borradores de T-49 (manual) y T-51 (diapositivas) con capturas del mock.
+  - T-27 hecha (PR #NN) → borradores de T-49 (manual) y T-51 (diapositivas) con capturas del mock y del muestrario.
   - Verificar reconexión cliente de T-11 con T-08; al llegar T-09, verificar T-13 contra el servidor real.
 - **Massimo:**
   - Preparar la verificación de checklist T-44 cuando el equipo acuerde el corte.
@@ -110,3 +111,5 @@ Avance por hito: H1 10/14 (71 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 �
 | 2026-10-05 | Massimo: revisión parcial de T-54 atendida en PR #20: rutas lógicas POSIX/CRLF, alternativas lockfile/Compose y 10 pruebas con ZIP real. Typecheck y suite con PostgreSQL 16.15: 213 pruebas, 3,431 aserciones, cero fallos. Las cifras históricas del empaquetado se distinguen de la aceptación final; T-54/T-55 siguen pendientes. |
 | 2026-10-06 | Massimo: segunda revisión de #23 atendida: registro sin filas duplicadas y ordenado por fecha CDMX; PR #20 añadido al resumen. T-54 hecha, fusionada en c2daf78: Bun 1.3.13 genera ZIP de 124 archivos/272,903 bytes, validado con unzip del sistema (<20 MB); no es aceptación del ZIP final. Avance base16/57, Massimo8/19; T-48/T-55 pendientes. |
 | 2026-10-06 | Massimo: review de #26 atendida; PR limitado a evidencia T-06 y seguimiento, apilado sobre #23 actualizado. Capturas/medición del 5 oct: tres pestañas Chromium renderizadas muestran 3 y luego 2 en 32 ms, sobre código fusionado desde PR #3. T-06 hecha por Hector, verificada por Massimo; avance 17/57 (30 %), H1 10/14. Evidencia de integración se conserva fuera de este PR en la rama local respaldo/t06-integracion-antes-review-20261006; requiere integración/revisión aparte. |
+| 2026-10-06 | T-27 hecha por Nahum (PR #NN): muestrario `?mock=1&muestrario` con las 52 cartas, los 5 reversos del catálogo (solo CSS), dealer y asientos en sus estados; `Carta` acepta `reverso` para T-40. Typecheck y 244 pruebas en verde. Avance 18/57 (32 %), Nahum 3/17, H2 6/19. |
+| 2026-10-06 | Nahum: corrección local de arranque de T-01, pendiente de PR. `server/package.json` carga explícitamente `.env` de la raíz; `bun run dev` arranca desde `server/` y desde raíz sin el error de DATABASE_URL. Typecheck correcto con Bun 1.3.8; conectividad PostgreSQL no comprobada en esta corrección. README/manual actualizados. |
