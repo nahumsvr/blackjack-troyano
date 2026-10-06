@@ -1,14 +1,12 @@
 # ESTADO — ¿Dónde vamos?
 
-_Última actualización: mar 6 oct 2026 CDMX. Auditoría sobre `main` en `04802be` y PR abiertos. Fechas del registro en America/Mexico_City._
+_Última actualización: mar 6 oct 2026 CDMX. Auditoría iniciada sobre `main` en `04802be` y actualizada con `main` en `42b5b65` (#35, #28 y #22 fusionados). Fechas del registro en America/Mexico_City._
 
 ## Resumen
 
-`main` contiene contrato/BD/economía SQL (PR #4/#14), cliente y mock (#6/#7/#16), guion (#17), enrutador/auth (#18/#19), Carta/Baraja y Mano/Dealer (#25/#27), empaquetado (#20), documentación (#23), aceptación visual T-06 (#26) y reconexión con la misma sesión T-11 (#34).
+`main` contiene contrato/BD/economía SQL (PR #4/#14), cliente y mock (#6/#7/#16), guion (#17), enrutador/auth (#18/#19), Carta/Baraja y Mano/Dealer (#25/#27), empaquetado (#20), documentación (#23), aceptación visual T-06 (#26), reconexión con la misma sesión T-11 (#34), muestrario T-27 (#35), resolución de resultados y pagos T-17 (#28) y tres mesas con asientos T-09 (#22, que trae también la economía WebSocket #21 y la producción #24). `main` está protegida: cada PR necesita 1 aprobación de otro dev y se fusiona con squash.
 
-**PR #21 y #24 están fusionados en la rama de #22, todavía abierta.** Sus cambios de economía WebSocket y producción no están en `main`. El head auditado de #22 es `acd560a`; tiene conflictos y observaciones pendientes. En `main`, acceso y consulta de billetera funcionan, pero `lobby.listar` responde `ERROR_INTERNO`, no hay rondas reales y faltan los scripts raíz `build`/`start`.
-
-El camino crítico **T-01 → T-03 → T-07 → T-18 → T-20 → T-31** espera la integración de T-09/T-18/T-20. Hay código publicado en la cadena #28 → #29 → #30 → #31 → #32 → #33, pero sus tareas conservan casillas abiertas hasta cumplir fusión y aceptación.
+El camino crítico **T-01 → T-03 → T-07 → T-18 → T-20 → T-31** espera la integración de T-18/T-20. Hay código publicado en la cadena #29 → #30 → #31 → #32 → #33, pero sus tareas conservan casillas abiertas hasta cumplir fusión y aceptación. T-38 sigue abierta hasta jugar desde otra laptop por IP.
 
 ## Hito actual
 
@@ -24,29 +22,41 @@ Solo se cuentan tareas con código fusionado en `main` y criterio comprobado.
 
 | Dev | Completadas | Total | % |
 |---|---|---|---|
-| Hector | 7 | 19 | 37 % |
-| Nahum | 3 | 17 | 18 % |
+| Hector | 9 | 19 | 47 % |
+| Nahum | 4 | 17 | 24 % |
 | Massimo | 8 | 19 | 42 % |
 | Equipo | 0 | 2 | 0 % |
-| **Total** | **18** | **57** | **32 %** |
+| **Total** | **21** | **57** | **37 %** |
 
-Avance por hito: H1 11/14 (79 %) · H2 5/19 (26 %) · H3 1/10 (10 %) · H4 0/8 · H5 1/5 (20 %) · Entrega 0/1.
+Avance por hito: H1 12/14 (86 %) · H2 7/19 (37 %) · H3 1/10 (10 %) · H4 0/8 · H5 1/5 (20 %) · Entrega 0/1.
 
-- **Hector:** T-01/T-02/T-06/T-07/T-08/T-15/T-16.
-- **Nahum:** T-10/T-11/T-12; T-11 acreditada en PR #34 con cliente real, PostgreSQL y capturas.
+- **Hector:** T-01/T-02/T-06/T-07/T-08/T-09/T-15/T-16/T-17.
+- **Nahum:** T-10/T-11/T-12/T-27; T-11 acreditada en PR #34 con cliente real, PostgreSQL y capturas; T-27 en PR #35.
 - **Massimo:** T-03/T-04/T-05/T-23/T-24/T-25/T-34/T-54. T-54 acredita el script ZIP, no T-55 ni el paquete final.
 - **T-22:** interfaz/db fusionadas desde #4. #31 ya contiene consumidor y billetera falsa con el mismo contrato; queda comprobar esa integración revisada antes de cerrar el criterio.
 - **T-14/T-48:** requieren instalación independiente de Nahum. La fusión de #23 aportó documentación, no esa aceptación.
+- **PR #7 ya está en `main`:** T-28–T-30 y T-41 tienen implementación integrada; conservan casilla abierta cuando falta su criterio de aceptación completo.
 
 ## Verificación de esta auditoría
 
-Sobre `main` en `04802be`, con **Bun 1.3.13 y PostgreSQL 16.15**: typecheck, **236 pruebas / 3,540 aserciones**, cero fallos/omisiones, y build del cliente correctos. Se usaron schemas aleatorios de pruebas; no se ejecutó `db:reset`. El Bun global sigue en 1.4.2; la comprobación usó un ejecutable 1.3.13 aislado.
+Sobre `main` en `04802be` (anterior a #35, #28 y #22; no se repitió tras fusionarlos), con **Bun 1.3.13 y PostgreSQL 16.15**: typecheck, **236 pruebas / 3,540 aserciones**, cero fallos/omisiones, y build del cliente correctos. Se usaron schemas aleatorios de pruebas; no se ejecutó `db:reset`. El Bun global sigue en 1.4.2; la comprobación usó un ejecutable 1.3.13 aislado.
+Avance por hito: H1 12/14 (86 %) · H2 7/19 (37 %) · H3 1/10 (10 %) · H4 0/8 · H5 1/5 (20 %) · Entrega 0/1
+
+- **Hechas:**
+  - T-01, T-02, T-06, T-07, T-08, T-09, T-15, T-16 y T-17 (Hector); mesas con asientos y espectadores (PR #22), resolver (PR #28), enrutador/auth, Carta/Baraja y Mano/Dealer fusionados y comprobados con Bun 1.3.13 y PostgreSQL 16.15.
+  - T-10 (Nahum, PR #6 fusionado en `main`; marca restaurada desde `main` durante la revisión del PR #7).
+  - T-12 (Nahum, PR #16): vista de tienda de solo lectura en `?mock=1`.
+  - T-11 (Nahum, PR #34): reconexión con la misma sesión contra el servidor autenticado.
+  - T-27 (Nahum, PR #35): muestrario con las 52 cartas y los 5 reversos del catálogo en `?mock=1&muestrario`.
+  - T-04, T-05, T-23, T-24, T-25, T-34 y T-54 (Massimo). Su criterio está verificado con PostgreSQL 16 en Avance-M-02, que indicaba marcarlas al fusionarse el PR #4.
+- **T-03 hecha:** PR #4 aporta contrato y pruebas; PR #14 centraliza límites; PR #7 integró el cliente que consume `@blackjack/shared`.
+- **T-14 y T-22:** README/manual e interfaz `Billetera` están en `main`, pero sus criterios (instalación independiente e importación por Hector) carecen de evidencia de cierre; siguen pendientes.
+- **PR #7 ya está en `main`:** T-28–T-30 y T-41 tienen implementación integrada; conservan casilla abierta cuando falta su criterio de aceptación completo.
 
 ## Bloqueos activos
 
-- **#22 / T-09:** conflictos con `main` y revisión de transferencia de asiento entre pestañas, limpieza de cierre, cosméticos/JSDoc/topics. Al integrarse aporta también #21/#24. Desbloquea verificación de T-13/T-30 y producción.
-- **Cadena del motor #28–#33:** requiere revisiones y actualización sucesiva sobre las dependencias. #31 aún contiene auth/economía anteriores a las correcciones de #21; conservar logout compartido, caducidad, saldos ordenados, respuestas sin duplicados y servidor estático de #24 al resolver los cruces.
-- **#35 / T-27:** muestrario preparado, PR con conflictos; actualizar sin perder T-11 ni sobrescribir contadores.
+- **Cadena del motor #29–#33:** #28 ya está en `main`; falta actualizar cada rama sobre la nueva base y revisarla. #31 aún contiene auth/economía anteriores a las correcciones de #21; conservar logout compartido, caducidad, saldos ordenados, respuestas sin duplicados y servidor estático de #24 al resolver los cruces.
+- **T-13/T-30/T-38:** #22 ya está en `main`; falta verificarlas contra el servidor real (lobby, compra de 1,000 fichas y juego desde otra laptop por IP).
 - **T-28/T-29/T-31/T-41:** esperan acciones y rondas reales integradas. El historial final requiere compras, apuestas y artículos con saldos correctos.
 - **T-36/T-37/T-42:** falta aceptación de desconexión/reserva de 60 s y endurecimiento de 20 mensajes/s; la reconexión de sesión T-11 no prueba recuperación de asiento/mano.
 - **T-35:** espera T-18 integrado y validación autoritativa de fase; coordinar con el alcance que confirme el líder para cosméticos/tienda.
@@ -54,11 +64,18 @@ Sobre `main` en `04802be`, con **Bun 1.3.13 y PostgreSQL 16.15**: typecheck, **2
 - **T-33/T-51/T-52/T-53/T-56:** falta aprobación del guion/diapositivas, ensayos cronometrados y video de respaldo.
 - **T-48/T-50/T-55/T-57:** manual independiente, arquitectura final revisada, ZIP jugable en máquina limpia y subida/verificación final.
 
-## Hoy le toca a… (mar 6 oct, después de T-11)
+## Hoy le toca a… (mar 6 oct, después de T-09/T-17/T-27)
 
-- **Hector:** corregir/rebasar #22 y continuar las revisiones de #28–#33; completar aceptación de T-36/T-37 y producción LAN.
-- **Nahum:** actualizar #35, comprobar lobby/billetera reales cuando entre #22, y mesa/resultados/historial al integrar el motor; probar instalación según README/manual y preparar exposición/manual de usuario.
-- **Massimo:** apoyar los bloqueos de #22 y la composición económica de #31; preparar evidencia de T-22, auditoría JSDoc, matriz de T-44 y diagramas/manuales. Coordinar T-31 con tres laptops cuando exista juego integrado; regenerar el ZIP después de las correcciones.
+- **Hector:**
+  - T-09/T-17 hechas (PR #22/#28); T-18 en PR #29 y T-19/T-20/T-21/T-26 en PR #30–#33, pendientes de revisión/fusión; no cuentan todavía. Las prioridades y el alcance corresponden al líder.
+- **Nahum:**
+  - T-33 guion de exposición (PR #17 fusionado, pendiente de aprobación del grupo).
+  - T-27 hecha (PR #35) → borradores de T-49 (manual) y T-51 (diapositivas) con capturas del mock y del muestrario.
+  - T-11 hecha (reconexión con la misma sesión verificada con T-08); T-09 ya está en `main`: verificar T-13 contra el servidor real.
+- **Massimo:**
+  - Preparar la verificación de checklist T-44 cuando el equipo acuerde el corte.
+  - Handlers de economía para el enrutador de T-07 y coordinación con Hector.
+  - Adelantar empaquetado y documentación; las decisiones de alcance permanecen con el líder.
 
 Plan para la sesión y hasta la entrega: [Avance-M-06.md](Avance-M-06.md). Las decisiones de alcance permanecen con el líder.
 
@@ -105,3 +122,11 @@ Plan para la sesión y hasta la entrega: [Avance-M-06.md](Avance-M-06.md). Las d
 | 2026-10-06 | Massimo: review de #26 atendida; PR limitado a evidencia T-06 y seguimiento, apilado sobre #23 actualizado. Capturas/medición del 5 oct: tres pestañas Chromium renderizadas muestran 3 y luego 2 en 32 ms, sobre código fusionado desde PR #3. T-06 hecha por Hector, verificada por Massimo; avance 17/57 (30 %), H1 10/14. Evidencia de integración se conserva fuera de este PR en la rama local respaldo/t06-integracion-antes-review-20261006; requiere integración/revisión aparte. |
 | 2026-10-06 | T-11 hecha por Nahum: prueba de integración con cliente real (`Conexion` + `ControladorJuego` + reductor) contra servidor autenticado y PostgreSQL 16; reinicio del servidor → `reconectando` → vuelve solo con la misma sesión vía `reanudar`, y caso de token inválido. Verificación visual en navegador con capturas en `docs/evidencia/t11/`. 236 pruebas y typecheck en verde. Avance 18/57 (32 %), H1 11/14. |
 | 2026-10-06 | Massimo: auditoría de main `04802be` y PRs. #23/#26/#34 están en main; #21/#24 se fusionaron en la rama de #22 y todavía no llegan a main. #22 y #35 tienen conflictos; #31 contiene auth/economía anteriores a la revisión de #21. Bun 1.3.13/PostgreSQL 16.15: typecheck, 236 pruebas/3,540 aserciones y build del cliente correctos. Sin nuevas casillas cerradas: 18/57, Massimo 8/19. Plan de sesión/entrega en Avance-M-06. |
+| 2026-10-06 | T-27 hecha por Nahum (PR #35): muestrario `?mock=1&muestrario` con las 52 cartas, los 5 reversos del catálogo (solo CSS), dealer y asientos en sus estados; `Carta` acepta `reverso` para T-40. Typecheck y 244 pruebas en verde. Al integrarse con T-11 (#34): avance 19/57 (33 %), Nahum 4/17, H1 11/14, H2 6/19. |
+| 2026-10-06 | Nahum: corrección local de arranque de T-01, pendiente de PR. `server/package.json` carga explícitamente `.env` de la raíz; `bun run dev` arranca desde `server/` y desde raíz sin el error de DATABASE_URL. Typecheck correcto con Bun 1.3.8; conectividad PostgreSQL no comprobada en esta corrección. README/manual actualizados. |
+| 2026-10-06 | Hector: revisión de T-17 atendida en PR #28; base main sin commits duplicados de #25/#27, copias de manos y pagos ligados a LIMITES_CANTIDAD. Typecheck y 250 pruebas SQL sin fallos; pendiente aprobación/fusión. |
+| 2026-10-06 | Hector: segunda revisión de PR #28 atendida sobre main con #35; conflicto de ESTADO resuelto sin perder T-27. Se restauraron pruebas separadas para enlaces a archivo (Unix) y directorio/junction (Windows) en el ZIP. Typecheck y 218 pruebas pasan; 45 omitidas sin TEST_DATABASE_URL y por condiciones de plataforma. T-17 sigue pendiente de aprobación/fusión; avance en main 19/57. |
+| 2026-10-06 | Hector: primera revisión de T-09 en PR #22 (`6a93a43`); main incorporada y #21/#24 conservadas. Traspaso, cosméticos, publicaciones y cierre corregidos; tipos y 270 pruebas PostgreSQL sin fallos. Revisión posterior solicita conservar la pestaña anterior como espectadora según PLAN §7.5; pendiente aprobación/fusión. |
+| 2026-10-06 | Hector: segunda revisión de T-09 atendida en PR #22; pestaña anterior como espectadora según PLAN §7.5, salida sin liberar asiento ajeno y recuperación tras salir/cerrar la dueña. Cliente de main conservado y conflicto de ESTADO resuelto con T-27. Bun 1.3.13/PostgreSQL 16.15: typecheck correcto y suite SQL completa sin fallos. Pendiente aprobación/fusión; avance aceptado 19/57. |
+| 2026-10-06 | Massimo: PR #22 fusionado con main tras revisar la segunda corrección (`348f849`). Incluye T-09 y las integraciones de #21 (T-34 por WebSocket) y #24 (T-38). T-09 y T-17 hechas por Hector (PR #22 y #28). T-38 sigue abierta hasta jugar desde otra laptop por IP. Avance 21/57 (37 %), Hector 9/19, H1 12/14, H2 7/19. |
+| 2026-10-06 | Revisión de PR #36: conflictos resueltos contra main `42b5b65`. Se actualizan las afirmaciones que dejaron de ser ciertas (#22, #28 y #35 ya fusionados; T-09/T-17/T-27 hechas) y se conserva el avance de main 21/57. La verificación de 236 pruebas corresponde a `04802be` y no se repitió. |

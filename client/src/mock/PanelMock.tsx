@@ -1,6 +1,7 @@
 /**
  * Barra superior del modo mock (`?mock=1`): permite recorrer las 6 fases de la mesa, forzar
- * cada resultado de la ronda (para ver sus animaciones) y simular una caída de red sin servidor.
+ * cada resultado de la ronda (para ver sus animaciones), simular una caída de red sin servidor y
+ * abrir el muestrario de cartas (`&muestrario`).
  * No se muestra fuera del modo mock.
  */
 import { FaseMesaSchema, ResultadoSchema } from "@blackjack/shared";
@@ -56,6 +57,9 @@ export function PanelMock({ servidor }: PropsPanelMock): ReactNode {
       <button type="button" onClick={() => servidor.simularCaida(CAIDA_MS)} className="ml-2 rounded bg-red-800 px-2 py-0.5">
         Simular caída
       </button>
+      <a href="?mock=1&muestrario" className="ml-2 rounded bg-fuchsia-800 px-2 py-0.5 hover:bg-fuchsia-700">
+        Muestrario de cartas
+      </a>
     </aside>
   );
 }

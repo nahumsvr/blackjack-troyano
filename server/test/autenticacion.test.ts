@@ -88,7 +88,12 @@ const destino = process.env.TEST_DATABASE_URL;
     expect(await segunda.enviar({ type: "reanudar", token: sesion.token })).toMatchObject({ type: "sesion" });
     expect(await primera.enviar({ type: "logout" })).toMatchObject({ type: "ok" });
     expect(await primera.enviar({ type: "billetera.consultar" })).toMatchObject({ codigo: "NO_AUTENTICADO" });
-    expect(await segunda.enviar({ type: "billetera.consultar" })).toMatchObject({ codigo: "SESION_INVALIDA" });
+    expect(await segunda.esperar((mensaje) => mensaje.type === "error" && mensaje.reqId === undefined))
+      .toMatchObject({ codigo: "SESION_INVALIDA" });
+    // Puede volver a entrar inmediatamente; no necesita provocar primero una validación protegida.
+    expect(await segunda.enviar({ type: "login", usuario, contrasena: "secreto08" })).toMatchObject({ type: "sesion" });
+    expect(await segunda.enviar({ type: "logout" })).toMatchObject({ type: "ok" });
+    expect(await segunda.enviar({ type: "reanudar", token: sesion.token })).toMatchObject({ codigo: "SESION_INVALIDA" });
     expect(await primera.enviar({ type: "reanudar", token: sesion.token })).toMatchObject({ codigo: "SESION_INVALIDA" });
     expect(await primera.enviar({ type: "login", usuario, contrasena: "secreto08" })).toMatchObject({ type: "sesion" });
   });
