@@ -117,15 +117,18 @@ const destino = process.env.TEST_DATABASE_URL;
     await cliente.enviar({ type: "fichas.comprar", cantidad: 10, clave: crypto.randomUUID() });
     await segunda.esperar((mensaje) => mensaje.type === "billetera" && mensaje.fichas === 510);
     const desde = segunda.mensajes.length;
+    const clienteDesde = cliente.mensajes.length;
     const respuestas = await Promise.all([cliente, segunda].map((pestana) =>
       pestana.enviar({ type: "tienda.comprar", articuloId: "avatar_robot" })));
     expect(respuestas.filter((respuesta) => respuesta.type === "inventario")).toHaveLength(1);
     expect(respuestas.filter((respuesta) => respuesta.type === "error")).toMatchObject([{ codigo: "YA_POSEIDO" }]);
-    const inventario = await segunda.esperar((mensaje) => mensaje.type === "inventario" && mensaje.reqId === undefined, desde);
+    const par = respuestas[0]?.type === "inventario" ? segunda : cliente;
+    const parDesde = par === segunda ? desde : clienteDesde;
+    const inventario = await par.esperar((mensaje) => mensaje.type === "inventario" && mensaje.reqId === undefined, parDesde);
     if (inventario.type !== "inventario") throw new Error("No hubo inventario");
     expect(inventario.articulos.filter((articulo) => articulo.id === "avatar_robot")).toHaveLength(1);
     expect("reqId" in inventario).toBe(false);
-    const saldo = await segunda.esperar((mensaje) => mensaje.type === "billetera" && mensaje.reqId === undefined, desde);
+    const saldo = await par.esperar((mensaje) => mensaje.type === "billetera" && mensaje.reqId === undefined, parDesde);
     expect(saldo).toMatchObject({ fichas: 360, dinero: 9990 });
     const catalogo = await cliente.enviar({ type: "tienda.catalogo" });
     if (catalogo.type === "catalogo") expect(catalogo.articulos.find((articulo) => articulo.id === "avatar_robot")?.poseido).toBe(true);
@@ -175,7 +178,7 @@ const destino = process.env.TEST_DATABASE_URL;
     for (const [pestana, inicio] of [[cliente, desde], [compartida, compartidaDesde]] as const) {
       expect(pestana.mensajes.slice(inicio).some((mensaje) => mensaje.type === "billetera")).toBe(false);
     }
-    expect(await compartida.enviar({ type: "billetera.consultar" })).toMatchObject({ codigo: "SESION_INVALIDA" });
+    expect(await compartida.enviar({ type: "billetera.consultar" })).toMatchObject({ codigo: "NO_AUTENTICADO" });
   });
 
   test("reanudar en vuelo termina de vincular antes de que logout revoque sus publicaciones", async () => {
@@ -220,7 +223,7 @@ const destino = process.env.TEST_DATABASE_URL;
       await independiente.enviar({ type: "fichas.comprar", cantidad: 10, clave: crypto.randomUUID() });
       await reanudada.enviar({ type: "ping" });
       expect(reanudada.mensajes.slice(desde).some((mensaje) => mensaje.type === "billetera")).toBe(false);
-      expect(await reanudada.enviar({ type: "billetera.consultar" })).toMatchObject({ codigo: "SESION_INVALIDA" });
+      expect(await reanudada.enviar({ type: "billetera.consultar" })).toMatchObject({ codigo: "NO_AUTENTICADO" });
     } finally {
       liberar.resolve();
       sesiones.validar = validar;
