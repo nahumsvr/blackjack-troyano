@@ -20,9 +20,28 @@ export interface IntegracionSesion {
 export function crearEnrutadorAutenticado(
   sesiones: Sesiones, adicionales: ManejadoresEnrutador = {}, integracion: IntegracionSesion = {},
 ): Enrutador {
+  const conexionesPorToken = new Map<string, Set<SocketConexion>>();
+  function limpiarSesion(socket: SocketConexion): void {
+    if (socket.data.usuarioId !== undefined) socket.unsubscribe(`usuario:${socket.data.usuarioId}`);
+    if (socket.data.token) {
+      const conexiones = conexionesPorToken.get(socket.data.token);
+      conexiones?.delete(socket);
+      if (conexiones?.size === 0) conexionesPorToken.delete(socket.data.token);
+    }
+    delete socket.data.usuarioId;
+    delete socket.data.token;
+    delete socket.data.usuario;
+    delete socket.data.equipado;
+    delete socket.data.alCerrar;
+  }
   function vincular(socket: SocketConexion, sesion: Sesion): MensajeServidor {
     if (socket.readyState === WebSocket.OPEN) {
       Object.assign(socket.data, { usuarioId: sesion.usuario.id, token: sesion.token, usuario: sesion.usuario, equipado: sesion.equipado });
+      socket.subscribe(`usuario:${sesion.usuario.id}`);
+      const conexiones = conexionesPorToken.get(sesion.token) ?? new Set<SocketConexion>();
+      conexiones.add(socket);
+      conexionesPorToken.set(sesion.token, conexiones);
+      socket.data.alCerrar = () => limpiarSesion(socket);
       integracion.alAutenticar?.(socket, sesion);
     }
     return { type: "sesion", ...sesion, mesaId: integracion.mesaDeUsuario?.(sesion.usuario.id) ?? null };
@@ -34,9 +53,14 @@ export function crearEnrutadorAutenticado(
     reanudar: async (socket, mensaje) => vincular(socket, await sesiones.validar(mensaje.token)),
     logout: async (socket) => {
       if (!socket.data.token) throw new ErrorJuego("NO_AUTENTICADO");
-      await sesiones.cerrar(socket.data.token);
-      integracion.alCerrar?.(socket);
-      limpiarSesion(socket);
+      const token = socket.data.token;
+      await sesiones.cerrar(token);
+      // Un token reanudado en otra pestaña también deja de recibir eventos privados.
+      for (const conexion of [...conexionesPorToken.get(token) ?? []]) {
+        integracion.alCerrar?.(conexion);
+        if (conexion === socket) limpiarSesion(conexion);
+        else conexion.unsubscribe(`usuario:${conexion.data.usuarioId}`);
+      }
       return { type: "ok" };
     },
   }, undefined, async (socket) => {
@@ -52,11 +76,4 @@ export function crearEnrutadorAutenticado(
       throw error;
     }
   });
-}
-
-function limpiarSesion(socket: SocketConexion): void {
-  delete socket.data.usuarioId;
-  delete socket.data.token;
-  delete socket.data.usuario;
-  delete socket.data.equipado;
 }
