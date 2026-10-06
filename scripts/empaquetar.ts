@@ -1,11 +1,20 @@
 /** Genera el ZIP de entrega con fuentes y manuales, sin datos ni dependencias locales. */
 import { copyFile, lstat, mkdir, mkdtemp, readdir, rename, rm } from "node:fs/promises";
-import { dirname, join, relative } from "node:path";
+import { dirname, join, posix, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
+const ARCHIVOS_OBLIGATORIOS = [
+  "README.md", ".env.example", "package.json", "bunfig.toml",
+  "docs/manual-instalacion.md", "server/db/schema.sql", "server/db/seed.sql",
+];
+const ALTERNATIVAS_OBLIGATORIAS = [
+  ["bun.lock", "bun.lockb"],
+  ["compose.yaml", "compose.yml", "docker-compose.yaml", "docker-compose.yml"],
+];
+// La selección raíz nace de los mismos requisitos, para no aceptar un nombre que se omita al copiar.
 const ARCHIVOS_RAIZ = [
-  ".env.example", ".gitignore", "README.md", "package.json", "bun.lock",
-  "bun.lockb", "bunfig.toml", "tsconfig.base.json", "docker-compose.yml",
+  ".gitignore", "tsconfig.base.json", ...ARCHIVOS_OBLIGATORIOS.filter((ruta) => !ruta.includes("/")),
+  ...ALTERNATIVAS_OBLIGATORIAS.flat(),
 ];
 const CARPETAS_FUENTE = ["server", "client", "shared", "scripts", "docs", "documentation"];
 const CARPETAS_EXCLUIDAS = new Set(["node_modules", ".git", "dist", "coverage", ".cache"]);
@@ -36,7 +45,8 @@ async function recoger(raiz: string, carpeta: string): Promise<string[]> {
   for (const entrada of entradas.sort((a, b) => a.name.localeCompare(b.name))) {
     if (excluir(entrada.name)) continue;
     if (/[\r\n]/.test(entrada.name)) throw new Error("Un nombre de archivo contiene un salto de línea.");
-    const ruta = join(carpeta, entrada.name);
+    // Las rutas del listado ZIP usan '/', independientemente del separador nativo de I/O.
+    const ruta = posix.join(carpeta, entrada.name);
     if (entrada.isDirectory()) archivos.push(...await recoger(raiz, ruta));
     else if (entrada.isFile()) archivos.push(ruta);
     else throw new Error("La entrega requiere archivos regulares: " + ruta);
@@ -85,8 +95,13 @@ export async function empaquetarProyecto(raiz: string): Promise<{
     if (!entrada.isDirectory()) throw new Error("La entrega requiere una carpeta regular: " + carpeta);
     archivos.push(...await recoger(raiz, carpeta));
   }
-  for (const obligatorio of ["README.md", ".env.example", "package.json", "docs/manual-instalacion.md"]) {
+  for (const obligatorio of ARCHIVOS_OBLIGATORIOS) {
     if (!archivos.includes(obligatorio)) throw new Error("Falta el archivo de entrega " + obligatorio + ".");
+  }
+  for (const alternativas of ALTERNATIVAS_OBLIGATORIAS) {
+    if (!alternativas.some((nombre) => archivos.includes(nombre))) {
+      throw new Error("Falta uno de los archivos de entrega: " + alternativas.join(" | ") + ".");
+    }
   }
   const temporal = await mkdtemp(join(raiz, ".empaquetar-"));
   const nombreProyecto = "blackjack-equipo";
@@ -102,8 +117,8 @@ export async function empaquetarProyecto(raiz: string): Promise<{
     if (bytes >= LIMITE_BYTES) throw new Error("El ZIP mide " + bytes + " bytes; debe pesar menos de 20 MB.");
     await ejecutar(["unzip", "-tqq", zipTemporal], temporal);
     const listado = await ejecutar(["unzip", "-Z1", zipTemporal], temporal);
-    const contenido = listado.trim().split("\n").filter((ruta) => !ruta.endsWith("/")).sort();
-    const esperado = archivos.map((ruta) => nombreProyecto + "/" + ruta).sort();
+    const contenido = listado.trim().split(/\r?\n/).filter((ruta) => !ruta.endsWith("/")).sort();
+    const esperado = archivos.map((ruta) => posix.join(nombreProyecto, ruta)).sort();
     if (JSON.stringify(contenido) !== JSON.stringify(esperado)) {
       throw new Error("El contenido del ZIP no coincide con las fuentes seleccionadas.");
     }

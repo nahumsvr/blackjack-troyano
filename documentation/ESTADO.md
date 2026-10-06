@@ -75,6 +75,7 @@ Avance por hito: H1 8/14 (57 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 ·
 
 | Fecha | Nota |
 |---|---|
+| 2026-10-05 | Massimo: T-54 verificada por adelantado en ZIP real y copia extraída: instalación con lockfile fijo, typecheck, 203 pruebas con PostgreSQL 16.15 y build del cliente correctos. T-48/T-55 y entrega final pendientes. Auditoría de 26 declaraciones públicas de shared/db/store sin JSDoc faltante; revisión T-46 pendiente. Ver Avance-M-04.md. |
 | 2026-10-05 | Hector: T-16 implementada en PR #27; dieciséis pruebas nuevas verifican Ases, natural, pasadas y dealer. Typecheck y 224 pruebas con PostgreSQL 16 pasan sin fallos/omisiones; pendiente revisión/fusión. |
 | 2026-10-05 | Hector: T-15 implementada en PR #25; Carta/Baraja y cinco pruebas verifican composición, extracción y umbral. Typecheck y 208 pruebas con PostgreSQL 16 pasan sin fallos/omisiones. Pendiente revisión/fusión; no se suma al avance de main. |
 | 2026-10-05 | Hector: T-07 implementada desde main con el contrato de PR #14 y cliente de PR #7 revisados; PR #18 en borrador. Typecheck correcto, 166 pruebas sin fallos (29 SQL omitidas por falta de TEST_DATABASE_URL) y build del cliente correcto. Seis pruebas nuevas con sockets reales cubren ataques, UTF-8, reqId, autorización y fallos async. T-06 visual sigue pendiente: el navegador no inició por fallo de ACL del entorno. |
@@ -104,3 +105,4 @@ Avance por hito: H1 8/14 (57 %) · H2 3/19 (16 %) · H3 1/10 (10 %) · H4 0/8 ·
 | 2026-10-06 | T-12 hecha por Nahum (PR #16): pestaña «Tienda» de solo lectura en el menú lateral con el catálogo del mock; desbloquea T-27. Avance 11/57 (19 %). |
 | 2026-10-05 | Hector: T-07 hecha, PR #18 fusionado. T-08 implementada con nueve pruebas PostgreSQL/WebSocket, registro atómico y sesiones persistentes; pendiente revisión/fusión. Docker recuperado conservando respaldos y datos. Avance fusionado: 12/57 (21 %), H1 8/14. |
 | 2026-10-05 | T-08 publicada por Hector en PR #19 sobre main actualizado con PR #16 y #17. Suite SQL completa: 203 pruebas, cero fallos/omisiones; typecheck correcto. Pendiente revisión/fusión. |
+| 2026-10-05 | Massimo: revisión parcial de T-54 atendida en PR #20: rutas lógicas POSIX/CRLF, alternativas lockfile/Compose y 10 pruebas con ZIP real. Typecheck y suite con PostgreSQL 16.15: 213 pruebas, 3,431 aserciones, cero fallos. Las cifras históricas del empaquetado se distinguen de la aceptación final; T-54/T-55 siguen pendientes. |
