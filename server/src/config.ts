@@ -1,5 +1,6 @@
 /** Configuración central del servidor; los valores se amplían por tarea. */
 import { LIMITES_CANTIDAD } from "@blackjack/shared";
+import { fileURLToPath } from "node:url";
 
 /** Dirección LAN en la que escucha el servidor. */
 export const HOST = "0.0.0.0";
@@ -7,6 +8,8 @@ export const HOST = "0.0.0.0";
 export const PUERTO = 3000;
 /** Ruta del upgrade WebSocket descrita en documentation/PLAN.md. */
 export const RUTA_WS = "/ws";
+/** Build de Vite resuelto desde el módulo; no depende del directorio de arranque. */
+export const DIRECTORIO_CLIENTE = fileURLToPath(new URL("../../client/dist/", import.meta.url));
 /** Topic compartido por las conexiones del lobby. */
 export const TOPIC_LOBBY = "lobby";
 /** Mesas fijas del Hito 1; el contrato compartido establece cinco asientos. */
