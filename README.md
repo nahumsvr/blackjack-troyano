@@ -69,6 +69,8 @@ El entorno objetivo se verificó el 4 de octubre: Compose levanta PostgreSQL 16.
 
 La corrida histórica del 5 oct, basada en `main` (`831dcd2`) más cambios locales del empaquetador, pasó instalación con lockfile fijo, typecheck, 203 pruebas con PostgreSQL 16.15 y build con Bun 1.4.2. Durante la revisión del PR #23 se repitieron esas comprobaciones en la misma copia extraída con **Bun 1.3.13**: 203 pruebas / 3,402 aserciones, cero fallos u omisiones, typecheck/build correctos. La rama documental, después de incorporar Carta/Baraja de PR #25, pasó 208 pruebas con esa misma versión objetivo. [Evidencia histórica](documentation/Revision-PR-23.md). La integración actual tiene [su propia evidencia](documentation/Entrega-Hector-2026-10-06.md); ninguna de estas corridas acredita instalación independiente ni el ZIP final.
 
+La auditoría del 6 oct sobre `main` en `04802be` pasó typecheck, **236 pruebas / 3,540 aserciones**, cero fallos/omisiones, y build del cliente con Bun 1.3.13/PostgreSQL 16.15. T-11 ya tiene [evidencia de reconexión con la misma sesión](docs/evidencia/t11/README.md) desde PR #34. Después se fusionaron #35, #28 y #22 (con #21 y #24); el [seguimiento y plan de integración](documentation/Avance-M-06.md) documenta los siguientes pasos.
+
 ## Organización
 
 | Ruta | Función actual |
