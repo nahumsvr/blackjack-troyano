@@ -90,7 +90,7 @@ El primer comando genera `client/dist` con Vite. El segundo inicia Bun en `0.0.0
 
 El ZIP no contiene `dist`: compila tras cada instalación o actualización del código del cliente. Si el build falta, Bun responde «Cliente no compilado. Ejecuta bun run build.» con 404, y `/ws` sigue disponible. Un archivo desconocido devuelve 404; el servidor no lo sustituye por HTML. `Ctrl+C` detiene Bun y cierra su pool SQL.
 
-Se verificaron HTML, JS/CSS y WebSocket con el build real en un puerto efímero. La comprobación en otra laptop por el puerto 3000 sigue pendiente; el puerto local estaba ocupado por un proceso ajeno que se conservó. El inicio de producción no implementa todavía el motor ni convierte el mock en una partida real.
+La comprobación en otra laptop por el puerto 3000 sigue pendiente.
 
 ## Problemas habituales
 

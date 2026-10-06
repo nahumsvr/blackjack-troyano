@@ -10,6 +10,10 @@ export const PUERTO = 3000;
 export const RUTA_WS = "/ws";
 /** Build de Vite resuelto desde el módulo; no depende del directorio de arranque. */
 export const DIRECTORIO_CLIENTE = fileURLToPath(new URL("../../client/dist/", import.meta.url));
+/** Revalidar documentos y archivos cuyo nombre no cambia con su contenido. */
+export const CACHE_CLIENTE_REVALIDAR = "no-cache";
+/** Vite incorpora el hash de contenido al nombre; esos assets pueden durar un año. */
+export const CACHE_CLIENTE_CON_HASH = "public, max-age=31536000, immutable";
 /** Topic compartido por las conexiones del lobby. */
 export const TOPIC_LOBBY = "lobby";
 /**

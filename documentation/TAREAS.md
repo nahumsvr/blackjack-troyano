@@ -146,6 +146,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 - [ ] T-38 · En producción el servidor sirve `client/dist` (un solo puerto 3000) y el cliente usa el mismo host para `/ws` · Hector · depende de: T-10
   - **Hecho cuando:** `bun run build && bun run start` y otra laptop abre `http://<ip>:3000` y juega.
   - **Desbloqueada (2026-10-05):** T-10 ya está en `main` (PR #6). El cliente construye la URL de `/ws` con el mismo host, así que funciona servido por Bun sin cambios.
+  - **Avance — PR #24 (2026-10-05):** Bun sirve HTML y assets del build junto con `/ws`; pruebas HTTP/WebSocket verifican MIME, HEAD, rutas inválidas, symlinks y caché. HTML y archivos sin hash se revalidan; assets con hash usan caché inmutable. Pendientes revisión de Hector, fusión y prueba LAN con juego desde otra laptop; la casilla sigue abierta.
 
 ### Nahum
 - [ ] T-39 · Tienda: catálogo por tipo con precio, "poseído" y compra con confirmación · Nahum · depende de: T-34

@@ -1,4 +1,4 @@
-/** Transporte WebSocket nativo y conteo de conexiones del lobby (T-06). */
+/** Transporte WebSocket y conteo del lobby (T-06); sirve el cliente compilado (T-38). */
 import { type Server } from "bun";
 import { DIRECTORIO_CLIENTE, HOST, PUERTO, RUTA_WS, TOPIC_LOBBY } from "../config";
 import { servirCliente } from "./clienteEstatico";

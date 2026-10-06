@@ -1,8 +1,9 @@
 /** Sirve únicamente el build de Vite; comparte puerto con WebSocket y limita rutas al dist. */
 import { realpath, stat } from "node:fs/promises";
 import { resolve, sep } from "node:path";
-import { DIRECTORIO_CLIENTE } from "../config";
+import { CACHE_CLIENTE_CON_HASH, CACHE_CLIENTE_REVALIDAR, DIRECTORIO_CLIENTE } from "../config";
 
+/** @returns Respuesta 404 sin sustituir un archivo ausente por el HTML inicial. */
 function noEncontrado(): Response {
   return new Response("No encontrado", { status: 404 });
 }
@@ -40,8 +41,12 @@ export async function servirCliente(peticion: Request, directorio = DIRECTORIO_C
     const info = await stat(real);
     if (!info.isFile()) return noEncontrado();
     const archivo = Bun.file(real);
+    // Solo el patrón de hash de Vite dentro de assets permite caché inmutable;
+    // index.html y nombres estables deben revalidarse después de recompilar.
+    const cache = /^\/assets\/[^/]+-[A-Za-z0-9_-]{8}\.[^/]+$/.test(ruta)
+      ? CACHE_CLIENTE_CON_HASH : CACHE_CLIENTE_REVALIDAR;
     return new Response(peticion.method === "HEAD" ? null : archivo, {
-      headers: { "Content-Type": archivo.type, "Content-Length": String(info.size) },
+      headers: { "Content-Type": archivo.type, "Content-Length": String(info.size), "Cache-Control": cache },
     });
   } catch (error) {
     if (esAusente(error)) return noEncontrado();
@@ -49,10 +54,21 @@ export async function servirCliente(peticion: Request, directorio = DIRECTORIO_C
   }
 }
 
+/**
+ * Comprueba el límite del build incluyendo el separador para evitar prefijos hermanos.
+ * @param archivo - Ruta absoluta candidata.
+ * @param raiz - Directorio absoluto del build.
+ * @returns Si el archivo es descendiente del directorio.
+ */
 function estaDentro(archivo: string, raiz: string): boolean {
   return archivo.startsWith(`${raiz}${sep}`);
 }
 
+/**
+ * Distingue rutas inexistentes de errores de disco que deben propagarse.
+ * @param error - Fallo de una operación de archivos.
+ * @returns Si falta el archivo o un directorio de su ruta.
+ */
 function esAusente(error: unknown): boolean {
   return error instanceof Error && "code" in error && (error.code === "ENOENT" || error.code === "ENOTDIR");
 }

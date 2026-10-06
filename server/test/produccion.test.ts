@@ -23,6 +23,10 @@ describe("T-38: cliente y WebSocket en un puerto", () => {
     await Bun.write(join(dist, "index.html"), pagina);
     await Bun.write(join(dist, "assets/app.js"), "window.aplicacion = true;");
     await Bun.write(join(dist, "assets/app.css"), "body { color: green; }");
+    await Bun.write(join(dist, "assets/app-A1b2C3d4.js"), "window.aplicacion = true;");
+    await Bun.write(join(dist, "assets/app-Z9y8X7w6.css"), "body { color: green; }");
+    await Bun.write(join(dist, "assets/logo-final.svg"), "<svg></svg>");
+    await Bun.write(join(dist, "manual-A1b2C3d4.html"), "Manual");
     await Bun.write(join(temporal, ".env"), "secreto-fuera-del-build");
     await symlink(join(temporal, ".env"), join(dist, "enlace.env"));
     await symlink(temporal, join(dist, "externo"));
@@ -34,6 +38,22 @@ describe("T-38: cliente y WebSocket en un puerto", () => {
     servidor?.stop(true);
     sinBuild?.stop(true);
     if (temporal) await rm(temporal, { recursive: true, force: true });
+  });
+
+  test("revalida HTML y nombres estables; solo assets con hash son inmutables", async () => {
+    for (const metodo of ["GET", "HEAD"]) {
+      for (const ruta of ["/", "/index.html", "/assets/app.js", "/assets/app.css",
+        "/assets/logo-final.svg", "/manual-A1b2C3d4.html"]) {
+        const respuesta = await fetch(`${url}${ruta}`, { method: metodo });
+        expect(respuesta.status).toBe(200);
+        expect(respuesta.headers.get("cache-control")).toBe("no-cache");
+      }
+      for (const ruta of ["/assets/app-A1b2C3d4.js", "/assets/app-Z9y8X7w6.css?v=1"]) {
+        const respuesta = await fetch(`${url}${ruta}`, { method: metodo });
+        expect(respuesta.status).toBe(200);
+        expect(respuesta.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
+      }
+    }
   });
 
   test("raíz y assets usan sus MIME y contenidos, incluida query de cache", async () => {
