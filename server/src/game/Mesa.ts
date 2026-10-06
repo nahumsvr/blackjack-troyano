@@ -1,12 +1,14 @@
 /** Máquina de estados y relojes autoritativos; el transporte inyecta dinero y persistencia. */
 import { CantidadApuestaSchema, ErrorJuego, type Asiento, type BilleteraEstado, type Equipado, type FaseMesa, type MesaEstado, type MensajeServidor, type UsuarioVista } from "@blackjack/shared";
-import { CAPACIDAD_MESA, TIEMPO_APUESTAS_MS, TIEMPO_TURNO_MS, TIEMPO_RESULTADOS_MS } from "../config";
+import { CAPACIDAD_MESA, TIEMPO_APUESTAS_MS, TIEMPO_TURNO_MS, TIEMPO_RESULTADOS_MS, REINTENTO_PAGOS_MS } from "../config";
 import { Baraja } from "./Baraja";
 import { Dealer } from "./Dealer";
 import { Jugador } from "./Jugador";
 import { Mano } from "./Mano";
 import { RelojMesa } from "./RelojMesa";
 import type { Billetera } from "./Billetera";
+import type { ResultadoMesa, RondaTerminada } from "./RondaTerminada";
+import { resolver } from "./reglas";
 
 /** Superficie mínima del zapato, inyectable sin añadir controles al protocolo del cliente. */
 export type ZapatoMesa = Pick<Baraja, "sacar" | "barajar" | "necesitaRebarajar">;
@@ -15,6 +17,9 @@ export type ZapatoMesa = Pick<Baraja, "sacar" | "barajar" | "necesitaRebarajar">
 export interface ServiciosMesa {
   billetera?: Billetera;
   publicarBilletera?: (usuarioId: number, estado: BilleteraEstado) => void;
+  guardarRonda?: (ronda: RondaTerminada) => Promise<void>;
+  publicarResultado?: (mensaje: ResultadoMesa) => void;
+  registrarError?: (error: unknown) => void;
 }
 
 /** Mesa en memoria; sus pasos internos solo los invoca el servidor, nunca el cliente. */
@@ -27,9 +32,13 @@ export class Mesa {
   private pendientes: Promise<void> = Promise.resolve();
   private readonly apuestasPendientes = new Set<number>();
   private detenida = false;
+  private iniciadaEn: string | null = null;
+  private liquidacion: RondaTerminada | null = null;
+  private liquidacionConfirmada = false;
+  private readonly pagados = new Set<number>();
 
   /**
-   * Crea una mesa con reloj y billetera inyectables, sin dependencias de transporte ni SQL.
+   * Crea una mesa con reloj, billetera y persistencia inyectados.
    * @param id - Identificador configurado de mesa.
    * @param nombre - Nombre público.
    * @param publicar - Recibe snapshots independientes tras cada cambio.
@@ -166,13 +175,19 @@ export class Mesa {
   }
 
   /** @returns Espera las acciones en vuelo; útil para cierre y ensayos con reloj manual. */
-  esperarOperaciones(): Promise<void> { return this.pendientes; }
+  async esperarOperaciones(): Promise<void> {
+    for (;;) {
+      const pendientes = this.pendientes;
+      await pendientes;
+      if (pendientes === this.pendientes) return;
+    }
+  }
 
   /**
    * Paso interno posterior al débito confirmado; no implementa la intención WS apostar.
    * @param usuarioId - Usuario elegible para esta ronda.
-   * @param cantidad - Apuesta cuyo débito deberá confirmar T-20 antes de llamar aquí.
-   * @returns Registra y publica la apuesta sin cerrar el período (lo hará T-19).
+   * @param cantidad - Apuesta ya confirmada por el servicio inyectado; paso de bancos internos.
+   * @returns Registra y publica; programa cierre anticipado si todos apostaron.
    * @throws ErrorJuego FASE_INCORRECTA | NO_ESTAS_EN_MESA | YA_APOSTASTE | CANTIDAD_INVALIDA.
    */
   registrarApuestaConfirmada(usuarioId: number, cantidad: number): void {
@@ -216,7 +231,7 @@ export class Mesa {
   }
 
   /**
-   * Paso de máquina de estados; T-19/T-20 validarán quién o qué lo dispara.
+   * Paso interno disparado por una acción validada, salida o vencimiento del servidor.
    * @returns Planta el turno vigente y pasa al siguiente, o a DEALER/PAGOS.
    * @throws ErrorJuego FASE_INCORRECTA si no hay un turno de jugador activo.
    */
@@ -229,12 +244,13 @@ export class Mesa {
   }
 
   /**
-   * Paso interno que T-21 invocará solo después de confirmar pagos e historial.
+   * Paso interno que el reloj invoca después de confirmar pagos e historial.
    * @returns Limpia manos, libera salidas pendientes y abre APUESTAS o ESPERANDO.
-   * @throws ErrorJuego FASE_INCORRECTA fuera de PAGOS.
+   * @throws ErrorJuego FASE_INCORRECTA fuera de PAGOS | ERROR_INTERNO si la liquidación sigue pendiente.
    */
   finalizarPagos(): void {
     this.exigirFase("PAGOS");
+    if (this.liquidacion && !this.liquidacionConfirmada) throw new ErrorJuego("ERROR_INTERNO");
     for (const [indice, jugador] of this.asientos.entries()) {
       if (jugador?.salidaPendiente) this.asientos[indice] = null;
     }
@@ -258,12 +274,28 @@ export class Mesa {
   /** @returns Cancela el reloj al detener el servidor o el banco de pruebas. */
   detener(): void { this.detenida = true; this.reloj.cancelar(); }
 
+  /**
+   * Drena las acciones y completa una liquidación pendiente antes de cerrar SQL.
+   * @returns Confirmación de pagos e historial pendientes, sin nuevos relojes ni resultados públicos.
+   * @throws Error Propaga un fallo persistente de billetera/historial en el último intento.
+   */
+  async cerrar(): Promise<void> {
+    this.detener();
+    await this.esperarOperaciones();
+    // Cancelar el reloj no descarta pagos iniciados: conservar UUID y créditos confirmados.
+    if (this.liquidacion && !this.liquidacionConfirmada) await this.encolar(() => this.liquidar(true));
+  }
+
   private abrirApuestas(): void {
     this.dealer = new Dealer();
     this.turno = null;
     for (const jugador of this.asientos) jugador?.reiniciarRonda();
     this.faseActual = this.asientos.some((jugador) => jugador !== null) ? "APUESTAS" : "ESPERANDO";
     this.rondaActual = this.fase === "APUESTAS" ? crypto.randomUUID() : null;
+    this.iniciadaEn = this.rondaActual ? new Date(this.reloj.ahora()).toISOString() : null;
+    this.liquidacion = null;
+    this.liquidacionConfirmada = false;
+    this.pagados.clear();
     this.reloj.cancelar();
     if (this.fase === "APUESTAS") this.programar(TIEMPO_APUESTAS_MS, () => this.cerrarApuestas());
     this.publicarEstado();
@@ -297,7 +329,20 @@ export class Mesa {
       }
     }
     this.faseActual = "PAGOS";
-    this.programar(TIEMPO_RESULTADOS_MS, () => this.finalizarPagos());
+    this.reloj.cancelar();
+    if (this.servicios.billetera && this.servicios.guardarRonda && this.servicios.publicarResultado) {
+      this.liquidacion = {
+        id: this.rondaActual!, mesaId: this.id, iniciadaEn: this.iniciadaEn!,
+        terminadaEn: new Date(this.reloj.ahora()).toISOString(),
+        dealer: { cartas: this.dealer.mano.cartas.map((carta) => carta.aVista()), total: this.dealer.mano.total() },
+        jugadores: this.participantes().map((jugador) => ({
+          usuarioId: jugador.usuarioId, asiento: jugador.indice, apuesta: jugador.apuesta,
+          cartas: jugador.mano.cartas.map((carta) => carta.aVista()), total: jugador.mano.total(),
+          ...resolver(jugador.mano, this.dealer.mano, jugador.apuesta),
+        })),
+      };
+      this.iniciarLiquidacion();
+    } else this.programar(TIEMPO_RESULTADOS_MS, () => this.finalizarPagos());
     this.publicarEstado();
   }
 
@@ -322,7 +367,7 @@ export class Mesa {
     }
   }
 
-  private programar(demora: number, accion: () => void): void {
+  private programar(demora: number, accion: () => void, mostrarVencimiento = true): void {
     if (this.detenida) return;
     const fase = this.fase, ronda = this.rondaActual, turno = this.turno;
     this.reloj.programar(demora, () => {
@@ -334,7 +379,42 @@ export class Mesa {
       } else {
         try { paso(); } catch (error) { console.error(`Error en reloj de ${this.id}`, error); }
       }
+    }, mostrarVencimiento);
+  }
+
+  private iniciarLiquidacion(): void {
+    void this.encolar(() => this.liquidar()).catch((error: unknown) => {
+      if (this.servicios.registrarError) this.servicios.registrarError(error);
+      else console.error(`Error al liquidar ${this.id}`, error);
+      // Retener cartas y resultados: nunca empezar otra ronda con pagos/historial incompletos.
+      if (!this.detenida && this.fase === "PAGOS") {
+        this.programar(REINTENTO_PAGOS_MS, () => this.iniciarLiquidacion(), false);
+        this.publicarEstado();
+      }
     });
+  }
+
+  private async liquidar(alCerrar = false): Promise<void> {
+    const ronda = this.liquidacion;
+    if (!ronda || (this.detenida && !alCerrar)) return;
+    if (!this.liquidacionConfirmada) {
+      for (const jugador of ronda.jugadores) {
+        if (this.pagados.has(jugador.usuarioId)) continue;
+        const estado = await this.servicios.billetera!.acreditarPago(jugador.usuarioId, jugador.pago, ronda.id);
+        this.pagados.add(jugador.usuarioId);
+        if (!this.detenida) this.servicios.publicarBilletera?.(jugador.usuarioId, estado);
+      }
+      await this.servicios.guardarRonda!(ronda);
+      this.liquidacionConfirmada = true;
+    }
+    if (this.detenida) return;
+    this.servicios.publicarResultado!({
+      type: "ronda.resultado", rondaId: ronda.id,
+      dealer: { cartas: [...ronda.dealer.cartas], total: ronda.dealer.total },
+      resultados: ronda.jugadores.map(({ usuarioId, resultado, apuesta, pago }) => ({ usuarioId, resultado, apuesta, pago })),
+    });
+    this.programar(TIEMPO_RESULTADOS_MS, () => this.finalizarPagos());
+    this.publicarEstado();
   }
 
   private encolar<T>(accion: () => T | Promise<T>): Promise<T> {

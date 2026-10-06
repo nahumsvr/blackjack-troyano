@@ -51,6 +51,8 @@ export const PAGO_BLACKJACK_DENOMINADOR = 2;
 export const TIEMPO_APUESTAS_MS = 15_000;
 export const TIEMPO_TURNO_MS = 20_000;
 export const TIEMPO_RESULTADOS_MS = 5_000;
+/** Reintento interno sin abrir otra ronda ni repetir pagos confirmados. */
+export const REINTENTO_PAGOS_MS = 1_000;
 /*
  * Los límites de cantidad se definen una sola vez en `LIMITES_CANTIDAD` (shared/protocolo.ts)
  * porque el cliente los necesita para validar formularios y `shared/` no puede importar

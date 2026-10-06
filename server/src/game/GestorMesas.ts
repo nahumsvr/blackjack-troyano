@@ -56,6 +56,17 @@ export class GestorMesas {
   async esperarOperaciones(): Promise<void> { await Promise.all([...this.mesas.values()].map((mesa) => mesa.esperarOperaciones())); }
 
   /**
+   * Finaliza todas las liquidaciones pendientes antes de permitir cerrar el pool SQL.
+   * @returns Confirmación de las tres mesas, incluso si alguna falla.
+   * @throws Error Propaga el primer fallo persistente una vez terminados todos los intentos.
+   */
+  async cerrar(): Promise<void> {
+    const resultados = await Promise.allSettled([...this.mesas.values()].map((mesa) => mesa.cerrar()));
+    const fallo = resultados.find((resultado) => resultado.status === "rejected");
+    if (fallo?.status === "rejected") throw fallo.reason;
+  }
+
+  /**
    * Obtiene una vista pública sin exponer los asientos internos.
    * @param mesaId - Mesa configurada.
    * @returns Copia pública; modificarla no altera asientos del servidor.

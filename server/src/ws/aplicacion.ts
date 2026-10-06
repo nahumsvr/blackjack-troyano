@@ -12,6 +12,7 @@ import { crearManejadoresEconomia } from "../store/manejadores";
 import type { DatosConexion, SocketConexion } from "./Enrutador";
 import { iniciarServidor } from "./servidor";
 import { crearManejadoresJuego } from "./juego";
+import { HistorialSQL } from "../db/HistorialSQL";
 
 /**
  * Compone sesiones persistentes, economía y juego sobre el transporte compartido.
@@ -23,9 +24,11 @@ import { crearManejadoresJuego } from "./juego";
  */
 export function iniciarAplicacion(conexion: SQL, puerto = PUERTO, crearMesa?: FabricaMesa): Server<DatosConexion> {
   let servidor: Server<DatosConexion>;
+  let cerrando = false;
   const conexiones = new Map<string, SocketConexion>();
   const billetera = new BilleteraSQL(conexion);
-  const publicar = (topic: string, mensaje: MensajeServidor) => servidor.publish(topic, JSON.stringify(mensaje));
+  const historial = new HistorialSQL(conexion);
+  const publicar = (topic: string, mensaje: MensajeServidor) => cerrando ? 0 : servidor.publish(topic, JSON.stringify(mensaje));
   const economia = crearManejadoresEconomia(billetera, new Tienda(conexion), publicar);
   function operarJuego(operacion: "debitarApuesta" | "acreditarPago" | "comprarFichas", usuarioId: number, cantidad: number, referencia: string) {
     return economia.serializarUsuario(usuarioId, async () => {
@@ -46,7 +49,14 @@ export function iniciarAplicacion(conexion: SQL, puerto = PUERTO, crearMesa?: Fa
     if (!anterior) return;
     desuscribirMesa(anterior);
     anterior.send(JSON.stringify({ type: "error", codigo: "NO_ESTAS_EN_MESA", mensaje: "Otra pestaña tomó tu asiento. Volviste al lobby." }));
-  }, { billetera: billeteraJuego }, crearMesa);
+  }, {
+    billetera: billeteraJuego,
+    guardarRonda: (ronda) => historial.guardar(ronda),
+    publicarResultado: (mensaje) => {
+      const mesa = gestor.listar().find(({ id }) => gestor.obtener(id).rondaId === mensaje.rondaId);
+      if (mesa) publicar(topicMesa(mesa.id), mensaje);
+    },
+  }, crearMesa);
   function desuscribirMesa(socket: SocketConexion): void {
     if (socket.data.mesaId !== undefined) socket.unsubscribe(topicMesa(socket.data.mesaId));
     delete socket.data.mesaId;
@@ -93,9 +103,10 @@ export function iniciarAplicacion(conexion: SQL, puerto = PUERTO, crearMesa?: Fa
   servidor = iniciarServidor(puerto, enrutador, limpiarMesa);
   const detenerTransporte = servidor.stop.bind(servidor);
   servidor.stop = async (cerrarConexiones) => {
+    cerrando = true;
     gestor.detener();
     await detenerTransporte(cerrarConexiones);
-    await gestor.esperarOperaciones();
+    await gestor.cerrar();
   };
   return servidor;
 }

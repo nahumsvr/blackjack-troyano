@@ -62,7 +62,7 @@ export class BilleteraSQL implements Billetera {
    * Acredita el pago calculado por el motor; cero conserva el libro contable.
    * @param usuarioId - Jugador liquidado.
    * @param cantidad - Pago total entero no negativo, incluida la apuesta.
-   * @param rondaId - UUID de la ronda que el juego liquida una sola vez.
+   * @param rondaId - UUID de la ronda; el reintento del mismo pago no vuelve a acreditar.
    * @returns Billetera confirmada después del pago.
    * @throws ErrorJuego CANTIDAD_INVALIDA | MENSAJE_INVALIDO | NO_AUTENTICADO | ERROR_INTERNO.
    */
@@ -73,8 +73,17 @@ export class BilleteraSQL implements Billetera {
       const saldos = await bloquearUsuario(sql, usuarioId);
       // Las pérdidas no escriben un movimiento vacío, prohibido por el CHECK.
       if (cantidad > 0) {
+        const clave = `pago:${rondaId.toLowerCase()}`;
+        const [previo] = await sql<{ cantidad: string }[]>`
+          SELECT delta_fichas::text AS cantidad FROM movimientos WHERE usuario_id = ${usuarioId} AND clave = ${clave}
+        `;
+        // Un commit puede haber terminado aunque la conexión pierda su respuesta: reintentar es seguro.
+        if (previo) {
+          if (Number(previo.cantidad) !== cantidad) throw new ErrorJuego("ERROR_INTERNO");
+          return consultarEstado(sql, usuarioId);
+        }
         saldos.fichas += cantidad;
-        await registrarMovimiento(sql, usuarioId, "pago", saldos, 0, cantidad, `ronda:${rondaId}`);
+        await registrarMovimiento(sql, usuarioId, "pago", saldos, 0, cantidad, `ronda:${rondaId}`, clave);
       }
       return consultarEstado(sql, usuarioId);
     });
