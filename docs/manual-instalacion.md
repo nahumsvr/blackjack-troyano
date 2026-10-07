@@ -1,21 +1,33 @@
-# Manual de instalación (borrador)
+# Manual de instalación
 
-Este manual describe esta rama de integración, que compone acceso, lobby, partidas y economía con PostgreSQL. El cliente también permite el recorrido con `?mock=1`. Bun sirve el build en producción. Typecheck, build y 326 pruebas con PostgreSQL 16.15 pasan sin fallos ni omisiones. La llegada de los cambios a `main` y la comprobación independiente en otra laptop (T-14/T-48/T-55) siguen pendientes; ver [entrega de Hector](../documentation/Entrega-Hector-2026-10-06.md).
+Cómo instalar y ejecutar Blackjack Troyano desde el repositorio o desde `blackjack-equipo.zip`, y cómo conectarse desde otras laptops de la misma red.
+
+## Ruta rápida (demo en red local)
+
+```bash
+cp .env.example .env
+docker compose up -d --wait
+bun install
+bun run db:reset --confirm blackjack
+bun run build
+bun run start
+```
+
+Abre `http://<IP-del-servidor>:3000` en cada laptop (ver [cómo conocer la IP](#conexión-desde-otra-laptop)). Las secciones siguientes explican cada paso.
 
 ## Requisitos
 
-- Bun 1.3.13, fijado en `package.json` y usado en la verificación actual. La corrida histórica también pasó con Bun 1.4.2.
+- Bun 1.3.13 (la versión fijada en `package.json`).
 - Docker Engine y Docker Compose v2 o compatible (`docker compose version`). El servicio usa la imagen `postgres:16`.
 - Git para clonar, o un descompresor ZIP si recibiste `blackjack-equipo.zip`.
 - Opcional: `psql` para consultas SQL desde el anfitrión. También puedes usar el cliente incluido en el contenedor.
-
-- `zip` y `unzip` para generar y validar el ZIP de entrega.
+- Opcional: `zip` y `unzip`, solo para generar el ZIP de entrega con `bun run empaquetar`.
 
 Abre una terminal en la raíz del clon o del archivo descomprimido: allí deben estar `package.json`, `docker-compose.yml` y `.env.example`. El ZIP incluye las fuentes; instala las dependencias después de descomprimirlo.
 
 ## Configuración y arranque
 
-1. Copia la configuración: `cp .env.example .env`. Conserva los valores locales o cambia usuario, contraseña, base y puerto. Si los cambias, ajusta también `DATABASE_URL`; codifica los caracteres especiales de la contraseña para una URL.
+1. Copia la configuración: `cp .env.example .env` (en `cmd` de Windows: `copy .env.example .env`). Conserva los valores locales o cambia usuario, contraseña, base y puerto. Si los cambias, ajusta también `DATABASE_URL`; codifica los caracteres especiales de la contraseña para una URL.
 2. Inicia PostgreSQL: `docker compose up -d --wait`.
 3. Instala los workspaces: `bun install`.
 4. Crea las tablas y carga el catálogo: `bun run db:reset`. Escribe el nombre de la base mostrado para confirmar (`blackjack` por defecto).
@@ -46,11 +58,11 @@ Con `psql` instalado y los valores predeterminados puedes usar:
 psql 'postgres://blackjack:blackjack_local@127.0.0.1:5432/blackjack' -c 'SELECT 1'
 ```
 
-## Desarrollo y conexión desde otra laptop
+## Desarrollo
 
 `bun run dev` inicia el servidor en `0.0.0.0:3000` y el cliente Vite en el puerto 5173, también abierto a la red. Desde la misma laptop abre `http://localhost:5173`; desde otra, `http://<IP-del-equipo>:5173`. Vite redirige `/ws` al servidor, así que el navegador solo necesita llegar al puerto 5173. Bun acepta WebSocket en `/ws` y, si existe `client/dist`, sirve ese build en `/`.
 
-Para recorrer partidas y compras mientras se integra el servidor, abre `http://localhost:5173/?mock=1`. Así se usa un servidor falso: la barra morada cambia de fase, fuerza resultados y simula una caída de red. En producción puedes usar `http://localhost:3000/?mock=1`.
+Para recorrer la interfaz sin servidor, abre `http://localhost:5173/?mock=1`. Así se usa un servidor falso: la barra morada cambia de fase, fuerza resultados y simula una caída de red. En producción puedes usar `http://localhost:3000/?mock=1`.
 
 Abre `scripts/verificar-ws.html` como archivo local en tres pestañas. Pulsa **Conectar** con `127.0.0.1:3000` si estás en la misma laptop. Desde otra laptop en la misma red, copia ese archivo y escribe la IP del equipo que ejecuta el servidor seguida de `:3000`, por ejemplo `192.168.1.42:3000`. Las tres pestañas deben mostrar `Conectados: 3`.
 
@@ -90,7 +102,17 @@ El primer comando genera `client/dist` con Vite. El segundo inicia Bun en `0.0.0
 
 El ZIP no contiene `dist`: compila tras cada instalación o actualización del código del cliente. Si el build falta, Bun responde «Cliente no compilado. Ejecuta bun run build.» con 404, y `/ws` sigue disponible. Un archivo desconocido devuelve 404; el servidor no lo sustituye por HTML. `Ctrl+C` detiene Bun y cierra su pool SQL.
 
-La comprobación en otra laptop por el puerto 3000 sigue pendiente.
+## Conexión desde otra laptop
+
+1. Conecta todas las laptops a la misma red (si la red escolar aísla dispositivos, usa el hotspot de un teléfono).
+2. En el equipo servidor, consulta su IP: `ipconfig` en Windows (dirección IPv4), `ip -4 addr` en Linux o `ipconfig getifaddr en0` en macOS.
+3. Comprueba primero en el propio servidor que `http://<IP>:3000` abre el juego; después ábrelo desde las demás laptops.
+
+Si solo el propio servidor logra abrirlo, permite TCP 3000 en su firewall:
+
+- Windows (PowerShell como administrador): `netsh advfirewall firewall add rule name="Blackjack" dir=in action=allow protocol=TCP localport=3000`
+- Linux con ufw: `sudo ufw allow 3000/tcp`
+- macOS: acepta el aviso «¿Permitir conexiones entrantes?» para `bun`.
 
 ## Problemas habituales
 
@@ -101,16 +123,7 @@ La comprobación en otra laptop por el puerto 3000 sigue pendiente.
 | `db:reset` indica que falta `DATABASE_URL` | Comprueba que `.env` esté en la raíz y ejecuta el comando desde esa carpeta. |
 | El servidor indica que falta `DATABASE_URL` | Comprueba que el `.env` de la raíz contiene una URL PostgreSQL válida. `bun run dev` dentro de `server/` carga ese archivo mediante `--env-file=../.env`. |
 | PostgreSQL rechaza la contraseña tras editar `.env` | El volumen retiene sus credenciales originales; usa esas credenciales o cambia la contraseña dentro de PostgreSQL. |
-| Bun no puede escuchar en `:3000` | Detén el otro proceso que usa ese puerto. |
-| Otra laptop no puede conectarse | Revisa IP, puerto, firewall y aislamiento de la red. Primero comprueba la conexión en el propio servidor. |
+| Bun no puede escuchar en `:3000` («Is port 3000 in use?») | Detén el otro proceso que usa ese puerto: `lsof -i :3000` en Linux/macOS o `netstat -ano \| findstr :3000` en Windows, y termina ese PID. |
+| Otra laptop no puede conectarse | Revisa IP, firewall y aislamiento de la red (ver [Conexión desde otra laptop](#conexión-desde-otra-laptop)). |
+| La página dice «Cliente no compilado» | Ejecuta `bun run build` y reinicia `bun run start`. |
 | `db:reset` falla por dependencia externa | Revisa la tabla ajena que referencia el esquema; el script revierte los cambios para conservar los datos. |
-
-## Evidencia local y pendientes
-
-El esquema, el catálogo y el reinicio se verificaron en una instancia temporal de PostgreSQL **18.6**, con Bun 1.4.2. Se comprobaron las siete tablas, los 14 artículos, las restricciones de saldo y duplicados, la clave de idempotencia, la confirmación obligatoria y la conservación de datos ante fallos.
-
-**Entorno objetivo (4 oct):** `docker compose up -d --wait` levantó PostgreSQL **16.15** sano y `psql $DATABASE_URL -c 'select 1'` respondió. Con **Bun 1.3.13** en un clon limpio, `db:reset` creó siete tablas y 14 artículos, y `typecheck` y la suite completa con `TEST_DATABASE_URL` (70 pruebas, 381 aserciones) pasaron sin fallos. El puerto 5432 estaba ocupado por otro PostgreSQL, así que se usó `POSTGRES_PORT=5433` como se indica en *Problemas habituales*.
-
-Este manual todavía no acredita instalación independiente en otra laptop ni juego con tres usuarios.
-
-**Después de T-08 (5 oct CDMX):** la corrida histórica de fuentes basada en `main` (`831dcd2`) más cambios locales del empaquetador se extrajo en una carpeta nueva. Instalación con lockfile fijo, typecheck, 203 pruebas SQL y build pasaron con Bun 1.4.2. Durante la revisión se repitieron en la misma copia extraída con **Bun 1.3.13 y PostgreSQL 16.15**: 203 pruebas / 3,402 aserciones, cero fallos/omisiones, typecheck/build correctos. Después de incorporar Carta/Baraja de PR #25, la rama documental pasó 208 pruebas / 3,438 aserciones con Bun 1.3.13. [Evidencia detallada](../documentation/Revision-PR-23.md). Los esquemas de prueba se eliminaron; el ZIP final, la instalación independiente y el juego completo siguen pendientes.
