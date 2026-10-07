@@ -1,6 +1,6 @@
 /** Máquina de estados y relojes autoritativos; el transporte inyecta dinero y persistencia. */
 import { CantidadApuestaSchema, ErrorJuego, type Asiento, type Equipado, type FaseMesa, type MesaEstado, type MensajeServidor, type UsuarioVista } from "@blackjack/shared";
-import { CAPACIDAD_MESA, TIEMPO_APUESTAS_MS, TIEMPO_TURNO_MS, TIEMPO_RESULTADOS_MS } from "../config";
+import { CAPACIDAD_MESA, TIEMPO_APUESTAS_MS, TIEMPO_TURNO_MS, TIEMPO_RESULTADOS_MS, TIEMPO_REINTENTO_MS, MAX_REINTENTOS_RELOJ } from "../config";
 import { Baraja } from "./Baraja";
 import { Dealer } from "./Dealer";
 import { Jugador } from "./Jugador";
@@ -18,6 +18,10 @@ export class Mesa {
   private turno: number | null = null;
   private rondaActual: string | null = null;
   private detenida = false;
+  /** Vencimiento original de APUESTAS; sobrevive a un cierre anticipado que luego se cancela. */
+  private finApuestas = 0;
+  private cierreAnticipado = false;
+  private reintentos = 0;
 
   /**
    * Crea una mesa vacía con publicaciones independientes de su estado interno.
@@ -26,6 +30,7 @@ export class Mesa {
    * @param publicar - Recibe snapshots independientes tras cada cambio.
    * @param baraja - Zapato real por defecto; se inyecta uno fijo para pruebas.
    * @param reloj - Único temporizador de la mesa; sustituible en pruebas.
+   * @param alLiquidar - Paga y registra la ronda; PAGOS no avanza hasta que se resuelve (T-20/T-21 lo inyectan).
    * @returns Mesa vacía; al sentarse el primer jugador abre el reloj de apuestas.
    */
   constructor(
@@ -33,6 +38,7 @@ export class Mesa {
     private readonly publicar: (mensaje: Extract<MensajeServidor, { type: "mesa.estado" }>) => void,
     private readonly baraja: ZapatoMesa = new Baraja(),
     private readonly reloj = new RelojMesa(),
+    private readonly alLiquidar: () => Promise<void> | void = () => {},
   ) {}
 
   /** @returns Fase autoritativa para validar acciones y equipamiento. */
@@ -66,7 +72,11 @@ export class Mesa {
       this.asientos[indice] = jugador;
     }
     if (this.fase === "ESPERANDO") this.abrirApuestas();
-    else this.publicarEstado();
+    else {
+      // Quien llega antes de que dispare un cierre anticipado devuelve el plazo a su vencimiento original.
+      if (this.fase === "APUESTAS") this.cerrarSiTodosApostaron();
+      this.publicarEstado();
+    }
     return this.snapshot();
   }
 
@@ -98,7 +108,7 @@ export class Mesa {
    * Paso interno posterior al débito confirmado; no implementa la intención WS apostar.
    * @param usuarioId - Usuario elegible para esta ronda.
    * @param cantidad - Apuesta cuyo débito deberá confirmar T-20 antes de llamar aquí.
-   * @returns Registra y publica la apuesta sin cerrar el período (lo hará T-19).
+   * @returns Registra y publica la apuesta; si ya apostaron todos, programa el cierre anticipado.
    * @throws ErrorJuego FASE_INCORRECTA | NO_ESTAS_EN_MESA | YA_APOSTASTE | CANTIDAD_INVALIDA.
    */
   registrarApuestaConfirmada(usuarioId: number, cantidad: number): void {
@@ -117,6 +127,7 @@ export class Mesa {
    * Reparte por vueltas, publica REPARTO y selecciona el primer turno elegible.
    * @returns Sin apuestas reinicia la ronda; con apuestas reparte sin filtrar la carta oculta.
    * @throws ErrorJuego FASE_INCORRECTA | ERROR_INTERNO si falla el suministro de cartas.
+   *   Llamado por el reloj, el fallo se reintenta (ver `programar`) y las apuestas quedan intactas.
    */
   cerrarApuestas(): void {
     this.exigirFase("APUESTAS");
@@ -191,7 +202,11 @@ export class Mesa {
     this.faseActual = this.asientos.some((jugador) => jugador !== null) ? "APUESTAS" : "ESPERANDO";
     this.rondaActual = this.fase === "APUESTAS" ? crypto.randomUUID() : null;
     this.reloj.cancelar();
-    if (this.fase === "APUESTAS") this.programar(TIEMPO_APUESTAS_MS, () => this.cerrarApuestas());
+    this.cierreAnticipado = false;
+    if (this.fase === "APUESTAS") {
+      this.finApuestas = this.reloj.ahora() + TIEMPO_APUESTAS_MS;
+      this.programar(TIEMPO_APUESTAS_MS, () => this.cerrarApuestas());
+    }
     this.publicarEstado();
   }
 
@@ -223,7 +238,13 @@ export class Mesa {
       }
     }
     this.faseActual = "PAGOS";
-    this.programar(TIEMPO_RESULTADOS_MS, () => this.finalizarPagos());
+    // El plazo de resultados no basta: se avanza solo tras liquidar, o se perdería el pago de la ronda.
+    this.programar(TIEMPO_RESULTADOS_MS, async () => {
+      // Sin await cuando es síncrono: así el avance sigue ocurriendo en el mismo tick.
+      const pendiente = this.alLiquidar();
+      if (pendiente) await pendiente;
+      if (this.fase === "PAGOS") this.finalizarPagos();
+    });
     this.publicarEstado();
   }
 
@@ -244,16 +265,30 @@ export class Mesa {
     const elegibles = this.asientos.filter((jugador) => jugador?.conectado && !jugador.salidaPendiente);
     // Cerrar en el próximo tick conserva la respuesta a la última apuesta antes del reparto.
     if (this.participantes().length > 0 && elegibles.every((jugador) => jugador!.apuesta > 0)) {
+      this.cierreAnticipado = true;
       this.programar(0, () => this.cerrarApuestas());
+    } else if (this.cierreAnticipado) {
+      this.cierreAnticipado = false;
+      this.programar(Math.max(0, this.finApuestas - this.reloj.ahora()), () => this.cerrarApuestas());
     }
   }
 
-  private programar(demora: number, accion: () => void): void {
+  /**
+   * Único punto que arma el reloj. Un paso que falla no debe dejar la mesa sin timeout:
+   * se reintenta un número acotado de veces y luego se deja el error registrado.
+   */
+  private programar(demora: number, accion: () => Promise<void> | void): void {
     if (this.detenida) return;
-    this.reloj.programar(demora, () => {
+    this.reloj.programar(demora, async () => {
       if (this.detenida) return;
-      try { accion(); }
-      catch (error) { console.error(`Error en reloj de ${this.id}`, error); }
+      try {
+        await accion();
+        this.reintentos = 0;
+      } catch (error) {
+        console.error(`Error en reloj de ${this.id}`, error);
+        // Si el paso ya armó otro reloj (p. ej. cambió de fase) no se pisa.
+        if (this.reloj.finEn === null && this.reintentos++ < MAX_REINTENTOS_RELOJ) this.programar(TIEMPO_REINTENTO_MS, accion);
+      }
     });
   }
 }

@@ -99,6 +99,7 @@ La comprobación en otra laptop por el puerto 3000 sigue pendiente.
 | Docker no puede conectarse a `/var/run/docker.sock` (`permission denied`) | Comprueba que Docker esté iniciado (`sudo systemctl start docker` en Linux). Si el error es de permisos, agrega tu usuario al grupo con `sudo usermod -aG docker $USER` y cierra e inicia sesión, o antepone `sudo` a los comandos `docker compose`. Si no quieres cerrar sesión, `newgrp docker` abre una terminal con el grupo aplicado. En Windows/macOS, abre Docker Desktop. |
 | PostgreSQL no inicia por puerto ocupado | Cambia `POSTGRES_PORT` en `.env` y el puerto de `DATABASE_URL`, y vuelve a levantar Compose. |
 | `db:reset` indica que falta `DATABASE_URL` | Comprueba que `.env` esté en la raíz y ejecuta el comando desde esa carpeta. |
+| El servidor indica que falta `DATABASE_URL` | Comprueba que el `.env` de la raíz contiene una URL PostgreSQL válida. `bun run dev` dentro de `server/` carga ese archivo mediante `--env-file=../.env`. |
 | PostgreSQL rechaza la contraseña tras editar `.env` | El volumen retiene sus credenciales originales; usa esas credenciales o cambia la contraseña dentro de PostgreSQL. |
 | Bun no puede escuchar en `:3000` | Detén el otro proceso que usa ese puerto. |
 | Otra laptop no puede conectarse | Revisa IP, puerto, firewall y aislamiento de la red. Primero comprueba la conexión en el propio servidor. |
