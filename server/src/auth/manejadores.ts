@@ -10,8 +10,8 @@ export interface IntegracionSesion {
   mesaDeUsuario?: (usuarioId: number) => string | null;
   /** Vincula mesa y suscripciones tras autenticar, con la identidad ya disponible. */
   alAutenticar?: (socket: SocketConexion, sesion: Sesion) => void;
-  /** Libera recursos antes de borrar identidad al cerrar, revocar o caducar la sesión. */
-  alCerrar?: (socket: SocketConexion) => void;
+  /** Distingue pérdida del transporte de revocación/caducidad antes de borrar identidad. */
+  alCerrar?: (socket: SocketConexion, motivo: "desconexion" | "sesion") => void;
 }
 
 /** Reloj inyectable para probar caducidad sin esperar los siete días de una sesión. */
@@ -49,9 +49,9 @@ export function crearEnrutadorAutenticado(
     try { return await actual; }
     finally { if (pendientesPorToken.get(token) === fin) pendientesPorToken.delete(token); }
   }
-  function limpiarSesion(socket: SocketConexion): void {
+  function limpiarSesion(socket: SocketConexion, motivo: "desconexion" | "sesion" = "sesion"): void {
     // Mesas necesita la identidad antes de que auth la elimine (también al caducar).
-    integracion.alCerrar?.(socket);
+    integracion.alCerrar?.(socket, motivo);
     if (socket.data.usuarioId !== undefined) socket.unsubscribe(topicUsuario(socket.data.usuarioId));
     if (socket.data.token) {
       const conexiones = conexionesPorToken.get(socket.data.token);
@@ -133,5 +133,5 @@ export function crearEnrutadorAutenticado(
       }
       throw error;
     }
-  }, limpiarSesion);
+  }, (socket) => limpiarSesion(socket, "desconexion"));
 }

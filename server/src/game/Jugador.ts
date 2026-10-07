@@ -7,6 +7,7 @@ export class Jugador {
   mano = new Mano();
   apuesta = 0;
   conectado = true;
+  desconectadoDesde: number | null = null;
   salidaPendiente = false;
   estado: EstadoJugador = "ESPERANDO_RONDA";
   private readonly usuario: UsuarioVista;

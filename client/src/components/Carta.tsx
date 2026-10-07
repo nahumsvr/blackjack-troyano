@@ -9,12 +9,14 @@
  * - "voltear": solo se descubre (la carta tapada del dealer al revelarse).
  * El valor ya llegó del servidor; el vuelo y la vuelta son solo efectos visuales.
  * `Mano` muestra además el total en la esquina superior derecha de la última carta.
- * T-40 podrá pasar el reverso equipado del jugador; por ahora hay un reverso único.
+ * El reverso se elige con la prop `reverso` (diseños en `reversos.ts`); T-40 pasará el reverso
+ * equipado del jugador. Sin ella se usa el clásico.
  */
 import type { CartaVista, CartaVisible } from "@blackjack/shared";
 import { useContext, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import { ESPERA_TOTAL_MS, retrasoReparto } from "./movimiento";
 import { OrigenCartas, calcularVuelo, type Vuelo } from "./origenCartas";
+import { disenoReverso } from "./reversos";
 
 /** Tamaños disponibles. */
 export type TamanoCarta = "normal" | "chica";
@@ -33,15 +35,6 @@ const MEDIDAS: Record<TamanoCarta, { caja: string; radio: string; esquina: strin
   chica: { caja: "h-14 w-10", radio: "rounded", esquina: "text-[10px]", centro: "text-xl" },
 };
 
-/** Trama del reverso clásico: rombos con dos franjas diagonales. */
-const ESTILO_REVERSO: CSSProperties = {
-  backgroundImage:
-    "repeating-linear-gradient(45deg, rgba(255,255,255,.18) 0 3px, transparent 3px 7px), repeating-linear-gradient(-45deg, rgba(255,255,255,.18) 0 3px, transparent 3px 7px)",
-};
-
-/** Clases del reverso (compartidas por la carta oculta y la cara trasera de las visibles). */
-const CLASES_REVERSO = "border-2 border-white bg-sky-800 shadow-md";
-
 /** Props de la carta. */
 interface PropsCarta {
   carta: CartaVista;
@@ -49,6 +42,8 @@ interface PropsCarta {
   entrada?: EntradaCarta;
   /** Espera antes de la animación, para repartir las cartas de una mano una tras otra. */
   retrasoMs?: number;
+  /** Id del artículo `reverso` con que se dibuja la parte trasera; por omisión, el clásico. */
+  reverso?: string;
 }
 
 /**
@@ -74,11 +69,12 @@ function useVuelo(entrada: EntradaCarta): [RefObject<HTMLDivElement | null>, Vue
 
 /**
  * Dibuja una carta: vuela desde el zapato boca abajo y se descubre (o solo se voltea).
- * @param props - Carta del snapshot, tamaño, animación de entrada y retraso.
+ * @param props - Carta del snapshot, tamaño, animación de entrada, retraso y reverso.
  * @returns Elemento de la carta con etiqueta accesible ("A de picas", "carta oculta").
  */
-export function Carta({ carta, tamano = "normal", entrada = "repartir", retrasoMs = 0 }: PropsCarta): ReactNode {
+export function Carta({ carta, tamano = "normal", entrada = "repartir", retrasoMs = 0, reverso }: PropsCarta): ReactNode {
   const medidas = MEDIDAS[tamano];
+  const diseno = disenoReverso(reverso);
   const [caja, vuelo] = useVuelo(entrada);
   const retraso: CSSProperties = { animationDelay: `${retrasoMs}ms` };
   const estiloVuelo: CSSProperties =
@@ -91,8 +87,8 @@ export function Carta({ carta, tamano = "normal", entrada = "repartir", retrasoM
         ref={caja}
         role="img"
         aria-label="carta oculta"
-        className={`${medidas.caja} ${medidas.radio} ${CLASES_REVERSO} ${claseVuelo} relative shrink-0`}
-        style={{ ...ESTILO_REVERSO, ...estiloVuelo }}
+        className={`${medidas.caja} ${medidas.radio} ${diseno.clases} ${claseVuelo} relative shrink-0`}
+        style={{ ...diseno.estilo, ...estiloVuelo }}
       />
     );
   }
@@ -117,7 +113,7 @@ export function Carta({ carta, tamano = "normal", entrada = "repartir", retrasoM
           <span className={`absolute inset-0 flex items-center justify-center ${medidas.centro}`}>{carta.palo}</span>
           <span className="absolute right-1 bottom-0.5 rotate-180">{esquina}</span>
         </div>
-        <div aria-hidden="true" className={`carta-cara carta-reverso ${medidas.radio} ${CLASES_REVERSO}`} style={ESTILO_REVERSO} />
+        <div aria-hidden="true" className={`carta-cara carta-reverso ${medidas.radio} ${diseno.clases}`} style={diseno.estilo} />
       </div>
     </div>
   );

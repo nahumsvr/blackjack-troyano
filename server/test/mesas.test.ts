@@ -2,7 +2,9 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import type { Server } from "bun";
 import { MesaEstadoSchema, type MensajeServidor } from "@blackjack/shared";
-import { EQUIPADO_INICIAL } from "../src/config";
+import { EQUIPADO_INICIAL, RESERVA_ASIENTO_MS } from "../src/config";
+import { Mesa } from "../src/game/Mesa";
+import { TiempoManual } from "./soporteMesa";
 import { GestorMesas } from "../src/game/GestorMesas";
 import type { DatosConexion } from "../src/ws/Enrutador";
 import { iniciarAplicacion } from "../src/ws/aplicacion";
@@ -40,14 +42,21 @@ test("repetir la unión no publica; retomar refresca cosméticos sin cambiar ocu
 describe.skipIf(!destino)("GestorMesas con servidor completo", () => {
   let base: Awaited<ReturnType<typeof crearBasePruebas>>;
   let servidor: Server<DatosConexion>;
+  let tiempo: TiempoManual;
   const clientes: ClienteWsPrueba[] = [];
   let secuencia = 0;
 
   beforeAll(async () => { base = await crearBasePruebas(destino!); });
-  beforeEach(() => { servidor = iniciarAplicacion(base.conexion, 0); });
+  beforeEach(() => {
+    servidor = iniciarAplicacion(base.conexion, 0, (id, nombre, publicar, servicios) => {
+      const manual = new TiempoManual();
+      if (id === "mesa-1") tiempo = manual;
+      return new Mesa(id, nombre, publicar, undefined, manual.reloj, servicios);
+    });
+  });
   afterEach(async () => {
     await Promise.all(clientes.splice(0).map((cliente) => cliente.cerrar()));
-    servidor.stop(true);
+    await servidor.stop(true);
   });
   afterAll(async () => { await base.cerrar(); });
 
@@ -111,30 +120,35 @@ describe.skipIf(!destino)("GestorMesas con servidor completo", () => {
     expect(await cliente.enviar({ type: "lobby.listar" })).toMatchObject({ mesas: [{ ocupados: 1 }, { ocupados: 0 }, { ocupados: 0 }] });
   });
 
-  test("otra pestaña toma el asiento; avisa y desuscribe a la anterior sin perder al nuevo dueño", async () => {
+  test("otra pestaña toma el asiento; la espectadora recibe estados y sale sin liberar al nuevo dueño", async () => {
     const primera = await registrar();
     await primera.cliente.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
     const segunda = await conectar();
     const reemplazo = primera.cliente.esperar((mensaje) => mensaje.type === "error" && mensaje.codigo === "NO_ESTAS_EN_MESA", primera.cliente.mensajes.length);
     const reanudada = await segunda.enviar({ type: "reanudar", token: primera.sesion.token });
     const aviso = await reemplazo;
-    expect(aviso).toMatchObject({ type: "error", codigo: "NO_ESTAS_EN_MESA" });
+    expect(aviso).toMatchObject({ type: "error", codigo: "NO_ESTAS_EN_MESA", mensaje: "Otra pestaña tomó tu asiento; ahora solo miras la mesa." });
     expect(aviso.reqId).toBeUndefined();
     expect(reanudada).toMatchObject({ type: "sesion", mesaId: "mesa-1", usuario: primera.sesion.usuario });
     expect(segunda.mensajes.some((mensaje) => mensaje.type === "mesa.estado" && mensaje.reqId === undefined)).toBe(true);
     await segunda.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
-    expect(await primera.cliente.enviar({ type: "mesa.salir" })).toMatchObject({ codigo: "NO_ESTAS_EN_MESA" });
     const desde = primera.cliente.mensajes.length;
     const tercero = await registrar();
+    const publicado = primera.cliente.esperar((mensaje) => mensaje.type === "mesa.estado" && mensaje.reqId === undefined && mensaje.asientos.filter(Boolean).length === 2, desde);
     await tercero.cliente.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
-    await primera.cliente.enviar({ type: "ping" });
-    expect(primera.cliente.mensajes.slice(desde).some((mensaje) => mensaje.type === "mesa.estado")).toBe(false);
-    await primera.cliente.cerrar();
+    await publicado;
+    expect(await primera.cliente.enviar({ type: "mesa.salir" })).toMatchObject({ type: "ok" });
     expect(await segunda.enviar({ type: "lobby.listar" })).toMatchObject({ mesas: [{ ocupados: 2 }, { ocupados: 0 }, { ocupados: 0 }] });
+    const trasSalir = primera.cliente.mensajes.length;
+    await tercero.cliente.enviar({ type: "mesa.salir" });
+    await primera.cliente.enviar({ type: "ping" });
+    expect(primera.cliente.mensajes.slice(trasSalir).some((mensaje) => mensaje.type === "mesa.estado")).toBe(false);
+    await primera.cliente.cerrar();
+    expect(await segunda.enviar({ type: "lobby.listar" })).toMatchObject({ mesas: [{ ocupados: 1 }, { ocupados: 0 }, { ocupados: 0 }] });
     expect(await segunda.enviar({ type: "mesa.salir" })).toMatchObject({ type: "ok" });
   });
 
-  test.each(["salir", "cerrar"] as const)("la pestaña reemplazada no recibe estados después de %s la dueña", async (modo) => {
+  test.each(["salir", "cerrar"] as const)("la espectadora retoma el asiento tras %s y vencer cualquier reserva", async (modo) => {
     const primera = await registrar();
     await primera.cliente.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
     const duena = await conectar();
@@ -142,8 +156,32 @@ describe.skipIf(!destino)("GestorMesas con servidor completo", () => {
     await duena.enviar({ type: "login", usuario: primera.sesion.usuario.usuario, contrasena: "secreto09" });
     await aviso;
     const desde = primera.cliente.mensajes.length;
+    const liberado = primera.cliente.esperar((mensaje) => mensaje.type === "mesa.estado" && mensaje.asientos.every((asiento) => asiento === null), desde);
     if (modo === "salir") await duena.enviar({ type: "mesa.salir" });
-    else await duena.cerrar();
+    else {
+      const reserva = primera.cliente.esperar((mensaje) => mensaje.type === "mesa.estado" && mensaje.asientos.some((asiento) => asiento?.conectado === false), desde);
+      await duena.cerrar(); await reserva;
+      tiempo.avanzar(RESERVA_ASIENTO_MS);
+    }
+    await liberado;
+    expect(await primera.cliente.enviar({ type: "mesa.unirse", mesaId: "mesa-1" })).toMatchObject({ asientos: [{ usuarioId: primera.sesion.usuario.id }, null, null, null, null] });
+  });
+
+  test.each(["salir", "cerrar"] as const)("la espectadora puede salir después de %s la dueña sin conservar la suscripción", async (modo) => {
+    const primera = await registrar();
+    await primera.cliente.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
+    const duena = await conectar();
+    await duena.enviar({ type: "login", usuario: primera.sesion.usuario.usuario, contrasena: "secreto09" });
+    const liberado = primera.cliente.esperar((mensaje) => mensaje.type === "mesa.estado" && mensaje.asientos.every((asiento) => asiento === null), primera.cliente.mensajes.length);
+    if (modo === "salir") await duena.enviar({ type: "mesa.salir" });
+    else {
+      const reserva = primera.cliente.esperar((mensaje) => mensaje.type === "mesa.estado" && mensaje.asientos.some((asiento) => asiento?.conectado === false), primera.cliente.mensajes.length);
+      await duena.cerrar(); await reserva;
+      tiempo.avanzar(RESERVA_ASIENTO_MS);
+    }
+    await liberado;
+    expect(await primera.cliente.enviar({ type: "mesa.salir" })).toMatchObject({ type: "ok" });
+    const desde = primera.cliente.mensajes.length;
     const siguiente = await registrar();
     await siguiente.cliente.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
     await primera.cliente.enviar({ type: "ping" });
@@ -151,7 +189,17 @@ describe.skipIf(!destino)("GestorMesas con servidor completo", () => {
     expect(await siguiente.cliente.enviar({ type: "lobby.listar" })).toMatchObject({ mesas: [{ ocupados: 1 }, { ocupados: 0 }, { ocupados: 0 }] });
   });
 
-  test("logout y cierre del dueño liberan el asiento y publican lobby", async () => {
+  test("cerrar una espectadora todavía suscrita no libera el asiento de la dueña", async () => {
+    const primera = await registrar();
+    await primera.cliente.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
+    const duena = await conectar();
+    await duena.enviar({ type: "reanudar", token: primera.sesion.token });
+    await primera.cliente.cerrar();
+    expect(await duena.enviar({ type: "lobby.listar" })).toMatchObject({ mesas: [{ ocupados: 1 }, { ocupados: 0 }, { ocupados: 0 }] });
+    expect(await duena.enviar({ type: "mesa.salir" })).toMatchObject({ type: "ok" });
+  });
+
+  test("logout libera el asiento; cierre lo libera tras la reserva y publica lobby", async () => {
     const observador = await registrar();
     const jugador = await registrar();
     for (const modo of ["logout", "cierre"] as const) {
@@ -162,7 +210,9 @@ describe.skipIf(!destino)("GestorMesas con servidor completo", () => {
         await cambio;
         expect(await jugador.cliente.enviar({ type: "login", usuario: jugador.sesion.usuario.usuario, contrasena: "secreto09" })).toMatchObject({ type: "sesion", mesaId: null });
       } else {
-        await jugador.cliente.cerrar();
+        const cerrado = observador.cliente.esperar((mensaje) => mensaje.type === "bienvenida", observador.cliente.mensajes.length);
+        await jugador.cliente.cerrar(); await cerrado;
+        tiempo.avanzar(RESERVA_ASIENTO_MS);
         await cambio;
       }
     }
