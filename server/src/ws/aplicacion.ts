@@ -66,11 +66,11 @@ export function iniciarAplicacion(conexion: SQL, puerto = PUERTO, crearMesa?: Fa
     socket.subscribe(topicMesa(mesaId));
     socket.data.mesaId = mesaId;
   }
-  function limpiarMesa(socket: SocketConexion): void {
+  function limpiarMesa(socket: SocketConexion, motivo: "desconexion" | "sesion"): void {
     conexiones.delete(socket.data.conexionId!);
     desuscribirMesa(socket);
     if (socket.data.usuarioId === undefined) return;
-    gestor.desconectar(socket.data.usuarioId, socket.data.conexionId!);
+    gestor.desconectar(socket.data.usuarioId, socket.data.conexionId!, motivo === "desconexion");
   }
   const enrutador = crearEnrutadorAutenticado(new Sesiones(conexion), {
     ...crearManejadoresJuego(gestor),
@@ -106,7 +106,7 @@ export function iniciarAplicacion(conexion: SQL, puerto = PUERTO, crearMesa?: Fa
     },
     alCerrar: limpiarMesa,
   });
-  servidor = iniciarServidor(puerto, enrutador, limpiarMesa);
+  servidor = iniciarServidor(puerto, enrutador, (socket) => limpiarMesa(socket, "desconexion"));
   const detenerTransporte = servidor.stop.bind(servidor);
   servidor.stop = async (cerrarConexiones) => {
     cerrando = true;

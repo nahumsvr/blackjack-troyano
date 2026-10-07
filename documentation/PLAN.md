@@ -558,8 +558,10 @@ Revisión T-20 (6 oct, PR #31): las acciones validan propiedad, fase, plazo, can
 1. Al cerrarse el socket: `Mesa.marcarDesconectado(usuarioId)` → `conectado = false`. Si era su turno, se planta en ese momento; si su turno llega después, se planta al llegar.
 2. En `APUESTAS` sin apuesta: no juega esa ronda. Si ya apostó, su apuesta sigue y se liquida normalmente.
 3. Si se reconecta (`reanudar` con su token) dentro de 60 s: recupera el asiento y recibe el snapshot actual.
-4. Después de 60 s desconectado, el asiento se libera al terminar la ronda en curso.
+4. Después de 60 s desconectado, el asiento se libera al terminar la ronda en curso. Si no tiene apuesta ni débito pendiente, se libera al vencer la reserva.
 5. Si el mismo usuario entra a la mesa desde otra pestaña, esa conexión se vuelve la dueña del asiento; la anterior queda como espectadora (recibe snapshots, pero sus acciones responden `NO_ESTAS_EN_MESA`). `GestorMesas` informa al transporte del dueño anterior, que conserva su suscripción y recibe un aviso con el código existente `NO_ESTAS_EN_MESA` sin `reqId`. La espectadora puede enviar `mesa.salir`: se desuscribe y recibe `ok` sin liberar el asiento ajeno, incluso si la dueña ya salió o se desconectó. Si la dueña libera el asiento, la espectadora recibe el snapshot y puede volver a unirse. Un cierre tardío de la conexión anterior no afecta al nuevo dueño.
+
+Implementación T-36: `RESERVA_ASIENTO_MS` vive en `config.ts`; el instante de desconexión permanece en memoria, fuera del snapshot. `RelojMesa` agenda el vencimiento más cercano entre fase y reservas con un solo `setTimeout`, mientras `finEn` conserva el plazo público de la fase. Reconectar cancela la reserva sin reiniciar el turno ajeno. Un débito en vuelo retiene el asiento hasta conocer su resultado; si se confirma, la apuesta se reparte y liquida. `logout` y caducidad/revocación producen salida explícita, mientras el cierre del transporte reserva el asiento. No cambian mensajes ni tablas.
 
 ---
 

@@ -2,7 +2,7 @@
 import { CantidadApuestaSchema, ErrorJuego, type Asiento, type BilleteraEstado, type Equipado, type FaseMesa, type MesaEstado, type MensajeServidor, type UsuarioVista } from "@blackjack/shared";
 import {
   CAPACIDAD_MESA, TIEMPO_APUESTAS_MS, TIEMPO_TURNO_MS, TIEMPO_RESULTADOS_MS, TIEMPO_REINTENTO_MS, MAX_REINTENTOS_RELOJ,
-  REINTENTO_PAGOS_MS, REINTENTOS_PAGOS_MAX,
+  REINTENTO_PAGOS_MS, REINTENTOS_PAGOS_MAX, RESERVA_ASIENTO_MS,
 } from "../config";
 import { Baraja } from "./Baraja";
 import { Dealer } from "./Dealer";
@@ -88,6 +88,8 @@ export class Mesa {
       const cosmeticosCambiaron = existente.actualizarEquipado(equipado);
       if (existente.conectado && !existente.salidaPendiente && !cosmeticosCambiaron) return this.snapshot();
       existente.conectado = true;
+      existente.desconectadoDesde = null;
+      this.reloj.cancelarReserva(usuario.id);
       existente.salidaPendiente = false;
     } else {
       const indice = this.asientos.findIndex((jugador) => jugador === null);
@@ -113,6 +115,8 @@ export class Mesa {
    */
   salir(usuarioId: number): void {
     const jugador = this.obtenerJugador(usuarioId);
+    jugador.desconectadoDesde = null;
+    this.reloj.cancelarReserva(usuarioId);
     if (jugador.apuesta === 0 && !this.apuestasPendientes.has(usuarioId)) {
       this.asientos[jugador.indice] = null;
       if (this.asientos.every((asiento) => asiento === null)) {
@@ -125,6 +129,23 @@ export class Mesa {
       jugador.salidaPendiente = true;
       if (jugador.indice === this.turno) { this.avanzarTurno(); return; }
     }
+    if (this.fase === "APUESTAS") this.cerrarSiTodosApostaron();
+    this.publicarEstado();
+  }
+
+  /**
+   * Reserva el asiento cerrado y planta inmediatamente al dueño del turno.
+   * @param usuarioId - Dueño autenticado del socket que se cerró.
+   * @returns Conserva cartas y apuesta; los demás reciben conectado=false.
+   * @throws ErrorJuego NO_ESTAS_EN_MESA si el asiento ya fue liberado.
+   */
+  marcarDesconectado(usuarioId: number): void {
+    const jugador = this.obtenerJugador(usuarioId);
+    if (!jugador.conectado) return;
+    jugador.conectado = false;
+    jugador.desconectadoDesde = this.reloj.ahora();
+    if (!this.detenida) this.reloj.reservar(usuarioId, RESERVA_ASIENTO_MS, () => this.liberarReservaVencida(usuarioId));
+    if (jugador.indice === this.turno) { this.avanzarTurno(); return; }
     if (this.fase === "APUESTAS") this.cerrarSiTodosApostaron();
     this.publicarEstado();
   }
@@ -158,6 +179,7 @@ export class Mesa {
       } finally {
         this.apuestasPendientes.delete(usuarioId);
         if (jugador.salidaPendiente && jugador.apuesta === 0) this.salir(usuarioId);
+        this.liberarReservaVencida(usuarioId);
       }
     });
   }
@@ -268,7 +290,10 @@ export class Mesa {
     this.exigirFase("PAGOS");
     if (this.liquidacion && !this.liquidacionConfirmada) throw new ErrorJuego("ERROR_INTERNO");
     for (const [indice, jugador] of this.asientos.entries()) {
-      if (jugador?.salidaPendiente) this.asientos[indice] = null;
+      if (jugador && (jugador.salidaPendiente || this.reservaVencida(jugador))) {
+        this.reloj.cancelarReserva(jugador.usuarioId);
+        this.asientos[indice] = null;
+      }
     }
     this.abrirApuestas();
   }
@@ -288,7 +313,7 @@ export class Mesa {
   }
 
   /** @returns Cancela el reloj al detener el servidor o el banco de pruebas. */
-  detener(): void { this.detenida = true; this.reloj.cancelar(); }
+  detener(): void { this.detenida = true; this.reloj.detener(); }
 
   /**
    * Drena las acciones y completa una liquidación pendiente antes de cerrar SQL.
@@ -375,6 +400,25 @@ export class Mesa {
     const jugador = this.asientos.find((asiento) => asiento?.usuarioId === usuarioId);
     if (!jugador) throw new ErrorJuego("NO_ESTAS_EN_MESA");
     return jugador;
+  }
+
+  private reservaVencida(jugador: Jugador): boolean {
+    return !jugador.conectado && jugador.desconectadoDesde !== null
+      && this.reloj.ahora() - jugador.desconectadoDesde >= RESERVA_ASIENTO_MS;
+  }
+
+  private liberarReservaVencida(usuarioId: number): void {
+    const jugador = this.asientos.find((asiento) => asiento?.usuarioId === usuarioId);
+    if (!jugador || !this.reservaVencida(jugador)) return;
+    // Un débito en vuelo o una apuesta confirmada retienen el asiento hasta PAGOS:
+    // vencer la reserva nunca descarta dinero ni cambia los participantes de la ronda.
+    if (jugador.apuesta > 0 || this.apuestasPendientes.has(usuarioId)) return;
+    this.asientos[jugador.indice] = null;
+    if (this.asientos.every((asiento) => asiento === null)) this.abrirApuestas();
+    else {
+      if (this.fase === "APUESTAS") this.cerrarSiTodosApostaron();
+      this.publicarEstado();
+    }
   }
 
   private exigirFase(fase: FaseMesa): void { if (this.fase !== fase) throw new ErrorJuego("FASE_INCORRECTA"); }
