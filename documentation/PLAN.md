@@ -611,6 +611,8 @@ Si vamos tarde, se sacrifica **en este orden** (lo primero se corta primero):
 
 **Nunca se cortan:** registro/login, lobby, ronda completa con 3+ jugadores, validaciones del servidor, desconexión, guardado de rondas, compra de fichas con límite diario, historial de movimientos y documentación.
 
+**Decisión de entrega — Hector, 6 oct 2026 CDMX:** se confirma el corte de T-35 (equipamiento), T-39 (compra de artículos en la UI) y T-40 (inventario/equipamiento visible). Se conserva el tema verde y el equipado básico del registro; el catálogo de solo lectura existente puede seguir disponible. No se agrega código de tienda/equipamiento para esta entrega. El backend existente de T-34 se conserva, igual que la compra de fichas con límite diario y el historial. Las tareas cortadas siguen abiertas y no suman al avance. No hay cambio de protocolo ni esquema SQL; el congelamiento y las pruebas de aceptación mantienen sus propios criterios.
+
 ## 11. Extras (fuera de alcance)
 
 Doblar apuesta · Dividir (split) · Seguro · Chat en la mesa · Ranking global. **No se empiezan antes del congelamiento (dom 4 oct, 22:00)** y solo si el checklist de funcionamiento está completo.

@@ -1,6 +1,6 @@
 # Arquitectura de Blackjack Troyano
 
-Documento de implementación, actualizado el 6 de octubre de 2026 CDMX. Describe `main` en `a68c62c`, que ya incluye el motor de partidas (T-18 a T-21, PR #29–#32). Los bots (T-26, PR #33) siguen abiertos; la recuperación de asiento (T-36, PR #37) se fusionó en la rama de los bots y llegará a `main` con el PR #33. El diseño original está en [PLAN.md](../documentation/PLAN.md) y los criterios de aceptación en [TAREAS.md](../documentation/TAREAS.md).
+Documento de implementación, actualizado el 6 de octubre de 2026 CDMX. Describe `main` en `8bfe554`, con el motor de partidas (T-18 a T-21, PR #29–#32), bots T-26 y recuperación de asiento T-36 (#37 integrado con #33). Revisión de contenido por Hector el 6 oct; renderizado en GitHub y exportaciones para el ZIP pendientes. El diseño original está en [PLAN.md](../documentation/PLAN.md) y los criterios de aceptación en [TAREAS.md](../documentation/TAREAS.md).
 
 ## Módulos
 
@@ -13,7 +13,7 @@ Documento de implementación, actualizado el 6 de octubre de 2026 CDMX. Describe
 | `server/src/store/` | `BilleteraSQL`, `Tienda`, consultas de saldo e historial y handlers de economía. |
 | `server/src/db/` | Pool PostgreSQL de Bun, `enTransaccion` y `HistorialSQL` (rondas terminadas). |
 | `server/db/` | `schema.sql` (7 tablas) y `seed.sql` (14 artículos). |
-| `scripts/` | `db-reset.ts`, `dev.ts`, `empaquetar.ts` y `verificar-mesa.ts` (verificación manual de la mesa). `bots.ts` (jugadores automáticos) llega con el PR #33. |
+| `scripts/` | `db-reset.ts`, `dev.ts`, `empaquetar.ts` y `verificar-mesa.ts` (verificación manual de la mesa). `bots.ts` (jugadores automáticos) está integrado desde #33. |
 | `client/` | React + Vite + Tailwind: capa de red con reconexión, estado, pantallas, componentes de mesa y servidor falso (`?mock=1`). |
 
 ## Dependencias implementadas
@@ -135,7 +135,7 @@ classDiagram
     +id string
     +nombre string
     +fase FaseMesa
-    +rondaId string
+    +rondaId string?
     +unirse(usuario, equipado) MesaEstado
     +salir(usuarioId) void
     +apostar(usuarioId, cantidad) Promise~void~
@@ -145,19 +145,30 @@ classDiagram
     +avanzarTurno() void
     +finalizarPagos() void
     +snapshot() MesaEstado
+    +marcarDesconectado(usuarioId) void
+    +esperarOperaciones() Promise~void~
+    +cerrar() Promise~void~
   }
   class RelojMesa {
-    +finEn number
-    +programar(demora, accion) number
+    +finEn number?
+    +programar(demora, accion, mostrarVencimiento) number
     +cancelar() void
+    +reservar(usuarioId, demora, accion) void
+    +cancelarReserva(usuarioId) void
+    +detener() void
   }
   class GestorMesas {
     +listar() MesaResumen[]
     +unirse(mesaId, usuario, equipado, conexionId) MesaEstado
     +salir(usuarioId, conexionId) string
-    +desconectar(usuarioId, conexionId) void
+    +desconectar(usuarioId, conexionId, reservar) void
     +mesaDeUsuario(usuarioId) string?
     +obtener(mesaId) Mesa
+    +mesaDelPropietario(usuarioId, conexionId) Mesa
+    +snapshot(mesaId) MesaEstado
+    +detener() void
+    +esperarOperaciones() Promise~void~
+    +cerrar() Promise~void~
   }
   class HistorialSQL {
     +guardar(ronda) Promise~void~
@@ -190,7 +201,7 @@ La interfaz `Billetera` vive en `game/Billetera.ts`, y `store/Billetera.ts` solo
 
 `Mesa` serializa todas sus operaciones con una cola de promesas (`encolar`): las acciones de jugadores, los vencimientos del reloj y la liquidación nunca se ejecutan intercalados. Cada vencimiento comprueba que la fase, la ronda y el turno sigan siendo los mismos que cuando se programó; un reloj viejo no puede mover una ronda nueva.
 
-`equipar` todavía no está implementado (T-35, pospuesta junto con T-40).
+`equipar` no está implementado. Hector confirma el corte de T-35/T-39/T-40 para esta entrega (PLAN §10); se conservan compra de fichas, historial y cosméticos básicos del registro.
 
 ## Persistencia
 
@@ -393,12 +404,16 @@ stateDiagram-v2
   PAGOS --> ESPERANDO : liquidación confirmada y pasan 5 s (o 30 fallos), sin jugadores
 ```
 
-- **Un solo reloj por mesa:** `RelojMesa` guarda un único timeout; programar uno nuevo cancela el anterior e invalida su callback aunque ya estuviera en vuelo. Expone `finEn` (epoch ms del servidor) para que todas las pantallas muestren la misma cuenta regresiva.
+- **Un solo reloj por mesa:** `RelojMesa` multiplexa el vencimiento de fase y las reservas de asiento en un único timeout; reprogramarlo invalida callbacks antiguos. `cancelar()` retira la fase, pero mantiene reservas; `detener()` cancela ambas. Expone `finEn` (epoch ms del servidor) para que todas las pantallas muestren la misma cuenta regresiva.
 - **Plazos:** una acción que llega cuando `finEn` ya pasó se rechaza con `FASE_INCORRECTA`, aunque el timeout todavía no haya corrido.
 - **Turnos:** se recorren los asientos en orden; se saltan los jugadores con blackjack natural y los desconectados (que quedan `PLANTADO`).
 - **Carta oculta:** `Mesa.snapshot()` envía `{oculta:true}` para la segunda carta del dealer fuera de `DEALER` y `PAGOS`, y `MesaEstadoSchema` rechaza cualquier snapshot que la filtre.
 - **Rebarajado:** al cerrar apuestas, si quedan menos del 25 % de las 208 cartas, el zapato se rebaraja antes de repartir.
 - **Quien entra a media ronda** queda `ESPERANDO_RONDA` hasta la siguiente fase de apuestas.
+
+## Desconexión y recuperación (T-36)
+
+El cierre del socket propietario marca al jugador desconectado y lo planta si está en turno; si todavía no le toca, se planta al llegar su turno. Se reserva el asiento durante RESERVA_ASIENTO_MS (60 s). Reanudar antes del vencimiento recupera mano, apuesta y saldo sin devolver un turno terminado. Una apuesta o débito pendiente retiene el asiento hasta liquidar la ronda; sin ellos, se libera al vencer la reserva. Logout y revocación producen salida explícita, sin reserva. El cierre tardío de una pestaña espectadora no afecta a la conexión propietaria. Las pruebas de desconexion.test.ts cubren los recorridos con sockets reales y PostgreSQL; la aceptación de Wi-Fi con tres laptops pertenece a T-42.
 
 ## Verificación
 
@@ -419,6 +434,6 @@ Pruebas en `server/test/` (las SQL necesitan `TEST_DATABASE_URL`, ver el manual)
 
 Evidencia del motor (6 oct, punta de la cadena `573171b` en la rama de los bots del PR #33, antes de integrarse a `main`, en PostgreSQL 16.15): typecheck correcto, 335 de 336 pruebas en verde (la que falla, `servidor.test.ts` «un fallo de limpieza…», pasa al correrla sola). `bun run bots 4 --mesa mesa-1 --rondas 10` jugó 10 rondas sin errores; quedaron 10 filas en `rondas`, 40 en `rondas_jugadores` y 0 usuarios con saldo distinto de la suma de sus `movimientos`.
 
-Las firmas públicas de `Mesa`, `GestorMesas`, `Jugador` y `aplicacion.ts` en `main` coinciden con las de esa punta; la integración solo agregó el tope de reintentos de la liquidación.
+La evidencia anterior es histórica. La revisión actual contrasta main 8bfe554 e incorpora las firmas y reservas de T-36; el tope de liquidación permanece en 30 intentos.
 
-Pendiente para cerrar T-32/T-50: ver los diagramas renderizados en GitHub y la confirmación de Hector de que coinciden con el código. La recuperación del asiento en 60 s (T-36, PR #37) ya está en la rama de los bots y se documentará cuando el PR #33 llegue a `main`; el límite de 20 mensajes/s (T-37) todavía no existe.
+Hector revisó el contenido frente a main 8bfe554. Pendiente para cerrar T-32/T-50: comprobar los diagramas renderizados en GitHub y exportarlos como imágenes/PDF para el ZIP. El navegador de esta sesión falló al aplicar permisos del sandbox, por lo que no se acredita esa comprobación. T-37 (#45) y la corrección HTTP LAN de T-38 (#46) están publicadas, pendientes de revisión/fusión; este documento no las presenta como parte de main.
