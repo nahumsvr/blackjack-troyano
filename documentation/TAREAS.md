@@ -148,7 +148,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Avance — PR #23 fusionado (2026-10-06):** arquitectura describe auth/router, Carta/Baraja, Mano/Dealer y las 45 columnas SQL. Preparar los diagramas de Mesa/Gestor desde los PR publicados, identificando su base; cierre cuando estén integrados y renderizados/verificados.
   - **Preparación local (2026-10-04):** Borrador docs/arquitectura.md con módulos/clases existentes, ER y máquina de estados prevista. T-18 y revisión/renderizado de GitHub pendientes; no se considera terminada. Incluido en PR #4 (abierto).
   - **Hecho cuando:** los diagramas se ven renderizados en GitHub y coinciden con los nombres de las clases reales.
-  - **Motor documentado (2026-10-06) — PR #41:** `docs/arquitectura.md` incluye `Jugador`, `Mesa`, `RelojMesa`, `GestorMesas`, `HistorialSQL` y `resolver` con sus firmas reales de la punta de PR #29–#33 (`573171b`); la máquina de estados ya es la implementada. Falta revisar tras la integración, verlo renderizado en GitHub y la confirmación de Hector.
+  - **Motor documentado (2026-10-06) — PR #41:** `docs/arquitectura.md` incluye `Jugador`, `Mesa`, `RelojMesa`, `GestorMesas`, `HistorialSQL` y `resolver` con sus firmas reales de `main` (PR #29–#32 integrados), incluida la liquidación con tope de 30 reintentos; la máquina de estados ya es la implementada. Falta verlo renderizado en GitHub y la confirmación de Hector.
 
 ---
 

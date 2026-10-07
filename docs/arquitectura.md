@@ -1,6 +1,6 @@
 # Arquitectura de Blackjack Troyano
 
-Documento de implementación, actualizado el 6 de octubre de 2026 CDMX. Describe `main` en `3e185d1` más el motor de partidas de los PR #29–#33 (T-18 a T-21 y T-26, punta `573171b`), que está en integración. El diseño original está en [PLAN.md](../documentation/PLAN.md) y los criterios de aceptación en [TAREAS.md](../documentation/TAREAS.md).
+Documento de implementación, actualizado el 6 de octubre de 2026 CDMX. Describe `main` en `6ffa424`, que ya incluye el motor de partidas (T-18 a T-21, PR #29–#32). Los bots (T-26, PR #33) y la recuperación de asiento (T-36, PR #37) siguen abiertos. El diseño original está en [PLAN.md](../documentation/PLAN.md) y los criterios de aceptación en [TAREAS.md](../documentation/TAREAS.md).
 
 ## Módulos
 
@@ -325,7 +325,7 @@ Al terminar el dealer, `Mesa` congela la ronda en un objeto `RondaTerminada` (UU
 2. `HistorialSQL.guardar`: inserta `rondas` y todas sus filas de `rondas_jugadores` en una sola transacción. Es idempotente por el UUID de la ronda: si la ronda ya existe con los mismos datos no hace nada; si existe con datos distintos lanza `ERROR_INTERNO`.
 3. Publica `ronda.resultado` en `mesa:<id>` y programa 5 s de resultados antes de abrir la siguiente ronda.
 
-Si falla el paso 1 o el 2, la mesa se queda en `PAGOS` y reintenta cada `REINTENTO_PAGOS_MS` (1 s). Nunca empieza una ronda nueva con pagos o historial incompletos. Al apagar el servidor, una liquidación pendiente se completa antes de cerrar.
+Si falla el paso 1 o el 2, la mesa se queda en `PAGOS` y reintenta cada `REINTENTO_PAGOS_MS` (1 s). Tras `REINTENTOS_PAGOS_MAX` (30) intentos fallidos, abandona la liquidación para no bloquear la mesa: conserva los pagos ya confirmados, registra en el log del servidor el UUID de la ronda, los usuarios sin pago confirmado y si el historial se guardó (para conciliarlo a mano), y abre la siguiente ronda. Al apagar el servidor, una liquidación pendiente se completa antes de cerrar.
 
 Las operaciones de dinero del juego pasan por la misma cola por usuario que las compras (`serializarUsuario`), así que una compra de fichas durante una mano no se intercala con el débito de la apuesta ni con el pago.
 
@@ -388,9 +388,9 @@ stateDiagram-v2
   TURNOS --> TURNOS : pedir, plantarse o vencen 20 s (se planta solo)
   TURNOS --> DEALER : no queda nadie por jugar
   DEALER --> PAGOS : el dealer pide hasta 17 y se planta
-  PAGOS --> PAGOS : falla un pago o el historial (reintento cada 1 s)
-  PAGOS --> APUESTAS : pagos e historial confirmados y pasan 5 s, si quedan jugadores
-  PAGOS --> ESPERANDO : pagos e historial confirmados y pasan 5 s, sin jugadores
+  PAGOS --> PAGOS : falla un pago o el historial (reintento cada 1 s, máximo 30)
+  PAGOS --> APUESTAS : liquidación confirmada y pasan 5 s (o 30 fallos), si quedan jugadores
+  PAGOS --> ESPERANDO : liquidación confirmada y pasan 5 s (o 30 fallos), sin jugadores
 ```
 
 - **Un solo reloj por mesa:** `RelojMesa` guarda un único timeout; programar uno nuevo cancela el anterior e invalida su callback aunque ya estuviera en vuelo. Expone `finEn` (epoch ms del servidor) para que todas las pantallas muestren la misma cuenta regresiva.
@@ -417,6 +417,8 @@ Pruebas en `server/test/` (las SQL necesitan `TEST_DATABASE_URL`, ver el manual)
 | `liquidacionMesa.test.ts`, `liquidacionSQL.test.ts`, `integracionJuegoEconomia.test.ts` | Pagos idempotentes, reintentos, historial en `rondas`/`rondas_jugadores` y saldos contra `movimientos` |
 | `bots.test.ts`, `produccion.test.ts` | Bots jugando rondas completas y cliente servido en el mismo puerto |
 
-Evidencia del motor (6 oct, punta `573171b` en PostgreSQL 16.15): typecheck correcto, 335 de 336 pruebas en verde (la que falla, `servidor.test.ts` «un fallo de limpieza…», pasa al correrla sola). `bun run bots 4 --mesa mesa-1 --rondas 10` jugó 10 rondas sin errores; quedaron 10 filas en `rondas`, 40 en `rondas_jugadores` y 0 usuarios con saldo distinto de la suma de sus `movimientos`.
+Evidencia del motor (6 oct, punta de la cadena `573171b` antes de integrarse, en PostgreSQL 16.15): typecheck correcto, 335 de 336 pruebas en verde (la que falla, `servidor.test.ts` «un fallo de limpieza…», pasa al correrla sola). `bun run bots 4 --mesa mesa-1 --rondas 10` jugó 10 rondas sin errores; quedaron 10 filas en `rondas`, 40 en `rondas_jugadores` y 0 usuarios con saldo distinto de la suma de sus `movimientos`.
 
-Pendiente para cerrar T-32/T-50: volver a revisar `GestorMesas` y `aplicacion.ts` cuando la integración resuelva sus conflictos con `main`, ver los diagramas renderizados en GitHub y la confirmación de Hector de que coinciden con el código. La recuperación del asiento en 60 s (T-36) y el límite de 20 mensajes/s (T-37) todavía no existen.
+Las firmas públicas de `Mesa`, `GestorMesas`, `Jugador` y `aplicacion.ts` en `main` coinciden con las de esa punta; la integración solo agregó el tope de reintentos de la liquidación.
+
+Pendiente para cerrar T-32/T-50: ver los diagramas renderizados en GitHub y la confirmación de Hector de que coinciden con el código. La recuperación del asiento en 60 s (T-36) está en el PR #37 y se documentará al fusionarse; el límite de 20 mensajes/s (T-37) todavía no existe.
