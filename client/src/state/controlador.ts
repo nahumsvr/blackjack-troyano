@@ -10,6 +10,7 @@ import type { MensajeServidor } from "@blackjack/shared";
 import { DURACION_AVISO_MS } from "../config";
 import type { AlmacenToken } from "../net/almacenToken";
 import { ErrorPeticion } from "../net/erroresLocales";
+import { generarUuid } from "../net/identificadores";
 import { calcularDesfase } from "../net/reloj";
 import type { EventoTransporte, Intencion, Transporte } from "../net/transporte";
 import type { Aviso, EventoJuego } from "./reductor";
@@ -18,7 +19,7 @@ import type { Aviso, EventoJuego } from "./reductor";
 export interface OpcionesControlador {
   /** Hora local en ms; por defecto `Date.now`. */
   ahora?: () => number;
-  /** Genera la clave de idempotencia de cada compra; por defecto `crypto.randomUUID`. */
+  /** Genera la clave de idempotencia de cada compra; compatible con HTTP en LAN. */
   generarClave?: () => string;
   /** Programa el cierre automático de avisos; por defecto `setTimeout`. */
   programar?: (funcion: () => void, ms: number) => unknown;
@@ -48,7 +49,7 @@ export class ControladorJuego {
     opciones: OpcionesControlador = {},
   ) {
     this.ahora = opciones.ahora ?? (() => Date.now());
-    this.generarClave = opciones.generarClave ?? (() => crypto.randomUUID());
+    this.generarClave = opciones.generarClave ?? generarUuid;
     this.programar = opciones.programar ?? ((funcion, ms) => setTimeout(funcion, ms));
   }
 

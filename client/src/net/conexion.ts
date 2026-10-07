@@ -14,6 +14,7 @@
 import { MensajeClienteSchema, MensajeServidorSchema, type MensajeServidor } from "@blackjack/shared";
 import { RECONEXION_MS, TIMEOUT_PETICION_MS } from "../config";
 import { ErrorPeticion, errorLocal } from "./erroresLocales";
+import { generarUuid } from "./identificadores";
 import type { EstadoConexion, EventoTransporte, Intencion, OyenteTransporte, Transporte } from "./transporte";
 
 /** Subconjunto de la API de `WebSocket` que usa la conexión (permite un socket falso en pruebas). */
@@ -40,7 +41,7 @@ export interface OpcionesConexion {
   programar?: (funcion: () => void, ms: number) => unknown;
   /** Cancela lo programado; por defecto `clearTimeout`. */
   cancelar?: (temporizador: unknown) => void;
-  /** Genera el `reqId`; por defecto `crypto.randomUUID`. */
+  /** Genera el `reqId`; por defecto un UUID compatible con HTTP en LAN. */
   generarId?: () => string;
   /** Espera máxima por respuesta, en ms. */
   timeoutMs?: number;
@@ -93,7 +94,7 @@ export class Conexion implements Transporte {
     this.crearSocket = opciones.crearSocket ?? ((url) => new WebSocket(url));
     this.programar = opciones.programar ?? ((funcion, ms) => setTimeout(funcion, ms));
     this.cancelar = opciones.cancelar ?? ((temporizador) => clearTimeout(temporizador as ReturnType<typeof setTimeout>));
-    this.generarId = opciones.generarId ?? (() => crypto.randomUUID());
+    this.generarId = opciones.generarId ?? generarUuid;
     this.timeoutMs = opciones.timeoutMs ?? TIMEOUT_PETICION_MS;
     this.esperas = opciones.esperas ?? RECONEXION_MS;
   }
