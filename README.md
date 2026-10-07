@@ -4,7 +4,7 @@ Proyecto de blackjack multijugador en desarrollo. La meta es que varias personas
 
 ## Estado actual
 
-Monorepo con **Bun workspaces** (`server`, `client` y `shared`). El servidor Bun atiende HTTP y WebSocket (`/ws`) en el puerto 3000. Ya funcionan registro, login, reanudar, logout, lobby con tres mesas, compra de fichas con límite diario, tienda e historial de movimientos. Después de compilar, Bun sirve el cliente desde `client/dist` en ese mismo puerto. El motor de rondas (PR #29–#33) está en integración; el avance está en [`ESTADO.md`](documentation/ESTADO.md).
+Monorepo con **Bun workspaces** (`server`, `client` y `shared`). El servidor Bun atiende HTTP y WebSocket (`/ws`) en el puerto 3000. Ya funcionan registro, login, reanudar, logout, lobby con tres mesas, compra de fichas con límite diario, tienda, historial de movimientos y rondas completas en mesa (apuestas, turnos con reloj del servidor, dealer, pagos e historial de rondas). Después de compilar, Bun sirve el cliente desde `client/dist` en ese mismo puerto. Los bots de prueba (PR #33) siguen en revisión; el avance está en [`ESTADO.md`](documentation/ESTADO.md).
 
 El cliente React (Vite + Tailwind) tiene:
 - acceso y lobby;
@@ -37,6 +37,8 @@ Después de copiar `.env`, los cuatro comandos levantan la base, instalan depend
 El [manual de instalación](docs/manual-instalacion.md) detalla los requisitos, la configuración, la conexión desde otra laptop y los problemas habituales.
 
 `bun run dev` inicia el servidor en `0.0.0.0:3000` y el cliente en `http://localhost:5173`. Vite redirige `/ws` al servidor y también acepta conexiones desde otra laptop por la IP de la máquina. Para detener ambos procesos, usa `Ctrl+C`.
+
+Para iniciar solo el servidor, ejecuta `cd server` y `bun run dev`. El comando carga explícitamente el `.env` de la raíz del repositorio, donde se configura `DATABASE_URL`.
 
 Para recorrer la interfaz sin backend, abre `http://localhost:5173/?mock=1`. La barra morada de arriba permite:
 - recorrer las 6 fases de la mesa;

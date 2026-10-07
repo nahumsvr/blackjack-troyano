@@ -17,7 +17,7 @@ Abre `http://<IP-del-servidor>:3000` en cada laptop (ver [cómo conocer la IP](#
 
 ## Requisitos
 
-- Bun 1.3.13 o superior (la versión fijada en `package.json`).
+- Bun 1.3.13 (la versión fijada en `package.json`).
 - Docker Engine y Docker Compose v2 o compatible (`docker compose version`). El servicio usa la imagen `postgres:16`.
 - Git para clonar, o un descompresor ZIP si recibiste `blackjack-equipo.zip`.
 - Opcional: `psql` para consultas SQL desde el anfitrión. También puedes usar el cliente incluido en el contenedor.
@@ -27,7 +27,7 @@ Abre una terminal en la raíz del clon o del archivo descomprimido: allí deben 
 
 ## Configuración y arranque
 
-1. Copia la configuración: `cp .env.example .env`. Conserva los valores locales o cambia usuario, contraseña, base y puerto. Si los cambias, ajusta también `DATABASE_URL`; codifica los caracteres especiales de la contraseña para una URL.
+1. Copia la configuración: `cp .env.example .env` (en `cmd` de Windows: `copy .env.example .env`). Conserva los valores locales o cambia usuario, contraseña, base y puerto. Si los cambias, ajusta también `DATABASE_URL`; codifica los caracteres especiales de la contraseña para una URL.
 2. Inicia PostgreSQL: `docker compose up -d --wait`.
 3. Instala los workspaces: `bun install`.
 4. Crea las tablas y carga el catálogo: `bun run db:reset`. Escribe el nombre de la base mostrado para confirmar (`blackjack` por defecto).
@@ -121,6 +121,7 @@ Si solo el propio servidor logra abrirlo, permite TCP 3000 en su firewall:
 | Docker no puede conectarse a `/var/run/docker.sock` (`permission denied`) | Comprueba que Docker esté iniciado (`sudo systemctl start docker` en Linux). Si el error es de permisos, agrega tu usuario al grupo con `sudo usermod -aG docker $USER` y cierra e inicia sesión, o antepone `sudo` a los comandos `docker compose`. Si no quieres cerrar sesión, `newgrp docker` abre una terminal con el grupo aplicado. En Windows/macOS, abre Docker Desktop. |
 | PostgreSQL no inicia por puerto ocupado | Cambia `POSTGRES_PORT` en `.env` y el puerto de `DATABASE_URL`, y vuelve a levantar Compose. |
 | `db:reset` indica que falta `DATABASE_URL` | Comprueba que `.env` esté en la raíz y ejecuta el comando desde esa carpeta. |
+| El servidor indica que falta `DATABASE_URL` | Comprueba que el `.env` de la raíz contiene una URL PostgreSQL válida. `bun run dev` dentro de `server/` carga ese archivo mediante `--env-file=../.env`. |
 | PostgreSQL rechaza la contraseña tras editar `.env` | El volumen retiene sus credenciales originales; usa esas credenciales o cambia la contraseña dentro de PostgreSQL. |
 | Bun no puede escuchar en `:3000` («Is port 3000 in use?») | Detén el otro proceso que usa ese puerto: `lsof -i :3000` en Linux/macOS o `netstat -ano \| findstr :3000` en Windows, y termina ese PID. |
 | Otra laptop no puede conectarse | Revisa IP, firewall y aislamiento de la red (ver [Conexión desde otra laptop](#conexión-desde-otra-laptop)). |

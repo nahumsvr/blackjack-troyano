@@ -550,6 +550,11 @@ Reglas clave:
 
 ## 7. Desconexión y varias pestañas
 
+Revisión T-21 (6 oct, PR #32): PAGOS conserva cartas/resultados y UUID hasta confirmar créditos e historial; el plazo público de resultados comienza después de ambas confirmaciones. Al apagar, se cancelan los relojes, se drenan las acciones y se hace un último intento de cada liquidación incompleta. Los pagos confirmados se conservan y SQL reconoce el mismo UUID ante una respuesta perdida; no se publican resultados ni se programan timers durante el cierre. El apagado espera todas las mesas y propaga un fallo persistente de ese último intento. No ofrece recuperación tras matar el proceso abruptamente: las partidas siguen en memoria, como establece §1. No cambian mensajes ni tablas; requiere revisión de Massimo en BilleteraSQL/HistorialSQL.
+
+Corrección de revisión T-21 (6 oct, Nahum en PR #32): `HistorialSQL` pasa las cartas como arreglos a jsonb; con `JSON.stringify(...)::jsonb` se guardaban como string y todo reintento con el mismo UUID terminaba en `ERROR_INTERNO`. Los reintentos de PAGOS tienen tope (`REINTENTOS_PAGOS_MAX`): al agotarlo se registra la ronda con los pagos sin confirmar para conciliación manual y la mesa abre la siguiente ronda en lugar de atrapar a sus jugadores. La ronda se paga siempre que haya billetera inyectada, y el apagado cierra el pool y termina el proceso aunque falle la última liquidación (código 1).
+
+Revisión T-20 (6 oct, PR #31): las acciones validan propiedad, fase, plazo, cantidad y turno dentro de la cola de la mesa. La billetera inyectada comparte la cola por usuario de los handlers económicos hasta publicar cada saldo, evitando que una compra adelante una publicación anterior del juego. Se conserva la revocación de #21: limpiar todas las identidades del token y avisar `SESION_INVALIDA` a sus pares. El contrato `Billetera` vive en `game/` y se re-exporta desde `store/`; requiere revisión de Massimo. No cambian mensajes ni tablas.
 1. Al cerrarse el socket: `Mesa.marcarDesconectado(usuarioId)` → `conectado = false`. Si era su turno, se planta en ese momento; si su turno llega después, se planta al llegar.
 2. En `APUESTAS` sin apuesta: no juega esa ronda. Si ya apostó, su apuesta sigue y se liquida normalmente.
 3. Si se reconecta (`reanudar` con su token) dentro de 60 s: recupera el asiento y recibe el snapshot actual.
