@@ -30,10 +30,10 @@ Solo se cuentan tareas con código fusionado en `main` y criterio comprobado.
 
 Avance por hito: H1 12/14 (86 %) · H2 9/19 (47 %) · H3 1/10 (10 %) · H4 0/8 · H5 1/5 (20 %) · Entrega 0/1.
 
-- **Hector:** T-01/T-02/T-06/T-07/T-08/T-09/T-15/T-16/T-17.
+- **Hector:** T-01/T-02/T-06/T-07/T-08/T-09/T-15/T-16/T-17/T-19.
 - **Nahum:** T-10/T-11/T-12/T-27; T-11 acreditada en PR #34 con cliente real, PostgreSQL y capturas; T-27 en PR #35.
-- **Massimo:** T-03/T-04/T-05/T-23/T-24/T-25/T-34/T-54. T-03 se acredita con PR #4 (contrato), #14 (límites) y #7 (cliente que consume `@blackjack/shared`). T-54 acredita el script ZIP, no T-55 ni el paquete final.
-- **T-22:** interfaz/db fusionadas desde #4. #31 ya contiene consumidor y billetera falsa con el mismo contrato; queda comprobar esa integración revisada antes de cerrar el criterio.
+- **Massimo:** T-03/T-04/T-05/T-22/T-23/T-24/T-25/T-34/T-54. T-03 se acredita con PR #4 (contrato), #14 (límites) y #7 (cliente que consume `@blackjack/shared`). T-54 acredita el script ZIP, no T-55 ni el paquete final.
+- **T-22:** hecha; interfaz y `db/` en #4, consumida por `Mesa` y por `BilleteraMemoria` en #29–#32.
 - **T-14/T-48:** requieren instalación independiente de Nahum. La fusión de #23 aportó documentación, no esa aceptación.
 - **PR #7 ya está en `main`:** T-28–T-30 y T-41 tienen implementación integrada; conservan casilla abierta cuando falta su criterio de aceptación completo.
 
@@ -128,4 +128,5 @@ Plan para la sesión y hasta la entrega: [Avance-M-06.md](Avance-M-06.md). Las d
 | 2026-10-06 | Nahum: corrige la revisión de T-21 en PR #32 (jsonb como arreglo, tope de reintentos en PAGOS, apagado con `finally`). Typecheck y 333 pruebas PostgreSQL sin fallos. Pendiente revisión de Massimo y fusión. |
 | 2026-10-06 | Massimo: manual de instalación y README listos para la prueba independiente de Nahum (T-14/T-48). Ruta rápida, conexión LAN y firewall; enlaces rotos y historial retirados. Verificado desde el ZIP de `main` `3e185d1`: instalación, `db:reset`, build y start; HTTP 200 por IP de LAN y registro/lobby/mesa por WebSocket. Sin casillas nuevas: 21/57. |
 | 2026-10-06 | Nahum: revisión de PR #39 aplicada: integra main `16f7e32` (#29–#32) resolviendo el conflicto del registro; README indica que las rondas completas ya están en `main` y solo faltan los bots (#33); manual con Bun 1.3.13 como en `package.json` y `copy` para `cmd` de Windows. Sin casillas nuevas. |
+| 2026-10-06 | Massimo: `docs/arquitectura.md` actualizado con el motor ya integrado en `main` (PR #29–#32): clases y firmas reales, dependencias, liquidación idempotente, handlers/topics, máquina de estados implementada y pruebas. T-32/T-50 esperan la revisión de Hector. Sin casillas nuevas: 21/57. |
 | 2026-10-06 | T-22 hecha por Massimo: interfaz `Billetera` en `main` usada por `Mesa` y por `BilleteraMemoria` en las pruebas del motor (PR #29–#32). Contadores recalculados con T-19, ya marcada en TAREAS: 23/57 (40 %), Hector 10/19, Massimo 9/19, H2 9/19. |

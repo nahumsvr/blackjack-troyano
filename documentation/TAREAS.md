@@ -126,7 +126,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 ### Massimo
 - [x] T-22 · 🔓 `server/src/db` (conexión `sql` de Bun, helper `enTransaccion`) + **interfaz `Billetera`** con JSDoc y firmas definitivas · Massimo · depende de: T-05 · PR #4 (interfaz) + PR #29–#32 (uso)
   - **Hecha (2026-10-06 CDMX):** criterio verificado en `main` `a68c62c`: `Mesa` importa `Billetera` (`server/src/game/Mesa.ts`), `server/test/soporteMesa.ts` la implementa en memoria con `BilleteraMemoria`, y `BilleteraSQL` implementa la misma interfaz (`store/Billetera.ts` la reexporta desde `game/`). `db/conexion.ts` con `enTransaccion` está en `main` desde PR #4.
-  - **Avance comprobado (2026-10-06):** db e interfaz fusionadas desde PR #4. PR #31 ya usa el contrato y `BilleteraMemoria` en `server/test/soporteMesa.ts`; su interfaz de game coincide con la de main y store la re-exporta. Pendiente revisar/verificar la integración resultante; esta evidencia desbloquea la coordinación con Hector, sin cerrar aún T-22.
+  - **Avance comprobado (2026-10-06, superado por el cierre):** db e interfaz fusionadas desde PR #4. PR #31 ya usa el contrato y `BilleteraMemoria` en `server/test/soporteMesa.ts`; su interfaz de game coincide con la de main y store la re-exporta. Pendiente revisar/verificar la integración resultante; esta evidencia desbloquea la coordinación con Hector, sin cerrar aún T-22.
   - **Preparación local (2026-10-04):** crearConexion, enTransaccion e interfaz Billetera con firmas async implementados y verificados. Pendiente PR/fusión e importación por Hector en T-20. Incluido en PR #4 (abierto).
   - **Hecho cuando:** la interfaz está fusionada en `main` y Hector la importa para T-20 con una implementación falsa en memoria. *Desbloquea a Hector.*
 - [x] T-23 · `BilleteraSQL.debitarApuesta` / `acreditarPago` con `FOR UPDATE` + `movimientos` · Massimo · depende de: T-22 · PR #4
@@ -149,6 +149,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Avance — PR #23 fusionado (2026-10-06):** arquitectura describe auth/router, Carta/Baraja, Mano/Dealer y las 45 columnas SQL. Preparar los diagramas de Mesa/Gestor desde los PR publicados, identificando su base; cierre cuando estén integrados y renderizados/verificados.
   - **Preparación local (2026-10-04):** Borrador docs/arquitectura.md con módulos/clases existentes, ER y máquina de estados prevista. T-18 y revisión/renderizado de GitHub pendientes; no se considera terminada. Incluido en PR #4 (abierto).
   - **Hecho cuando:** los diagramas se ven renderizados en GitHub y coinciden con los nombres de las clases reales.
+  - **Motor documentado (2026-10-06) — PR #41:** `docs/arquitectura.md` incluye `Jugador`, `Mesa`, `RelojMesa`, `GestorMesas`, `HistorialSQL` y `resolver` con sus firmas reales de `main` (PR #29–#32 integrados), incluida la liquidación con tope de 30 reintentos; la máquina de estados ya es la implementada. Falta verlo renderizado en GitHub y la confirmación de Hector.
 
 ---
 
@@ -223,6 +224,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Avance — PR #23 fusionado (2026-10-06):** diccionario de siete tablas/45 columnas y diagramas de módulos/clases disponibles en main. Falta incorporar motor/gestor al fusionarse, exportar diagramas para el ZIP y revisión de Hector.
   - **Preparación local (2026-10-04):** Borrador de arquitectura referencia schema/seed y distingue implementación de diseño pendiente. Motor/auth/router/cliente y revisión de Hector pendientes.
   - **Hecho cuando:** cubre los 3 puntos de la rúbrica (BD con scripts, clases, dependencias) y Hector confirma que coincide con el código.
+  - **Avance (2026-10-06) — PR #41:** módulos, dependencias (con la inyección de `Billetera`/`HistorialSQL` desde `aplicacion.ts`), clases del motor, liquidación de rondas, handlers y topics, máquina de estados y tabla de pruebas actualizados en `docs/arquitectura.md`. Mismos pendientes que T-32.
 
 ---
 
