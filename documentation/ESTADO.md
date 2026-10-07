@@ -47,6 +47,7 @@ Sobre `main` en `04802be` (anterior a #35, #28 y #22; no se repitió tras fusion
 - **T-13/T-30/T-38:** #22 ya está en `main`; falta verificarlas contra el servidor real (lobby, compra de 1,000 fichas y juego desde otra laptop por IP).
 - **T-28/T-29/T-31/T-41:** esperan acciones y rondas reales integradas. El historial final requiere compras, apuestas y artículos con saldos correctos.
 - **T-36/T-37/T-42:** falta aceptación de desconexión/reserva de 60 s y endurecimiento de 20 mensajes/s; la reconexión de sesión T-11 no prueba recuperación de asiento/mano.
+  - T-36 implementada en PR #37 (`t-36-desconexion-reconexion`), con recuperación de mano/saldo y 12 casos nuevos; revisión/fusión pendientes. Evidencia en [Avance-H-T36.md](Avance-H-T36.md). T-42 conserva su prueba de Wi-Fi en tres laptops pendiente.
 - **T-35:** espera T-18 integrado y validación autoritativa de fase; coordinar con el alcance que confirme el líder para cosméticos/tienda.
 - **T-43/T-44/T-45/T-46/T-47:** falta congelamiento y revisión final por otro integrante. Se puede preparar auditoría/checklist sin marcar el cierre.
 - **T-33/T-51/T-52/T-53/T-56:** falta aprobación del guion/diapositivas, ensayos cronometrados y video de respaldo.
@@ -72,6 +73,7 @@ Plan para la sesión y hasta la entrega: [Avance-M-06.md](Avance-M-06.md). Las d
 
 | Fecha (CDMX) | Nota |
 |---|---|
+| 2026-10-06 | T-36 implementada por Hector en PR #37 (borrador), con reserva exacta de 60 s, auto-plantado, recuperación de mano/saldo y transferencia a espectadora. Bun 1.3.13/PostgreSQL 16.15: typecheck y 357 pruebas/4,564 aserciones sin fallos/omisiones. Incluye 12 casos nuevos y sockets reales; revisión/fusión y aceptación Wi-Fi de T-42 pendientes. Ver Avance-H-T36.md. |
 | 2026-09-29 | Plan aprobado: `PLAN.md`, `TAREAS.md`, `ESTADO.md`, `CHECKLIST_ENTREGA.md`, `CLAUDE.md` creados. 57 tareas, 0 % completado. |
 | 2026-10-01 | Hector: T-01 preparada localmente en t-01-monorepo-bun. bun install en clon limpio y typecheck correctos. Sin tests aun. PR #1 abierto; no se contabiliza como fusionada. |
 | 2026-10-01 | Hector: plantilla T-02 publicada en PR #2 (borrador). Nahum aplicara la proteccion de main; pendiente comprobar rechazos. |
@@ -129,4 +131,6 @@ Plan para la sesión y hasta la entrega: [Avance-M-06.md](Avance-M-06.md). Las d
 | 2026-10-06 | Massimo: manual de instalación y README listos para la prueba independiente de Nahum (T-14/T-48). Ruta rápida, conexión LAN y firewall; enlaces rotos y historial retirados. Verificado desde el ZIP de `main` `3e185d1`: instalación, `db:reset`, build y start; HTTP 200 por IP de LAN y registro/lobby/mesa por WebSocket. Sin casillas nuevas: 21/57. |
 | 2026-10-06 | Nahum: revisión de PR #39 aplicada: integra main `16f7e32` (#29–#32) resolviendo el conflicto del registro; README indica que las rondas completas ya están en `main` y solo faltan los bots (#33); manual con Bun 1.3.13 como en `package.json` y `copy` para `cmd` de Windows. Sin casillas nuevas. |
 | 2026-10-06 | Massimo: `docs/arquitectura.md` actualizado con el motor ya integrado en `main` (PR #29–#32): clases y firmas reales, dependencias, liquidación idempotente, handlers/topics, máquina de estados implementada y pruebas. T-32/T-50 esperan la revisión de Hector. Sin casillas nuevas: 21/57. |
+| 2026-10-06 | Hector: PR #33 (T-26) actualizado sobre las correcciones de #22 y #28–#32; no tenía comentarios propios. Typecheck, build y 336 pruebas PostgreSQL sin fallos; cuatro bots completan diez rondas, 40 resultados guardados y libro contable conciliado. Pendiente revisión/fusión. |
+| 2026-10-06 | Nahum: revisión de PR #33 (T-26) atendida; los bots tratan FASE_INCORRECTA/NO_ES_TU_TURNO/YA_APOSTASTE como carrera y esperan el siguiente snapshot, no apuestan con menos de `BOTS_MARGEN_APUESTA_MS` y un bot sin fichas deja la mesa sin detener al grupo. Prueba nueva con servidor WS guionado (falla con el código anterior). Rama integrada con main `c619262` y con T-36 (#37). `HistorialSQL` envía `cartas` como texto JSON con cast `::text::jsonb`, porque Bun 1.3.13 no serializa los arreglos igual que 1.3.8. Typecheck y 364 pruebas PostgreSQL sin fallos en Bun 1.3.13 y 1.3.8. Pendiente revisión/fusión. |
 | 2026-10-06 | T-22 hecha por Massimo: interfaz `Billetera` en `main` usada por `Mesa` y por `BilleteraMemoria` en las pruebas del motor (PR #29–#32). Contadores recalculados con T-19, ya marcada en TAREAS: 23/57 (40 %), Hector 10/19, Massimo 9/19, H2 9/19. |

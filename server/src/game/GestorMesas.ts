@@ -16,7 +16,7 @@ export class GestorMesas {
   /**
    * Construye el motor de las tres mesas y mantiene sus índices de ocupación.
    * @param publicar - Transporte pub/sub; recibe mensajes del contrato sin reqId.
-   * @param alReemplazar - Avisa a la conexión anterior, que queda como espectadora.
+   * @param alReemplazar - Avisa a la conexión anterior; conserva su suscripción como espectadora.
    * @param servicios - Billetera y publicaciones privadas inyectadas en el motor.
    * @param crearMesa - Construcción del motor; nunca se expone por WebSocket.
    * @returns Gestor con las tres mesas y publicaciones nativas, sin importar store/.
@@ -92,7 +92,7 @@ export class GestorMesas {
     const snapshot = mesa.unirse(usuario, equipado);
     this.ubicaciones.set(usuario.id, mesaId);
     const anterior = this.propietarios.get(usuario.id);
-    // El gestor transfiere la propiedad; el transporte avisa a la anterior, que queda como espectadora.
+    // El gestor decide la transferencia; el transporte avisa a la espectadora sin retirar su vista.
     this.propietarios.set(usuario.id, conexionId);
     if (anterior !== undefined && anterior !== conexionId) this.alReemplazar(anterior);
     return snapshot;
@@ -115,17 +115,18 @@ export class GestorMesas {
   }
 
   /**
-   * Libera únicamente el asiento que aún pertenece al socket cerrado.
+   * Reserva únicamente el asiento que aún pertenece al socket cerrado.
    * @param usuarioId - Identidad del socket antes de borrar su sesión.
    * @param conexionId - Identificador único; un cierre tardío no afecta al nuevo dueño.
+   * @param reservar - false al revocar la sesión: equivale a salida explícita.
    * @returns Sin efecto para espectadores o usuarios sin asiento.
    */
-  desconectar(usuarioId: number, conexionId: string): void {
+  desconectar(usuarioId: number, conexionId: string, reservar = true): void {
     const mesaId = this.mesaDeUsuario(usuarioId);
     if (mesaId === null || this.propietarios.get(usuarioId) !== conexionId) return;
-    // Caída de red: conserva la ubicación para que reanudar recupere el asiento (PLAN §7.3).
-    this.obtener(mesaId).salir(usuarioId);
+    if (!reservar) { this.salir(usuarioId, conexionId); return; }
     this.propietarios.delete(usuarioId);
+    this.obtener(mesaId).marcarDesconectado(usuarioId);
   }
 
   /**
