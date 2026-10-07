@@ -91,16 +91,20 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Revisión atendida — PR #28 (2026-10-06):** rama reconstruida sobre main, sin duplicar Carta/Baraja/Mano/Dealer de #25/#27. Las pruebas comparan copias independientes y recorren los límites de shared para garantizar pagos naturales enteros. Se conservan las pruebas de rechazo de enlaces a archivo y directorio del ZIP; resuelto el conflicto de ESTADO con #35. Pendiente aprobación/fusión.
   - **Hecho cuando:** tests: blackjack con apuesta 10 → pago 25; gana con 10 → 20; empate → 10; pierde → 0; blackjack vs blackjack del dealer → empate; jugador pasado pierde aunque el dealer también se pase.
 - [ ] T-18 · 🔓 `Mesa`: máquina de estados de `PLAN.md` §6, asientos, `snapshot()` que **nunca** incluye la carta oculta, publicación en `mesa:<id>` · Hector · depende de: T-09, T-16
+  - **Implementada — PR #29 fusionado en c2ed8ca:** la evidencia de navegador anterior a la reconstrucción es histórica. Pendiente aceptación en tres pestañas sobre la versión integrada y revisión de otro dev; los tests no sustituyen ese criterio.
   - **Revisión atendida — PR #29 (2026-10-06):** reconstruida sobre main `3e185d1` con los siete archivos de T-18 y su evidencia histórica; conserva el modo espectador. Salir voluntariamente elimina la ubicación de reconexión; una caída con apuesta conserva el asiento hasta PAGOS. La regresión reproduce el fallo anterior y pasa con la corrección. Typecheck correcto; PostgreSQL 16.15/Bun 1.3.13: 311 pruebas correctas, cero fallos y una omitida por enlaces a archivo en Windows. Pendiente aprobación/fusión; reserva de 60 s en T-36.
   - **Hecho cuando:** con 3 pestañas, las 3 reciben el mismo `mesa.estado` en < 1 s en cada transición y, en la pestaña de red del navegador, la carta oculta del dealer aparece como `{oculta:true}`. *Desbloquea a Nahum (T-28).*
 - [x] T-19 · Relojes: 15 s apuestas (cierra antes si todos apostaron), 20 s por turno (auto-plantar), 5 s de resultados; un solo `setTimeout` por mesa · Hector · depende de: T-18 · PR #30
   - **Hecho cuando:** un jugador que no actúa en 20 s queda `PLANTADO` y el turno pasa al siguiente; la mesa encadena 5 rondas sin intervención y sin quedarse atorada.
-  - **Revisión atendida — PR #30 (2026-10-07):** rebasada sobre main (#29 ya fusionada) conservando el modo espectador de #22. La salida sin apuesta reevalúa el cierre anticipado; detener impide recrear timers al cerrar sockets. Si el reparto falla en el reloj se reintenta (máx. 3, 1 s) en vez de dejar la mesa sin timeout; el cierre anticipado se revierte al plazo original si entra otro jugador; PAGOS espera la liquidación inyectada (`alLiquidar`) antes de abrir la siguiente ronda. Regresiones con reloj manual; aprobada para fusión.
-- [ ] T-20 · Acciones `apostar`, `pedir`, `plantarse` con todas las validaciones (fase, turno, rango, múltiplo de 10, saldo vía interfaz `Billetera`; con billetera falsa si T-23 no está) · Hector · depende de: T-18, T-22
+  - **Revisión atendida — PR #30 (2026-10-06 CDMX):** rebasada sobre main (#29 ya fusionada) conservando el modo espectador de #22. La salida sin apuesta reevalúa el cierre anticipado; detener impide recrear timers al cerrar sockets. Si el reparto falla en el reloj se reintenta (máx. 3, 1 s) en vez de dejar la mesa sin timeout; el cierre anticipado se revierte al plazo original si entra otro jugador; PAGOS espera la liquidación inyectada (`alLiquidar`) antes de abrir la siguiente ronda. Regresiones con reloj manual; aprobada para fusión.
+- [x] T-20 · Acciones `apostar`, `pedir`, `plantarse` con todas las validaciones (fase, turno, rango, múltiplo de 10, saldo vía interfaz `Billetera`; con billetera falsa si T-23 no está) · Hector · depende de: T-18, T-22 · PR #31
+  - **Hecha — revisión de Hector (2026-10-06 CDMX):** PR #31 integrado en main con #30 (de1ca32). accionesMesa.test.ts y accionesWs.test.ts verifican fase, turno, cantidades inválidas, doble apuesta y saldo sin cobros indebidos.
   - **Hecho cuando:** `pedir` fuera de turno → `NO_ES_TU_TURNO`; apostar en `TURNOS` → `FASE_INCORRECTA`; apostar 15, 0, -10, 10.5, "abc" o 600 → `CANTIDAD_INVALIDA`; apostar dos veces → `YA_APOSTASTE`.
-- [ ] T-21 · Liquidación en `PAGOS`: `acreditarPago` por jugador, `INSERT` en `rondas` y `rondas_jugadores` y mensaje `ronda.resultado` · Hector · depende de: T-17, T-23
+- [x] T-21 · Liquidación en `PAGOS`: `acreditarPago` por jugador, `INSERT` en `rondas` y `rondas_jugadores` y mensaje `ronda.resultado` · Hector · depende de: T-17, T-23 · PR #32
+  - **Hecha — revisión de Hector (2026-10-06 CDMX):** PR #32 fusionado en 16f7e32; #33 conserva la corrección jsonb portable. liquidacionSQL.test.ts y desconexion.test.ts verifican tres resultados por ronda y conciliación con movimientos. #43 amplía la regresión a ambos modos prepare.
   - **Hecho cuando:** tras una ronda de 3 jugadores, `SELECT * FROM rondas_jugadores WHERE ronda_id = …` muestra 3 filas con resultado y pago correctos, y las fichas de cada usuario coinciden con `movimientos`.
 - [ ] T-26 · `scripts/bots.ts`: N bots que se registran, se sientan, apuestan 10 y piden hasta 17 · Hector · depende de: T-20
+  - **Implementada — PR #33 fusionado en 8bfe554:** evidencia CLI histórica en 573171b. `bots.test.ts` sí ejecuta la CLI en un subproceso con PostgreSQL, pero con baraja controlada y schema aislado. Pendiente corrida de aceptación con cuatro bots y diez rondas en la versión integrada, configuración normal y revisión de otro dev.
   - **Hecho cuando:** `bun run bots 4 --mesa mesa-1` juega 10 rondas seguidas sin errores en la consola del servidor (sirve también de jugadores extra en la demo).
 
 ### Nahum
@@ -143,7 +147,11 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 - [ ] T-31 · Integración Hito 2 en 3 laptops (coordina, los 3 participan); abrir issues por cada fallo · Massimo · depende de: T-20, T-21, T-28, T-24
   - **Trabajo disponible (2026-10-06):** motor/acciones/liquidación/bots publicados en #29–#33, pendientes de revisión/fusión. Preparar cuentas, laptops y consultas de reconciliación; ejecutar cinco rondas reales solo sobre la combinación integrada y documentar cada fallo.
   - **Hecho cuando:** **checkpoint Hito 2** — 3 personas en 3 laptops juegan 5 rondas seguidas sin errores, y cada una compra fichas respetando el límite.
+
+<a id="t-32-revision-de-arquitectura"></a>
+
 - [ ] T-32 · `docs/arquitectura.md` v1: arquitectura, diagrama de clases, máquina de estados y ER (desde `PLAN.md`, actualizados a lo que realmente se construyó) · Massimo · depende de: T-18
+  - **Revisión de Hector (2026-10-06 CDMX):** contenido contrastado con main 8bfe554; se actualizan bots, reserva de asiento y firmas de Mesa/RelojMesa/GestorMesas. Falta verificar el renderizado en GitHub (navegador bloqueado por permisos del entorno); T-50 también conserva la exportación de diagramas para el ZIP. La casilla permanece abierta por esos pendientes.
   - **Avance — PR #23 fusionado (2026-10-06):** arquitectura describe auth/router, Carta/Baraja, Mano/Dealer y las 45 columnas SQL. Preparar los diagramas de Mesa/Gestor desde los PR publicados, identificando su base; cierre cuando estén integrados y renderizados/verificados.
   - **Preparación local (2026-10-04):** Borrador docs/arquitectura.md con módulos/clases existentes, ER y máquina de estados prevista. T-18 y revisión/renderizado de GitHub pendientes; no se considera terminada. Incluido en PR #4 (abierto).
   - **Hecho cuando:** los diagramas se ven renderizados en GitHub y coinciden con los nombres de las clases reales.
@@ -155,6 +163,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 
 ### Hector
 - [ ] T-36 · Desconexión y reconexión (`PLAN.md` §7): auto-plantar, reserva de 60 s, `reanudar` recupera asiento, otra pestaña toma el asiento y la anterior queda espectadora · Hector · depende de: T-19, T-08
+  - **Implementada — PR #37 incorporado con #33 en 8bfe554:** tests de reserva, recuperación y propiedad con sockets/SQL. Pendiente cerrar/reabrir una pestaña real y comprobar el traspaso entre pestañas sobre la versión integrada, con revisión de otro dev. Wi-Fi en tres laptops sigue en T-42. Evidencia de implementación: [Avance-H-T36.md](Avance-H-T36.md).
   - **Hecho cuando:** cerrar la pestaña del jugador en turno → se planta en < 1 s y la mesa sigue; reabrirla en < 60 s → vuelve a su asiento con sus cartas; abrir la mesa en una 2ª pestaña del mismo usuario → la 1ª ya no puede actuar.
   - **Implementada — PR #37 (2026-10-06):** reserva con el único reloj de mesa, recuperación de mano/apuesta/saldo y propiedad entre pestañas; 12 casos nuevos, incluidos tres sockets y PostgreSQL reales. Ver [Avance-H-T36.md](Avance-H-T36.md). Pendiente revisión/fusión; no se suma a `main`.
 - [x] T-37 · Endurecimiento: límite de 20 mensajes/s, acciones de espectadores rechazadas, `ERROR_INTERNO` sin tumbar el proceso, logs claros · Hector · depende de: T-07 · PR #45
@@ -169,12 +178,12 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 ### Nahum
 - [ ] T-39 · Tienda: catálogo por tipo con precio, "poseído" y compra con confirmación · Nahum · depende de: T-34
   - **Hecho cuando:** comprar un artículo descuenta fichas, aparece como poseído y el botón ya no deja comprarlo otra vez.
-  - **⏸ Pospuesta (2026-10-05):** Nahum la pospone (no se elimina) según el criterio de corte de PLAN §10, pendiente de confirmar en la decisión de corte del equipo. Se retoma solo si las tareas P0 del cliente están fusionadas, T-31 pasó y T-34 está conectada al enrutador.
+  - **⏸ Alcance:** ver [decisión de entrega en PLAN §10](PLAN.md#10-criterio-de-corte).
 - [ ] T-40 · Inventario y equipar; avatar y reverso de los demás visibles en la mesa; tema de mesa aplicado localmente · Nahum · depende de: T-35
   - **Hecho cuando:** A equipa `avatar_robot` en el lobby, entra a la mesa y B y C ven el robot en el asiento de A.
-  - **⏸ Pospuesta (2026-10-05):** igual que T-39; además requiere T-35.
+  - **⏸ Alcance:** ver [decisión de entrega en PLAN §10](PLAN.md#10-criterio-de-corte).
 - [ ] T-41 · Historial de movimientos (tabla con tipo, cambio en fichas/dinero, saldo resultante, fecha en hora local; "ver más") · Nahum · depende de: T-34 · rama de PR #7 (avance original de #10)
-  - **Hecho cuando:** tras comprar fichas, apostar y comprar un artículo, aparecen las 3 filas en orden con los saldos correctos.
+  - **Hecho cuando — alcance de entrega (PLAN §10):** tras comprar fichas y jugar una ronda, el historial muestra compra, apuesta y pago cuando corresponda, en orden y con saldos correctos; "ver más" pagina sin duplicar filas. La compra de artículos desde la UI queda fuera por T-39; el historial de `compra_articulo` del backend T-34 se verifica con una compra por WebSocket y luego se consulta en el cliente real, sin exigir una pantalla de compra.
   - **Avance integrado en PR #7 (original #10, 2026-10-05):** historial compacto en el menú lateral con tipo, Δ fichas, Δ dinero, saldo y hora local; "Ver más" con `antesDe` y `hayMas`. Verificado en el mock. Falta `movimientos.listar` por WebSocket (T-34 + T-07).
 - [ ] T-42 · Indicador de conexión propia (conectado / reconectando) y de jugadores desconectados en su asiento · Nahum · depende de: T-36
   - **Hecho cuando:** al apagar el Wi-Fi de una laptop, las otras dos ven a ese jugador como "desconectado" en < 2 s.
@@ -186,10 +195,12 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** test: dos compras simultáneas del mismo artículo → una exitosa y una `YA_POSEIDO`, cobrada una sola vez.
   - **Hecha — PR #4 (2026-10-05):** PR #4 fusionado. Servicios verificados con PostgreSQL real en [Avance-M-02](Avance-M-02.md); se marca según esa auditoría. `movimientos.listar` por WebSocket depende del enrutador (T-07); el cliente ya lo consume en T-41.
 - [ ] T-35 · `inventario.equipar` con `BLOQUEADO_EN_MANO` (consulta a `GestorMesas`) y republicación del snapshot de la mesa · Massimo · depende de: T-34, T-18
+  - **⏸ Alcance:** ver [decisión de entrega en PLAN §10](PLAN.md#10-criterio-de-corte).
   - **Preparación local (2026-10-04):** Bloqueada por GestorMesas (T-18). No se implementa equipamiento sin validación autoritativa de fase ni publicación del snapshot.
   - **Hecho cuando:** equipar en fase `TURNOS` → `BLOQUEADO_EN_MANO`; en `APUESTAS` → los demás ven el cambio en < 1 s; equipar algo no poseído → `NO_POSEIDO`.
-- [ ] T-43 · Congelamiento: todas las tareas del Hito 3 fusionadas, `main` estable, tag `v0.9-congelado` · Massimo · depende de: T-36…T-42, T-34, T-35
-  - **Hecho cuando:** existe el tag y, a partir de aquí, solo entran PRs de corrección de bugs y documentación.
+- [ ] T-43 · Congelamiento del alcance de entrega de PLAN §10: `main` estable, tag `v0.9-congelado` · Massimo · depende de: T-34, T-36, T-37, T-38, T-41, T-42
+  - **Hecho cuando:** las seis dependencias conservadas están fusionadas y tienen su criterio de aceptación acreditado; `bun run typecheck` y `bun test` con PostgreSQL pasan sobre la versión a etiquetar, existe el tag y, a partir de aquí, solo entran PRs de corrección de bugs y documentación.
+  - **Alcance del gate:** ver [PLAN §10](PLAN.md#10-criterio-de-corte); se exige acreditar las dependencias conservadas y el tag.
 
 ---
 
@@ -203,18 +214,19 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 - [ ] T-47 · JSDoc/comentarios en hooks de red, store y componentes principales del cliente · Nahum · depende de: T-43
   - **Hecho cuando:** `useSocket`, el store y las 5 pantallas tienen comentario de propósito; revisado por Hector.
   - **Avance (2026-10-05):** todo el código del cliente en los PRs #6 a #12 tiene comentario de cabecera y JSDoc en clases, funciones exportadas y componentes. Falta la revisión final de Hector tras el congelamiento.
-- [ ] T-49 · `docs/manual-usuario.md` con capturas: registro, lobby, cómo jugar una ronda, comprar fichas, tienda, inventario, historial, qué pasa si te desconectas · Nahum · depende de: T-43
-  - **Hecho cuando:** Hector (que no lo escribió) juega una ronda y compra un artículo siguiendo solo el manual.
+- [ ] T-49 · `docs/manual-usuario.md` con capturas: registro, lobby, cómo jugar una ronda, comprar fichas, catálogo de solo lectura, historial y desconexión; limitaciones del corte de PLAN §10 · Nahum · depende de: T-43
+  - **Hecho cuando — alcance de entrega:** Hector (que no lo escribió) juega una ronda, compra fichas y consulta el historial siguiendo solo el manual. El manual explica que comprar/equipar artículos e inventario editable quedan fuera de esta entrega; no pide realizar acciones de T-35/T-39/T-40.
 - [ ] T-51 · Diapositivas (≤ 8, más imágenes que texto): problema, arquitectura, protocolo, juego, economía/transacciones, demo, cierre · Nahum · depende de: T-33
   - **Hecho cuando:** ninguna diapositiva tiene más de 25 palabras y las 3 personas las aprobaron.
 
 ### Massimo
 - [ ] T-44 · Pasar **completa** la sección de Funcionamiento de `CHECKLIST_ENTREGA.md`; cada fallo → issue asignado · Massimo · depende de: T-43
-  - **Hecho cuando:** todas las casillas de Funcionamiento están en `[x]` o tienen issue abierto con dueño y fecha.
+  - **Hecho cuando — alcance de entrega:** todas las casillas de Funcionamiento conservadas están en `[x]` o tienen issue abierto con dueño y fecha. Las casillas `[CORTE]` se registran como excluidas por PLAN §10, permanecen sin marcar y no se presentan como pruebas aprobadas ni cumplimiento de la rúbrica original completa.
 - [ ] T-46 · JSDoc completo en `server/src/store`, `server/src/db` y `shared/` · Massimo · depende de: T-43
+  - **Revisión realizada — cierre pendiente (2026-10-06 CDMX):** PR #40 fusionado en a68c62c. Hector revisó clases, métodos públicos, funciones, esquemas y constantes de shared/, db/ y store/: 62 declaraciones públicas con JSDoc. Falta T-43 y confirmar la documentación de la versión congelada, incluidos cambios posteriores a esta revisión; no se cuenta como hecha.
   - **Trabajo disponible (2026-10-06):** se puede preparar auditoría JSDoc de shared/db/store y de los handlers nuevos de #21. No sustituye congelamiento ni revisión final de Hector.
   - **Preparación local (2026-10-04):** Los nuevos archivos shared/db/store incluyen comentarios de propósito y documentación de APIs. Revisión final de Hector y gate T-43 pendientes. Incluido en PR #4 (abierto).
-  - **Hecho cuando:** ninguna función exportada queda sin JSDoc (revisado por Hector).
+  - **Hecho cuando:** T-43 está hecha y ninguna función exportada de la versión congelada queda sin JSDoc (revisado por Hector).
   - **Lista para revisión de Hector (2026-10-06) — PR #40:** todas las clases, métodos públicos y funciones exportadas de `store/`, `db/` y `shared/` ya tenían JSDoc; se agregó JSDoc de una línea a los 31 esquemas y constantes exportados de `shared/` (significado de cada contrato, no repetición del código) y a `Saldos`. Los tipos `z.infer` llevan un comentario de grupo. Escaneo de exportaciones sin JSDoc: 0. Typecheck y 129 pruebas de shared/cliente sin fallos.
 - [ ] T-48 · `docs/manual-instalacion.md`: requisitos con versiones, clonar/descomprimir, `.env`, Docker, `db:reset`, `build`, `start`, cómo conectarse desde otra laptop, problemas comunes (puerto ocupado, firewall) · Massimo · depende de: T-38
   - **Avance — PR #23 fusionado (2026-10-06):** documentación corregida y entorno Bun 1.3.13/PostgreSQL 16 comprobado. Producción de #24 ya está en `main` (con #22); la instalación desde cero por Nahum siguiendo únicamente el manual continúa pendiente.
@@ -222,6 +234,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Hecho cuando:** Nahum instala desde cero en su laptop siguiendo solo el manual.
   - **Listo para la prueba de Nahum (2026-10-06) — PR #39:** ruta rápida de 6 comandos, sección de conexión desde otra laptop (IP, hotspot, reglas de firewall para Windows/Linux/macOS), puerto ocupado y «Cliente no compilado» en problemas habituales; historial de evidencias retirado del manual. Verificado desde el ZIP de `main` `3e185d1` en carpeta limpia: `bun install --frozen-lockfile` (5 s), `db:reset`, `build`, `start`; `GET /` → 200 por `localhost` y por la IP de LAN, y por WebSocket registro → `sesion`, `lobby.listar` → `lobby`, `mesa.unirse` → `mesa.estado`. Falta que Nahum lo siga solo en su laptop.
 - [ ] T-50 · `docs/arquitectura.md` final: descripción de cada tabla + `schema.sql`/`seed.sql` referenciados, diagrama de clases, diagrama de dependencias, protocolo, máquina de estados, decisiones de diseño · Massimo · depende de: T-32, T-45
+  - **Revisión de contenido:** ver [T-32](#t-32-revision-de-arquitectura). T-50 conserva además su dependencia T-45 y la exportación de diagramas para el ZIP; permanece abierta.
   - **Avance — PR #23 fusionado (2026-10-06):** diccionario de siete tablas/45 columnas y diagramas de módulos/clases disponibles en main. Falta incorporar motor/gestor al fusionarse, exportar diagramas para el ZIP y revisión de Hector.
   - **Preparación local (2026-10-04):** Borrador de arquitectura referencia schema/seed y distingue implementación de diseño pendiente. Motor/auth/router/cliente y revisión de Hector pendientes.
   - **Hecho cuando:** cubre los 3 puntos de la rúbrica (BD con scripts, clases, dependencias) y Hector confirma que coincide con el código.
@@ -233,7 +246,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 
 - [ ] T-52 · Ensayo 1 cronometrado de la exposición con demo en vivo + retroalimentación · **Equipo** · depende de: T-51
   - **Hecho cuando:** duración anotada en `ESTADO.md`, lista de ajustes escrita.
-- [ ] T-53 · Video de respaldo de la demo (≈3 min, 3 jugadores, ronda completa, compra de fichas, tienda) · Nahum · depende de: T-44
+- [ ] T-53 · Video de respaldo de la demo (≈3 min, 3 jugadores, ronda completa, compra de fichas, catálogo de solo lectura y desconexión; corte de PLAN §10) · Nahum · depende de: T-44
   - **Hecho cuando:** el video se reproduce desde USB y desde la nube sin internet de la escuela (descargado).
 - [x] T-54 · Script `bun run empaquetar` → `blackjack-equipo.zip` sin `node_modules`, `.env`, `dist` ni `.git`, con `docs/` y `README` · Massimo · depende de: T-48
   - **Hecha — PR #20 (2026-10-06 CDMX):** fusionada en `c2daf78`. Bun 1.3.13 genera ZIP real de fuentes (124 archivos, 272,903 bytes en la rama documental); `unzip -t` del sistema valida el archivo y pesa <20 MB. Diez regresiones del empaquetador verifican exclusiones y alternativas. T-48/T-55, prueba en Windows y paquete final con juego continúan pendientes; esta casilla acredita el script y su criterio, no la aceptación de la entrega.

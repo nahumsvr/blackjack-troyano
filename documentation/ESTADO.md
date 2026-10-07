@@ -1,74 +1,66 @@
 # ESTADO — ¿Dónde vamos?
 
-_Última actualización: mar 6 oct 2026 CDMX. Auditoría iniciada sobre `main` en `04802be` y actualizada con `main` en `42b5b65` (#35, #28 y #22 fusionados). Fechas del registro en America/Mexico_City._
+_Última actualización: mié 7 oct 2026 CDMX. Seguimiento de Hector sobre main 8bfe554, integrado con main 727f86e (#43); fechas del registro en America/Mexico_City._
 
 ## Resumen
 
-`main` contiene contrato/BD/economía SQL (PR #4/#14), cliente y mock (#6/#7/#16), guion (#17), enrutador/auth (#18/#19), Carta/Baraja y Mano/Dealer (#25/#27), empaquetado (#20), documentación (#23), aceptación visual T-06 (#26), reconexión con la misma sesión T-11 (#34), muestrario T-27 (#35), resolución de resultados y pagos T-17 (#28) y tres mesas con asientos T-09 (#22, que trae también la economía WebSocket #21 y la producción #24). `main` está protegida: cada PR necesita 1 aprobación de otro dev y se fusiona con squash.
+`main` incluye el motor T-18/T-19/T-20/T-21 (#29–#32), bots T-26 y desconexión T-36 (#37 incorporado con #33), además de contrato, economía, cliente, documentación y empaquetador previamente registrados. Se comprueba en GitHub la fusión de los PRs y en Git el código integrado. Main mantiene protección y una aprobación de otro dev.
 
+#43 (regresión jsonb en ambos modos prepare) ya está en `main` (727f86e). #44 se cerró sin fusionar: este seguimiento (#47) incluye sus commits. PRs abiertos: #45 (endurecimiento T-37), #46 (registro HTTP LAN/producción T-38), #47 (este seguimiento) y #48 (JSDoc T-45).
 El camino crítico **T-01 → T-03 → T-07 → T-18 → T-20 → T-31** espera la integración de T-18/T-20. Hay código publicado en la cadena #29 → #30 → #31 → #32 → #33, pero sus tareas conservan casillas abiertas hasta cumplir fusión y aceptación. T-38 tiene aceptación LAN registrada en PR #46; sigue abierta hasta aprobación y fusión.
 
 ## Hito actual
 
 **Hito 5 — mar 6 oct:** ensayos y ZIP probado. Entrega **mié 7 oct, 13:00 CDMX**; objetivo de subida **antes de las 11:00**.
 
-Estado: 🔴 **Atrasados**. H1/H2/H3/H4 no se cerraron en sus fechas y no existe el tag `v0.9-congelado`. Las pruebas unitarias e integración parcial no acreditan cinco rondas en tres laptops, instalación independiente ni aceptación de la entrega.
+Estado: 🔴 **Atrasados**. H1–H4 no se cerraron en sus fechas; no hay tag v0.9-congelado. La evidencia automática no acredita la sesión de tres laptops, instalación independiente ni aceptación del ZIP.
 
-El líder debe confirmar el criterio de corte de PLAN §10 y la fecha/condiciones del congelamiento. T-39/T-40 están pospuestas; no se cambia el alcance en esta auditoría.
+**Alcance de entrega:** ver [decisión y gate en PLAN §10](PLAN.md#10-criterio-de-corte).
 
 ## Avance
 
-Solo se cuentan tareas con código fusionado en `main` y criterio comprobado.
+Se cuentan tareas con código fusionado y criterio acreditado. T-20/T-21 se cierran con evidencia SQL/WebSocket. T-18/T-26/T-36 están implementadas y fusionadas, pero siguen abiertas por falta de aceptación actual sobre la versión integrada; las evidencias históricas y los tests no acreditan esos cierres. T-46 tiene revisión realizada, pero queda abierta hasta T-43 y la comprobación de la documentación de la versión congelada.
 
 | Dev | Completadas | Total | % |
 |---|---|---|---|
-| Hector | 10 | 19 | 53 % |
+| Hector | 12 | 19 | 63 % |
 | Nahum | 4 | 17 | 24 % |
 | Massimo | 9 | 19 | 47 % |
 | Equipo | 0 | 2 | 0 % |
-| **Total** | **23** | **57** | **40 %** |
+| **Total** | **25** | **57** | **44 %** |
 
-Avance por hito: H1 12/14 (86 %) · H2 9/19 (47 %) · H3 1/10 (10 %) · H4 0/8 · H5 1/5 (20 %) · Entrega 0/1.
+Avance por hito: H1 12/14 (86 %) · H2 11/19 (58 %) · H3 1/10 (10 %) · H4 0/8 (0 %) · H5 1/5 (20 %) · Entrega 0/1.
 
-- **Hector:** T-01/T-02/T-06/T-07/T-08/T-09/T-15/T-16/T-17/T-19.
-- **Nahum:** T-10/T-11/T-12/T-27; T-11 acreditada en PR #34 con cliente real, PostgreSQL y capturas; T-27 en PR #35.
-- **Massimo:** T-03/T-04/T-05/T-22/T-23/T-24/T-25/T-34/T-54. T-03 se acredita con PR #4 (contrato), #14 (límites) y #7 (cliente que consume `@blackjack/shared`). T-54 acredita el script ZIP, no T-55 ni el paquete final.
-- **T-22:** hecha; interfaz y `db/` en #4, consumida por `Mesa` y por `BilleteraMemoria` en #29–#32.
-- **T-14/T-48:** requieren instalación independiente de Nahum. La fusión de #23 aportó documentación, no esa aceptación.
-- **PR #7 ya está en `main`:** T-28–T-30 y T-41 tienen implementación integrada; conservan casilla abierta cuando falta su criterio de aceptación completo.
+- **Hector:** T-01/T-02/T-06/T-07/T-08/T-09/T-15/T-16/T-17/T-19/T-20/T-21.
+- **Nahum:** T-10/T-11/T-12/T-27.
+- **Massimo:** T-03/T-04/T-05/T-22/T-23/T-24/T-25/T-34/T-54.
+- **T-32/T-50:** ver [revisión de arquitectura en T-32](TAREAS.md#t-32-revision-de-arquitectura).
+- **T-14/T-48:** falta la instalación independiente de Nahum. T-54 acredita el empaquetador, no el ZIP final ni T-55.
 
-## Verificación de esta auditoría
+## Verificación
 
-Sobre `main` en `04802be` (anterior a #35, #28 y #22; no se repitió tras fusionarlos), con **Bun 1.3.13 y PostgreSQL 16.15**: typecheck, **236 pruebas / 3,540 aserciones**, cero fallos/omisiones, y build del cliente correctos. Se usaron schemas aleatorios de pruebas; no se ejecutó `db:reset`. El Bun global sigue en 1.4.2; la comprobación usó un ejecutable 1.3.13 aislado.
+En esta sesión: revisión del código de shared/db/store, arquitectura, criterios y fusiones. Evidencia histórica T-18: tres pestañas, cada transición en menos de 21 ms, carta oculta hasta DEALER (evidencias/T-18-navegador.json). T-20/T-21/T-36 tienen regresiones con WebSocket y PostgreSQL; bots.test.ts prueba cuatro bots, diez rondas, 40 resultados y conciliación de movimientos.
+
+Validación final del seguimiento con Bun 1.3.13 y PostgreSQL de pruebas: `bun run typecheck` correcto; `bun test ./server/test ./client/test`: **363 correctas, 1 omitida por enlaces a archivo en Windows, 0 fallos, 4,619 aserciones**, en 38 archivos. Los intentos dentro del sandbox no se consideran resultado del producto: el entorno denegó lectura de directorios y conexiones SQL; la ejecución final fuera del sandbox pasa. Auditoría TypeScript de JSDoc: 62 declaraciones públicas revisadas, 0 sin documentación.
+
+La auditoría previa de Massimo sobre main 8bfe554 registró 364 pruebas, cero fallos. #43, ya fusionado, añade cobertura prepare=true/false; no es necesario para contar T-21, cuya corrección jsonb llegó en #33. No se ejecuta db:reset en esta sesión.
 
 ## Bloqueos activos
 
-- **Cadena del motor #29–#33:** #28 ya está en `main`; falta actualizar cada rama sobre la nueva base y revisarla. #31 aún contiene auth/economía anteriores a las correcciones de #21; conservar logout compartido, caducidad, saldos ordenados, respuestas sin duplicados y servidor estático de #24 al resolver los cruces.
-- **T-13/T-30:** #22 ya está en `main`; falta verificarlas contra el servidor real (lobby y compra de 1,000 fichas).
-- **T-38:** producción y aceptación desde dos dispositivos registradas en PR #46; pendiente aprobación y fusión.
-- **T-28/T-29/T-31/T-41:** esperan acciones y rondas reales integradas. El historial final requiere compras, apuestas y artículos con saldos correctos.
-- **T-36/T-37/T-42:** falta aceptación de desconexión/reserva de 60 s y endurecimiento de 20 mensajes/s; la reconexión de sesión T-11 no prueba recuperación de asiento/mano.
-  - T-36 implementada en PR #37 (`t-36-desconexion-reconexion`), con recuperación de mano/saldo y 12 casos nuevos; revisión/fusión pendientes. Evidencia en [Avance-H-T36.md](Avance-H-T36.md). T-42 conserva su prueba de Wi-Fi en tres laptops pendiente.
-- **T-35:** espera T-18 integrado y validación autoritativa de fase; coordinar con el alcance que confirme el líder para cosméticos/tienda.
-- **T-43/T-44/T-45/T-46/T-47:** falta congelamiento y revisión final por otro integrante. Se puede preparar auditoría/checklist sin marcar el cierre.
-- **T-33/T-51/T-52/T-53/T-56:** falta aprobación del guion/diapositivas, ensayos cronometrados y video de respaldo.
-- **T-48/T-50/T-55/T-57:** manual independiente, arquitectura final revisada, ZIP jugable en máquina limpia y subida/verificación final.
+- **T-18/T-26/T-36:** implementadas y fusionadas; aceptación actual pendiente (ver TAREAS). No suman al avance.
+- **T-31:** el código del camino crítico ya está integrado. Falta jugar cinco rondas y comprar fichas con tres personas en tres laptops; coordinar con las aceptaciones del cliente T-13/T-28/T-29/T-30/T-41/T-42.
+- **T-37/T-38:** #45/#46 pendientes de revisión/fusión; las observaciones de Massimo requieren respuesta de sus autores. La cuenta HectorD20 no puede aprobar estos PRs propios.
+- **T-32/T-50:** ver [pendientes de T-32](TAREAS.md#t-32-revision-de-arquitectura); T-50 conserva la dependencia T-45.
+- **T-43:** espera T-34/T-36/T-37/T-38/T-41/T-42 fusionadas y aceptadas, tipos/pruebas SQL en verde sobre la versión a etiquetar y el tag. T-35/T-39/T-40 están excluidas por el corte y no bloquean este gate.
+- **T-44/T-45/T-46/T-47:** falta T-43 y aceptación/revisión de la versión congelada. La revisión previa de T-46 está registrada; su casilla y cierre final permanecen pendientes.
+- **T-14/T-48/T-55:** instalación independiente y prueba del ZIP en máquina limpia.
+- **T-33/T-51/T-52/T-53/T-56/T-57:** aprobación del guion, diapositivas, ensayos, video y subida final.
 
-## Hoy le toca a… (mar 6 oct, después de T-09/T-17/T-27)
+## Hoy le toca a… (mar 6 oct noche → mié 7 oct mañana)
 
-- **Hector:**
-  - T-09/T-17 hechas (PR #22/#28); T-18 en PR #29 y T-19/T-20/T-21/T-26 en PR #30–#33, pendientes de revisión/fusión; no cuentan todavía. Las prioridades y el alcance corresponden al líder.
-- **Nahum:**
-  - T-33 guion de exposición (PR #17 fusionado, pendiente de aprobación del grupo).
-  - T-27 hecha (PR #35) → borradores de T-49 (manual) y T-51 (diapositivas) con capturas del mock y del muestrario.
-  - T-11 hecha (reconexión con la misma sesión verificada con T-08); T-09 ya está en `main`: verificar T-13 contra el servidor real.
-- **Massimo:**
-  - Preparar la verificación de checklist T-44 cuando el equipo acuerde el corte.
-  - Revisar la economía y el contrato en #31 contra lo que #21 ya dejó en `main` (logout compartido, caducidad, cola por usuario, estáticos de #24).
-  - Auditoría JSDoc de `shared/`, `db/` y `store/` (T-46) y matriz de Funcionamiento de T-44, según [Avance-M-06.md](Avance-M-06.md).
-  - Adelantar empaquetado y documentación; las decisiones de alcance permanecen con el líder.
-
-Plan para la sesión y hasta la entrega: [Avance-M-06.md](Avance-M-06.md). Las decisiones de alcance permanecen con el líder.
+- **Hector:** responder los hallazgos de #45/#46/#48; tras T-43 cerrar T-45 con revisión de Massimo y confirmar T-46 sobre la versión congelada. Participar en T-31/T-55. Acreditar T-18/T-36 en pestañas reales y T-26 con CLI/configuración normal sobre la versión integrada; solicitar revisión de otro dev. Ver alcance en PLAN §10.
+- **Nahum:** instalación independiente T-14/T-48, pruebas del cliente con tres laptops T-13/T-28–T-30/T-41/T-42, manual/diapositivas/video y revisión del seguimiento.
+- **Massimo:** renderizado/exportación T-32/T-50; coordinar T-31 y checklist T-44, resolver la decisión de congelamiento con el corte documentado, empaquetar tras las verificaciones y subir antes de las 11:00.
 
 ## Registro diario
 
@@ -127,7 +119,7 @@ Plan para la sesión y hasta la entrega: [Avance-M-06.md](Avance-M-06.md). Las d
 | 2026-10-06 | Nahum: revisión de PR #36 aplicada: `ESTADO.md` sin bloque duplicado de avance; T-38/T-48 y `Avance-M-06.md` reflejan que #21/#24 llegaron a `main` con #22 (`42b5b65`); tareas de Massimo actualizadas. Sin cambios de casillas: 21/57. |
 | 2026-10-06 | Massimo: T-46 lista para revisión de Hector: JSDoc en los esquemas y constantes exportados de `shared/` y en `Saldos`; 0 exportaciones sin JSDoc en store/db/shared. Typecheck y pruebas de shared/cliente en verde. Sin casillas nuevas: 21/57. |
 | 2026-10-06 | Hector: revisión 5435739214 de T-18 atendida en PR #29 sobre main `3e185d1`, conservando el modo espectador. Salida voluntaria separada de caída de red; regresión falla antes y pasa después. Typecheck correcto y suite PostgreSQL 16.15/Bun 1.3.13: 311 pruebas correctas, cero fallos, una omitida por enlaces a archivo en Windows. Evidencia visual histórica conservada; pendiente aprobación/fusión, sin recalcular contadores. |
-| 2026-10-07 | Revisión de código de PR #30 (T-19) atendida (incluye #31): rama integrada sobre main tras el squash de #29 (se descartan los commits duplicados y se conserva el modo espectador de #22). Reintento acotado si falla el reparto, plazo de apuestas restaurado si alguien llega tras un cierre anticipado y PAGOS espera la liquidación. Typecheck y suite completa con PostgreSQL de pruebas (322 pruebas, 0 fallos). Casilla de T-19 abierta hasta fusión. |
+| 2026-10-06 | Revisión de código de PR #30 (T-19) atendida (incluye #31): rama integrada sobre main tras el squash de #29 (se descartan los commits duplicados y se conserva el modo espectador de #22). Reintento acotado si falla el reparto, plazo de apuestas restaurado si alguien llega tras un cierre anticipado y PAGOS espera la liquidación. Typecheck y suite completa con PostgreSQL de pruebas (322 pruebas, 0 fallos). Casilla de T-19 abierta hasta fusión. |
 | 2026-10-06 | Hector: revisión de T-20 atendida en PR #31; conserva limpieza/aviso de token compartido de #21 y cola económica común para apuestas/compras. Typecheck y 319 pruebas SQL sin fallos; pendiente revisión de Massimo y fusión. |
 | 2026-10-06 | Hector: revisión de T-21 atendida en PR #32; apagar completa liquidaciones pendientes, conserva UUID/créditos y espera todas las mesas. Regresión SQL falla con el apagado anterior y pasa tras la corrección; typecheck y 332 pruebas PostgreSQL sin fallos. Pendiente revisión de Massimo y fusión. |
 | 2026-10-06 | Nahum: corrige la revisión de T-21 en PR #32 (jsonb como arreglo, tope de reintentos en PAGOS, apagado con `finally`). Typecheck y 333 pruebas PostgreSQL sin fallos. Pendiente revisión de Massimo y fusión. |
@@ -137,7 +129,17 @@ Plan para la sesión y hasta la entrega: [Avance-M-06.md](Avance-M-06.md). Las d
 | 2026-10-06 | Hector: PR #33 (T-26) actualizado sobre las correcciones de #22 y #28–#32; no tenía comentarios propios. Typecheck, build y 336 pruebas PostgreSQL sin fallos; cuatro bots completan diez rondas, 40 resultados guardados y libro contable conciliado. Pendiente revisión/fusión. |
 | 2026-10-06 | Nahum: revisión de PR #33 (T-26) atendida; los bots tratan FASE_INCORRECTA/NO_ES_TU_TURNO/YA_APOSTASTE como carrera y esperan el siguiente snapshot, no apuestan con menos de `BOTS_MARGEN_APUESTA_MS` y un bot sin fichas deja la mesa sin detener al grupo. Prueba nueva con servidor WS guionado (falla con el código anterior). Rama integrada con main `c619262` y con T-36 (#37). `HistorialSQL` envía `cartas` como texto JSON con cast `::text::jsonb`, porque Bun 1.3.13 no serializa los arreglos igual que 1.3.8. Typecheck y 364 pruebas PostgreSQL sin fallos en Bun 1.3.13 y 1.3.8. Pendiente revisión/fusión. |
 | 2026-10-06 | T-22 hecha por Massimo: interfaz `Billetera` en `main` usada por `Mesa` y por `BilleteraMemoria` en las pruebas del motor (PR #29–#32). Contadores recalculados con T-19, ya marcada en TAREAS: 23/57 (40 %), Hector 10/19, Massimo 9/19, H2 9/19. |
+| 2026-10-06 | Massimo: seguimiento sobre `main` `c07c9de` (#42 fusionado). Resumen, bloqueos y "Hoy le toca" actualizados con #29–#32 y #38–#41 fusionados y #33 (con #37/T-36) abierto. Suite: 340 correctas y 7 fallos por `HistorialSQL` con `prepare: false`; corrección en #43 (349/0 con Bun 1.3.13 y 1.4.2). Fecha del registro de #30 corregida a CDMX. Sin casillas nuevas además de T-22: 23/57 (40 %). |
+| 2026-10-06 | Massimo: seguimiento actualizado a `main` `8bfe554` (#33 fusionado con bots y T-36). Suite en verde: 364/0 con Bun 1.3.13. #43 queda como regresión de `HistorialSQL`. Bloqueos y "Hoy le toca" sin #33; el congelamiento espera T-37. Sin casillas nuevas: 23/57 (40 %). |
 | 2026-10-06 | Massimo: PR #43 reducido a la regresión de `HistorialSQL`; el arreglo `::text::jsonb` ya llegó a `main` con #33. `historialSQL.test.ts` guarda una ronda con `prepare: true` (producción) y `prepare: false` (pruebas), acepta el reintento igual y rechaza otras cartas con `ERROR_INTERNO`; el comentario del código explica que la causa es el modo de conexión, no la versión de Bun. Sin casillas nuevas. |
+| 2026-10-06 | T-18/T-26/T-36: Hector comprueba su fusión en `main`; quedan abiertas hasta acreditar su aceptación sobre la versión integrada (ver TAREAS). |
+| 2026-10-06 | T-20 hecha por Hector: fusión y criterio comprobados; evidencia y PR de implementación identificados en TAREAS. |
+| 2026-10-06 | T-21 hecha por Hector: fusión y criterio comprobados; evidencia y PR de implementación identificados en TAREAS. |
+| 2026-10-06 | Revisión previa de T-46 por Hector sobre PR #40 fusionado; el cierre propuesto inicialmente en #47 se corrige: falta T-43 y comprobación sobre la versión congelada. T-32/T-50 revisadas y actualizadas con T-36; renderizado/exportaciones pendientes. |
+| 2026-10-06 | Hector confirma el corte de T-35/T-39/T-40 para esta entrega según PLAN §10, sin contarlas como hechas. |
+| 2026-10-06 | Revisión de PR #47 atendida por Hector: T-43 exige solo dependencias conservadas, T-46 vuelve a pendiente y se propaga el corte a T-41/T-44/T-49/T-53 y al checklist. Los requisitos excluidos permanecen sin marcar; backend T-34 se verifica por WebSocket. Corrección documental, sin nueva aceptación de tareas ni cambios de código. |
+| 2026-10-06 | Hector: nueve comentarios de PR #47 atendidos. T-18/T-26/T-36 vuelven a pendientes por aceptación no acreditada; avance vigente 25/57 (44 %), Hector 12/19 (63 %), H2 11/19 y H3 1/10. Tabla diaria reparada, arquitectura completada, checklist YA_POSEIDO restaurado y alcance centralizado en PLAN §10. Validación de esta revisión: typecheck correcto; 363 pruebas PostgreSQL correctas, 0 fallos y 1 omitida en Windows; tabla diaria renderizada por GitHub. Pendiente aprobación de otro dev. |
+| 2026-10-07 | Nahum: PR #47 integrado con `main` `727f86e` (#43); conflicto del registro resuelto conservando ambas filas. Revisión de #47: #43 fusionado y #44 cerrado (reemplazado por #47), filas de cierres rectificados unificadas, cifra 28/57 retirada, PR #31/#32 en las casillas de T-20/T-21 y nota duplicada de T-36 retirada. Sin casillas nuevas: 25/57 (44 %). |
 | 2026-10-06 | Hector: T-38 revisada; registro por HTTP LAN corregido, build y ronda con tres bots verificados. 364 pruebas correctas, 0 fallos y 1 omitida en Windows. Primera comprobación de acceso; la aceptación tras recargar se completó después, como registra la siguiente entrada. Sin nuevas casillas. |
 | 2026-10-06 | Hector: T-38 aceptada por el usuario desde dos dispositivos después de corregir el registro HTTP LAN. Code review final sin hallazgos pendientes; se autoriza publicar el PR. Casilla pendiente de fusión. |
 | 2026-10-06 | Hector: T-38 publicada en PR #46, con aceptación desde dos dispositivos, code review final y revisión solicitada a Nahum. Pendiente aprobación/fusión en main. |

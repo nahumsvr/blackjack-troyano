@@ -615,9 +615,15 @@ Si vamos tarde, se sacrifica **en este orden** (lo primero se corta primero):
 1. **Extras** (ya fuera de alcance): doblar, split, seguro, chat, ranking.
 2. **Temas de mesa** (el tema queda fijo en verde).
 3. **Cosméticos visibles para otros** (avatar y reverso solo se ven localmente).
-4. **Tienda completa** (se oculta la tienda; el historial de movimientos se conserva).
+4. **Compra y equipamiento de artículos** (se excluyen sus controles y el inventario editable; puede conservarse el catálogo de solo lectura. El historial de movimientos y el backend existente se conservan).
 
 **Nunca se cortan:** registro/login, lobby, ronda completa con 3+ jugadores, validaciones del servidor, desconexión, guardado de rondas, compra de fichas con límite diario, historial de movimientos y documentación.
+
+**Decisión de entrega — Hector, 6 oct 2026 CDMX:** se confirma el corte de T-35 (equipamiento), T-39 (compra de artículos en la UI) y T-40 (inventario/equipamiento visible). Se conserva el tema verde y el equipado básico del registro; el catálogo de solo lectura existente puede seguir disponible. No se agrega código de tienda/equipamiento para esta entrega. El backend existente de T-34 se conserva, igual que la compra de fichas con límite diario y el historial. Las tareas cortadas siguen abiertas y no suman al avance. No hay cambio de protocolo ni esquema SQL; el congelamiento y las pruebas de aceptación mantienen sus propios criterios.
+
+**Aplicación del corte — revisión de PR #47:** el congelamiento T-43 requiere T-34/T-36/T-37/T-38/T-41/T-42 fusionadas y aceptadas, tipos y pruebas con PostgreSQL en verde sobre la versión a etiquetar y el tag `v0.9-congelado`. T-35/T-39/T-40 no son dependencias de este congelamiento. T-46 conserva su revisión realizada, pero solo se cierra al revisar la documentación de la versión congelada tras T-43.
+
+La aceptación del alcance reducido se documenta en `TAREAS.md` y `CHECKLIST_ENTREGA.md`: las funciones cortadas se identifican con `[CORTE]`, sin marcar sus casillas ni contarlas como cumplidas. Las pruebas del backend T-34 se conservan por WebSocket aunque no haya UI de compra; T-41 debe mostrar también esos movimientos. Manual, demo y video usan compra de fichas, historial y catálogo de solo lectura, y explican la ausencia de compra/equipamiento de artículos. Este acuerdo interno no modifica la rúbrica del profesor ni acredita sus requisitos excluidos.
 
 ## 11. Extras (fuera de alcance)
 

@@ -27,6 +27,8 @@
 
 Antes de empezar: servidor y BD arriba, las 3 laptops con la app abierta en la pantalla de acceso y DevTools → pestaña **Red** (WS) lista en la laptop A.
 
+**Alcance de la demo:** seguir la [decisión de entrega de PLAN §10](../documentation/PLAN.md#10-criterio-de-corte); explicar sus limitaciones y demostrar solo las funciones conservadas.
+
 | # | Paso | Quién hace / quién narra | Dura | Si falta tiempo |
 |---|---|---|---|---|
 | 1 | **Registro y login de 3 usuarios.** A registra un usuario nuevo en vivo; B y C entran con usuarios de demo ya creados. | Los 3 hacen · Nahum narra | 0:20 | B y C ya entraron antes de pasar. |
@@ -36,7 +38,7 @@ Antes de empezar: servidor y BD arriba, las 3 laptops con la app abierta en la p
 | 5 | **Turnos.** Solo quien tiene el turno ve Pedir/Plantarse activos; los demás los ven deshabilitados. | Los 3 juegan · Hector narra | 0:15 | Todos se plantan de inmediato. |
 | 6 | **Dealer y resultado.** El dealer descubre su carta y pide hasta 17; aparece el resultado y el saldo se actualiza. | Hector narra | 0:15 | — |
 | 7 | **Compra de fichas y límite agotado.** C abre la billetera, compra fichas y luego intenta pasar del límite diario: el servidor responde `LIMITE_DIARIO`. | Massimo hace y narra | 0:30 | Usar un usuario de demo que ya tenga el límite casi agotado. |
-| 8 | **Tienda.** En el menú lateral, pestaña Tienda: catálogo por tipo, precios y artículos poseídos. | Massimo hace y narra | 0:15 | **Saltar.** |
+| 8 | **Catálogo de solo lectura.** En el menú lateral, pestaña Tienda: catálogo por tipo, precios y artículos poseídos; explicar el corte de compra/equipamiento. | Massimo hace y narra | 0:15 | **Saltar el catálogo**, manteniendo la explicación del corte. |
 | 9 | **Desconexión y reconexión.** B apaga el Wi-Fi: su asiento aparece desconectado en A y C; al volver, B se reconecta solo y regresa a la mesa con la misma sesión. | Hector hace · Nahum narra | 0:20 | — |
 
 Si el servidor real no está listo, la demo se hace en una laptop con `?mock=1`: se recorren las 6 fases con la barra del mock, la billetera, la tienda y la caída simulada.
