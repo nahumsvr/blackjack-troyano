@@ -1,57 +1,55 @@
 # Arquitectura de Blackjack Troyano
 
-Documento de implementación, actualizado el 5 de octubre de 2026 CDMX sobre `main` en `af772d8`, con T-07/T-08/T-15/T-16 fusionadas (PR #18/#19/#25/#27). El diseño completo está en [PLAN.md](../documentation/PLAN.md); las tareas y sus criterios de aceptación están en [TAREAS.md](../documentation/TAREAS.md). El cliente, el contrato, la autenticación, Carta/Baraja y Mano/Dealer están en `main`; faltan el motor de mesa y la revisión final de Hector.
+Documento de implementación, actualizado el 6 de octubre de 2026 CDMX. Describe `main` en `3e185d1` más el motor de partidas de los PR #29–#33 (T-18 a T-21 y T-26, punta `573171b`), que está en integración. El diseño original está en [PLAN.md](../documentation/PLAN.md) y los criterios de aceptación en [TAREAS.md](../documentation/TAREAS.md).
 
-## Módulos disponibles y pendientes
+## Módulos
 
-| Módulo | Implementación disponible | Integración pendiente |
-|---|---|---|
-| `shared/` | Esquemas Zod, tipos inferidos, errores y límites únicos, consumidos por cliente y enrutador | Contratos del juego listos para sus handlers |
-| `server/src/ws/` | `Bun.serve`, `/ws`, `bienvenida`, `Enrutador`, validación UTF-8 de 16 KB, reqId, errores y cola por conexión | Límite de ritmo, handlers de mesas y compras |
-| `server/src/db/conexion.ts` | Pool PostgreSQL de Bun y `enTransaccion`; creado en index y cerrado al detener el servidor | Instalación independiente |
-| `server/src/store/` | Interfaz `Billetera`, `BilleteraSQL`, `Tienda` y consultas de saldo/historial | Handlers WebSocket, publicación de respuestas y equipamiento |
-| `server/db/` | Siete tablas e índices, catálogo de 14 artículos; usuarios/sesiones/inventario/ledger usados por auth | Persistencia de rondas |
-| `scripts/db-reset.ts` | Recreación atómica de tablas del proyecto con confirmación de destino | Instalación independiente según manual |
-| `client/` | Vite/React/Tailwind, red/reconexión/reqId, pantallas y mock; catálogo de solo lectura en mock (T-12) | Lobby y partidas reales, verificación de reconexión cliente, compras/historial e inventario completos |
-| `server/src/auth/` | `Sesiones` y adaptador autenticado: registro atómico, login, reanudar, logout, vigencia/revocación antes de cada intención protegida | Recuperación de asiento cuando exista el juego |
-| `server/src/game/` | `Carta` inmutable, `Baraja` de cuatro mazos y `Mano`/`Dealer` con As flexible (T-15/T-16) | GestorMesas, Mesa y máquina de estados |
-
-El servidor disponible en `main` permite autenticar y consultar la billetera por WebSocket. Compras, inventario e historial tienen servicios SQL probados y esperan sus handlers; el lobby y las partidas requieren `GestorMesas` y el motor. El cliente cubre la interfaz completa con el mock. Las instrucciones disponibles están en [manual-instalacion.md](manual-instalacion.md).
+| Módulo | Contenido |
+|---|---|
+| `shared/` | Esquemas Zod de los 18 mensajes del cliente y los 12 del servidor, tipos inferidos, códigos de error en español y límites de cantidades. Lo importan cliente y servidor. |
+| `server/src/ws/` | `Bun.serve` en un solo puerto (`servidor.ts`, `clienteEstatico.ts`), `Enrutador` (JSON, Zod, 16 KB, `reqId`, `try/catch` global), composición de la aplicación (`aplicacion.ts`) y handlers de juego (`juego.ts`). |
+| `server/src/auth/` | `Sesiones` (Argon2id, tokens de 7 días, registro atómico) y el adaptador que exige sesión antes de cada intención protegida. |
+| `server/src/game/` | Motor en memoria: `Carta`, `Baraja`, `Mano`, `Dealer`, `Jugador`, `Mesa`, `RelojMesa`, `GestorMesas`, la función `resolver` y la interfaz `Billetera`. No importa `store/` ni `db/`. |
+| `server/src/store/` | `BilleteraSQL`, `Tienda`, consultas de saldo e historial y handlers de economía. |
+| `server/src/db/` | Pool PostgreSQL de Bun, `enTransaccion` y `HistorialSQL` (rondas terminadas). |
+| `server/db/` | `schema.sql` (7 tablas) y `seed.sql` (14 artículos). |
+| `scripts/` | `db-reset.ts`, `dev.ts`, `empaquetar.ts` y `bots.ts` (jugadores automáticos). |
+| `client/` | React + Vite + Tailwind: capa de red con reconexión, estado, pantallas, componentes de mesa y servidor falso (`?mock=1`). |
 
 ## Dependencias implementadas
 
 ```mermaid
 flowchart LR
-  INDEX["index.ts: composición y apagado"] --> WS
-  INDEX --> AUTH["auth/Sesiones y manejadores"]
-  INDEX --> WAL
-  INDEX --> TX
-  WS["ws/servidor.ts: Bun.serve"] --> CFG["config.ts"]
-  WS --> ROUTER["ws/Enrutador"]
-  SH["shared/: Zod, tipos y errores"]
-  ROUTER --> SH
-  AUTH -->|construye e inyecta handlers| ROUTER
-  AUTH --> SH
-  AUTH --> TX
-  AUTH --> Q
-  CLIENT["client/: red y validación"] --> SH
-  CLIENT --> WS
-  WAL["store/BilleteraSQL"] --> SH
-  STORE["store/Tienda"] --> SH
-  WAL --> Q["store/consultas.ts"]
-  STORE --> Q
-  Q --> SH
-  WAL --> TX["db/conexion.ts: enTransaccion"]
+  CLIENT["client/"] -->|WebSocket /ws| SRV
+  CLIENT --> SH
+  INDEX["index.ts"] --> APP["ws/aplicacion.ts: composición"]
+  APP --> SRV["ws/servidor.ts: Bun.serve + cliente estático"]
+  SRV --> ROUTER["ws/Enrutador"]
+  APP --> AUTH["auth/Sesiones + adaptador"]
+  AUTH -->|construye| ROUTER
+  APP --> JUEGO["ws/juego.ts: apostar, pedir, plantarse"]
+  APP --> ECO["store/manejadores: economía"]
+  APP --> GM["game/GestorMesas"]
+  JUEGO --> GM
+  GM --> MESA["game/Mesa + Jugador + RelojMesa"]
+  MESA --> REGLAS["game/Baraja, Mano, Dealer, resolver"]
+  MESA -.->|interfaz inyectada| BIL["game/Billetera"]
+  APP --> WAL["store/BilleteraSQL"]
+  WAL -.->|implementa| BIL
+  APP --> HIST["db/HistorialSQL"]
+  ECO --> WAL
+  ECO --> STORE["store/Tienda"]
+  WAL --> TX["db/conexion: enTransaccion"]
   STORE --> TX
-  WAL --> CFG
-  Q --> CFG
+  HIST --> TX
   TX --> PG[("PostgreSQL 16")]
-  Q --> PG
   RESET["scripts/db-reset.ts"] --> PG
-  RESET --> SQL["schema.sql + seed.sql"]
-  GAME["game/Carta, Baraja, Mano y Dealer"] --> SH
-  GAME --> CFG
+  ROUTER --> SH["shared/: Zod, tipos, errores"]
+  MESA --> SH
+  WAL --> SH
 ```
+
+`aplicacion.ts` es el único lugar que conoce a la vez SQL y el motor: crea `BilleteraSQL` y `HistorialSQL` y se los inyecta a `GestorMesas` como `ServiciosMesa`. Así `game/` se prueba con `BilleteraMemoria` y relojes falsos, sin base de datos.
 
 `shared/` no depende de Bun ni del servidor; se importa desde ambos workspaces como `@blackjack/shared`. Los tipos de mensajes se infieren de Zod. La interfaz `Billetera` solo importa tipos compartidos; permite que el juego reciba una implementación falsa en memoria para sus pruebas.
 
@@ -121,6 +119,57 @@ classDiagram
     +debePedir() boolean
     +jugar(baraja) void
   }
+  class Jugador {
+    +usuarioId number
+    +indice number
+    +mano Mano
+    +apuesta number
+    +conectado boolean
+    +salidaPendiente boolean
+    +estado EstadoJugador
+    +reiniciarRonda() void
+    +actualizarEquipado(equipado) boolean
+    +snapshot() Asiento
+  }
+  class Mesa {
+    +id string
+    +nombre string
+    +fase FaseMesa
+    +rondaId string
+    +unirse(usuario, equipado) MesaEstado
+    +salir(usuarioId) void
+    +apostar(usuarioId, cantidad) Promise~void~
+    +pedir(usuarioId) Promise~void~
+    +plantarse(usuarioId) Promise~void~
+    +cerrarApuestas() void
+    +avanzarTurno() void
+    +finalizarPagos() void
+    +snapshot() MesaEstado
+  }
+  class RelojMesa {
+    +finEn number
+    +programar(demora, accion) number
+    +cancelar() void
+  }
+  class GestorMesas {
+    +listar() MesaResumen[]
+    +unirse(mesaId, usuario, equipado, conexionId) MesaEstado
+    +salir(usuarioId, conexionId) string
+    +desconectar(usuarioId, conexionId) void
+    +mesaDeUsuario(usuarioId) string
+    +obtener(mesaId) Mesa
+  }
+  class HistorialSQL {
+    +guardar(ronda) Promise~void~
+  }
+  GestorMesas *-- Mesa
+  Mesa *-- Jugador
+  Mesa *-- Dealer
+  Mesa *-- RelojMesa
+  Mesa ..> Baraja
+  Mesa ..> Billetera
+  Jugador *-- Mano
+  HistorialSQL ..> ErrorJuego
   Mano *-- Carta
   Dealer *-- Mano
   Dealer ..> Baraja
@@ -133,9 +182,15 @@ classDiagram
   Baraja ..> ErrorJuego
 ```
 
-`CompraArticulo` contiene `{inventario, billetera}`; `PaginaMovimientos`, `{items, hayMas}`. `Tienda` y `BilleteraSQL` comparten consultas y transacciones, sin que una clase invoque a la otra. `equipar` aún requiere a `GestorMesas` para validar la fase y publicar el nuevo snapshot; no se declara como método implementado.
+`CompraArticulo` contiene `{inventario, billetera}`; `PaginaMovimientos`, `{items, hayMas}`. `Tienda` y `BilleteraSQL` comparten consultas y transacciones, sin que una clase invoque a la otra.
 
-`Carta`/`Baraja` y `Mano`/`Dealer` están implementadas desde PR #25/#27; las firmas del diagrama corresponden a sus archivos reales. `Mano` distingue el blackjack natural de un 21 con tres cartas y `Dealer` se planta también en 17 blando. Las clases previstas `Jugador`, `Mesa` y `GestorMesas` se describen en PLAN §5 y se incorporarán cuando se fusionen. La dependencia de autenticación hacia el enrutador está en la función `crearEnrutadorAutenticado` de `auth/manejadores.ts`, que importa y construye `Enrutador`. La clase `Sesiones` no depende de `Enrutador`, y `Enrutador` no importa SQL ni clases de autenticación.
+La interfaz `Billetera` vive en `game/Billetera.ts`, y `store/Billetera.ts` solo la reexporta. Así el motor define lo que necesita y `store/` lo implementa, sin que `game/` importe `store/`. `resolver(mano, manoDealer, apuesta)` en `game/reglas.ts` es una función pura que devuelve `{resultado, pago}`; el pago incluye la apuesta (blackjack 10 → 25, gana 10 → 20, empate 10 → 10, pierde → 0).
+
+`GestorMesas` garantiza un solo asiento por usuario y una sola conexión dueña del asiento. Si el mismo usuario abre la mesa en otra pestaña, la nueva toma el asiento y la anterior recibe `NO_ESTAS_EN_MESA` y vuelve al lobby (PLAN §7.5). Un cierre tardío de la pestaña vieja no afecta al nuevo dueño, porque cada operación lleva el `conexionId`. Al reanudar sesión, si el usuario todavía tiene asiento, el servidor lo vuelve a suscribir a su mesa y le envía el snapshot.
+
+`Mesa` serializa todas sus operaciones con una cola de promesas (`encolar`): las acciones de jugadores, los vencimientos del reloj y la liquidación nunca se ejecutan intercalados. Cada vencimiento comprueba que la fase, la ronda y el turno sigan siendo los mismos que cuando se programó; un reloj viejo no puede mover una ronda nueva.
+
+`equipar` todavía no está implementado (T-35, pospuesta junto con T-40).
 
 ## Persistencia
 
@@ -226,7 +281,7 @@ Los tipos y restricciones siguientes corresponden a `server/db/schema.sql`. `PK`
 | `clave` | varchar(64) | Compra idempotente; única por usuario cuando no es null |
 | `creado_en` | timestamptz | Fecha obligatoria; now() por defecto; compras fijan el reloj usado para el límite |
 
-**rondas** (persistencia preparada para T-21)
+**rondas** (escrita por `HistorialSQL` al liquidar)
 
 | Columna | Tipo | Uso y restricciones |
 |---|---|---|
@@ -237,7 +292,7 @@ Los tipos y restricciones siguientes corresponden a `server/db/schema.sql`. `PK`
 | `cartas_dealer` | jsonb | Mano final obligatoria; formato de cartas validado por el código |
 | `total_dealer` | smallint | Total final obligatorio |
 
-**rondas_jugadores** (persistencia preparada para T-21)
+**rondas_jugadores** (escrita por `HistorialSQL` en la misma transacción)
 
 | Columna | Tipo | Uso y restricciones |
 |---|---|---|
@@ -262,11 +317,23 @@ El día natural se calcula en PostgreSQL usando `America/Mexico_City`. El servic
 
 Saldos y deltas SQL `bigint` se leen como texto y solo se convierten a números si `Number.isSafeInteger` permite representarlos exactamente. Los ID `bigserial` del historial se conservan como strings decimales hasta `9223372036854775807`. Las cantidades de compra/apuesta siguen los límites de `server/src/config.ts`.
 
+### Liquidación de una ronda (T-21)
+
+Al terminar el dealer, `Mesa` congela la ronda en un objeto `RondaTerminada` (UUID, mesa, tiempos, mano del dealer y, por jugador, asiento, cartas, total, apuesta, resultado y pago) y la liquida en este orden:
+
+1. `acreditarPago` para cada jugador. Un conjunto en memoria recuerda a quién ya se pagó, así que un reintento no paga dos veces; un pago cero no crea movimiento.
+2. `HistorialSQL.guardar`: inserta `rondas` y todas sus filas de `rondas_jugadores` en una sola transacción. Es idempotente por el UUID de la ronda: si la ronda ya existe con los mismos datos no hace nada; si existe con datos distintos lanza `ERROR_INTERNO`.
+3. Publica `ronda.resultado` en `mesa:<id>` y programa 5 s de resultados antes de abrir la siguiente ronda.
+
+Si falla el paso 1 o el 2, la mesa se queda en `PAGOS` y reintenta cada `REINTENTO_PAGOS_MS` (1 s). Nunca empieza una ronda nueva con pagos o historial incompletos. Al apagar el servidor, una liquidación pendiente se completa antes de cerrar.
+
+Las operaciones de dinero del juego pasan por la misma cola por usuario que las compras (`serializarUsuario`), así que una compra de fichas durante una mano no se intercala con el débito de la apuesta ni con el pago.
+
 ### Registro atómico implementado (T-08)
 
 La transacción de `Sesiones.registrar` crea usuario con dinero inicial 10000 y fichas 500, entrega los tres artículos gratuitos, los equipa, crea sesión e inserta un movimiento `registro` con `delta_dinero=10000`, `delta_fichas=500` y saldos posteriores iguales. Esto permite reconciliar la suma de movimientos con el saldo desde el origen. El default SQL de fichas es cero; el registro establece explícitamente los 500 de bienvenida. `Tienda.inventario` rechaza con `ERROR_INTERNO` a un usuario que no tenga los tres cosméticos equipados.
 
-Las contraseñas se guardan como Argon2id; los tokens contienen 32 bytes aleatorios y expiran en siete días. El adaptador asocia identidad al socket después de validar SQL y comprueba la vigencia antes de cada intención protegida. La cola del enrutador conserva el orden de registro/login/logout en una conexión. `mesaId` sigue siendo null hasta integrar las mesas.
+Las contraseñas se guardan como Argon2id; los tokens contienen 32 bytes aleatorios y expiran en siete días. El adaptador asocia identidad al socket después de validar SQL y comprueba la vigencia antes de cada intención protegida. La cola del enrutador conserva el orden de registro/login/logout en una conexión. `mesaDeUsuario` permite al adaptador saber en qué mesa está cada usuario autenticado.
 
 La suite de economía prepara usuarios y movimientos propios en su esquema aislado; la suite de autenticación ejercita el registro y las sesiones reales mediante SQL y sockets.
 
@@ -276,11 +343,11 @@ En [shared/protocolo.ts](../shared/protocolo.ts) hay 18 intenciones y 12 mensaje
 
 La validación rechaza campos desconocidos y no convierte cadenas a números. Si el único error es una `cantidad` presente de `apostar`/`fichas.comprar`, `crearErrorValidacion` devuelve `CANTIDAD_INVALIDA`; los errores de estructura, cantidad faltante y tipos desconocidos devuelven `MENSAJE_INVALIDO`. `ErrorJuego(codigo)` proporciona el mensaje español para fallos de dominio. El enrutador convierte excepciones inesperadas a `ERROR_INTERNO` y registra sus detalles sin exponerlos al cliente.
 
-Los límites de apuesta y compra se definen una sola vez en `LIMITES_CANTIDAD` (`shared/protocolo.ts`). `MensajeClienteSchema` los aplica, el cliente los usa en sus formularios y `server/src/config.ts` los re-exporta para `BilleteraSQL`, así que el enrutador usa `MensajeClienteSchema` directamente. El tamaño de 16 KB ya se controla en `Enrutador` (T-07), y el adaptador de auth valida la sesión antes de cada intención protegida (T-08). Los permisos de fase/turno esperan el motor; el límite de ritmo de 20/s sigue pendiente en T-37. Esos controles pertenecen al servidor, fuera del esquema Zod.
+Los límites de apuesta y compra se definen una sola vez en `LIMITES_CANTIDAD` (`shared/protocolo.ts`). `MensajeClienteSchema` los aplica, el cliente los usa en sus formularios y `server/src/config.ts` los re-exporta para `BilleteraSQL`, así que el enrutador usa `MensajeClienteSchema` directamente. El tamaño de 16 KB ya se controla en `Enrutador` (T-07), y el adaptador de auth valida la sesión antes de cada intención protegida (T-08). Fase, turno y plazo los valida `Mesa` (`FASE_INCORRECTA`, `NO_ES_TU_TURNO`, `YA_APOSTASTE`); el límite de ritmo de 20 mensajes/s sigue pendiente en T-37. Esos controles pertenecen al servidor, fuera del esquema Zod.
 
 Los snapshots `mesa.estado` contienen los campos de `MesaEstado` directamente en la raíz. Los cinco asientos tienen índice coincidente con su posición. La carta oculta solo puede contener `{oculta:true}`, con total del dealer `null`; antes de `DEALER` hay como máximo una carta visible y en `DEALER/PAGOS` todas están reveladas.
 
-Integración de servicios (consulta de billetera disponible en `main`; demás handlers pendientes):
+Handlers de economía:
 
 | Intención | Llamada | Respuesta que construye el handler |
 |---|---|---|
@@ -291,32 +358,65 @@ Integración de servicios (consulta de billetera disponible en `main`; demás ha
 | `inventario.listar` | `tienda.inventario(usuarioId)` | `{type:"inventario", ...estado, reqId}` |
 | `movimientos.listar` | `tienda.listarMovimientos(usuarioId,limite,antesDe)` | `{type:"movimientos", ...pagina, reqId}` |
 
+Handlers de mesas y juego:
+
+| Intención | Llamada | Respuesta y publicaciones |
+|---|---|---|
+| `lobby.listar` | `gestor.listar()` | `{type:"lobby", mesas}` |
+| `mesa.unirse` | `gestor.unirse(mesaId, usuario, equipado, conexionId)` | Snapshot directo; suscribe el socket a `mesa:<id>` |
+| `mesa.salir` | `gestor.salir(usuarioId, conexionId)` | `{type:"ok"}` y desuscribe; con apuesta activa el asiento se libera al terminar `PAGOS` |
+| `apostar` | `mesa.apostar(usuarioId, cantidad)` → `billetera.debitarApuesta` | Snapshot directo; `billetera` en `usuario:<id>` |
+| `pedir` / `plantarse` | `mesa.pedir` / `mesa.plantarse` | Snapshot directo |
+
+Cada cambio de la mesa publica `mesa.estado` en `mesa:<id>`, y `GestorMesas` publica `lobby` con la ocupación y fase de las tres mesas. Topics de pub/sub: `lobby`, `mesa:<id>` (snapshots y `ronda.resultado`) y `usuario:<id>` (billetera e inventario para todas las pestañas del usuario).
+
 `usuarioId` siempre proviene de la sesión validada por el servidor. El cliente no puede enviarlo como autorización. La paginación devuelve filas por ID descendente, pide una fila extra para `hayMas` y usa como cursor exclusivo el ID de la última fila recibida.
 
-## Máquina de estados prevista
+## Máquina de estados de la mesa
 
-Las fases y los snapshots ya se validan en `shared/`. Las transiciones y relojes aún dependen de T-18/T-19:
+Implementada en `game/Mesa.ts` (T-18/T-19). Todos los tiempos vienen de `server/src/config.ts`:
 
 ```mermaid
 stateDiagram-v2
   [*] --> ESPERANDO
-  ESPERANDO --> APUESTAS : primer jugador
-  APUESTAS --> APUESTAS : vence reloj sin apuestas
-  APUESTAS --> ESPERANDO : no quedan jugadores
-  APUESTAS --> REPARTO : todos apuestan o vence reloj con apuesta
-  REPARTO --> TURNOS : reparto inicial
-  REPARTO --> DEALER : blackjack del dealer
-  TURNOS --> TURNOS : pedir o siguiente jugador
-  TURNOS --> DEALER : nadie queda por actuar
-  DEALER --> PAGOS : revela y termina su mano
-  PAGOS --> APUESTAS : pasan 5 s y quedan jugadores
-  PAGOS --> ESPERANDO : pasan 5 s y no quedan jugadores
+  ESPERANDO --> APUESTAS : se sienta el primer jugador (reloj 15 s)
+  APUESTAS --> APUESTAS : vence el reloj sin apuestas (nueva ronda)
+  APUESTAS --> ESPERANDO : se van todos
+  APUESTAS --> REPARTO : apostaron todos los conectados, o vence el reloj con al menos una apuesta
+  REPARTO --> TURNOS : 2 cartas por jugador y dealer
+  REPARTO --> DEALER : el dealer tiene blackjack
+  TURNOS --> TURNOS : pedir, plantarse o vencen 20 s (se planta solo)
+  TURNOS --> DEALER : no queda nadie por jugar
+  DEALER --> PAGOS : el dealer pide hasta 17 y se planta
+  PAGOS --> PAGOS : falla un pago o el historial (reintento cada 1 s)
+  PAGOS --> APUESTAS : pagos e historial confirmados y pasan 5 s, si quedan jugadores
+  PAGOS --> ESPERANDO : pagos e historial confirmados y pasan 5 s, sin jugadores
 ```
 
-`Mesa` tendrá un solo timeout activo, reloj de apuestas 15 s y turnos 20 s. La carta oculta debe excluirse al construir el snapshot, además de ser rechazada por el contrato si aparece filtrada. La autorización de turnos y la fase de equipamiento requieren la futura conexión con `GestorMesas`.
+- **Un solo reloj por mesa:** `RelojMesa` guarda un único timeout; programar uno nuevo cancela el anterior e invalida su callback aunque ya estuviera en vuelo. Expone `finEn` (epoch ms del servidor) para que todas las pantallas muestren la misma cuenta regresiva.
+- **Plazos:** una acción que llega cuando `finEn` ya pasó se rechaza con `FASE_INCORRECTA`, aunque el timeout todavía no haya corrido.
+- **Turnos:** se recorren los asientos en orden; se saltan los jugadores con blackjack natural y los desconectados (que quedan `PLANTADO`).
+- **Carta oculta:** `Mesa.snapshot()` envía `{oculta:true}` para la segunda carta del dealer fuera de `DEALER` y `PAGOS`, y `MesaEstadoSchema` rechaza cualquier snapshot que la filtre.
+- **Rebarajado:** al cerrar apuestas, si quedan menos del 25 % de las 208 cartas, el zapato se rebaraja antes de repartir.
+- **Quien entra a media ronda** queda `ESPERANDO_RONDA` hasta la siguiente fase de apuestas.
 
-## Verificación y cierre pendiente
+## Verificación
 
-`server/test/protocolo.test.ts` verifica un ejemplo válido/inválido por mensaje, tipos desconocidos, cantidades, errores públicos, IDs sin pérdida de precisión y protección del snapshot. `server/test/servidor.test.ts` comprueba conteos con tres conexiones WebSocket reales. `enrutador.test.ts` cubre mensajes malformados, tamaño UTF-8, correlación y continuidad del servidor; `autenticacion.test.ts`, registro atómico, credenciales, revocación y recuperación de sesiones persistentes. `baraja.test.ts` verifica Carta/Baraja, extracción sin reemplazo y el umbral de 52/51. `mano.test.ts` cubre dieciséis casos de Ases, natural, pasadas y regla del dealer. Las pruebas de economía están en `economia.test.ts`; economía/auth requieren PostgreSQL de pruebas, según el manual.
+Pruebas en `server/test/` (las SQL necesitan `TEST_DATABASE_URL`, ver el manual):
 
-Antes de cerrar T-32/T-50: incorporar las clases reales de mesa/gestor y su integración cuando se fusionen, confirmar publicación de eventos y dependencias del cliente, completar equipamiento/persistencia de rondas, renderizar los diagramas en GitHub y obtener revisión de Hector. Auth, router, Carta/Baraja y Mano/Dealer ya se describen aquí. El juego desde tres laptops, los manuales independientes y el paquete final mantienen sus propios criterios de aceptación.
+| Archivo | Qué comprueba |
+|---|---|
+| `protocolo.test.ts` | Un ejemplo válido y uno inválido por mensaje, cantidades, IDs sin pérdida de precisión, snapshot sin carta oculta |
+| `servidor.test.ts`, `enrutador.test.ts` | Conteo con tres sockets reales, JSON inválido, 16 KB, `reqId`, el servidor sigue vivo |
+| `autenticacion.test.ts` | Registro atómico, credenciales, revocación, sesiones que sobreviven a un reinicio |
+| `baraja.test.ts`, `mano.test.ts` | 208 cartas, extracción sin reemplazo, umbral de rebarajado, Ases, natural, pasadas, dealer en 17 blando |
+| `economia.test.ts` | Concurrencia, límite diario CDMX, idempotencia por `clave`, reconciliación de `movimientos` con el saldo |
+| `reglas.test.ts` | `resolver`: pagos de blackjack, victoria, empate, derrota y pasadas |
+| `mesas.test.ts`, `mesa.test.ts`, `relojesMesa.test.ts` | Asientos, segunda pestaña, máquina de estados, carta oculta, relojes y auto-plantar |
+| `accionesMesa.test.ts`, `accionesWs.test.ts` | Validaciones de `apostar`/`pedir`/`plantarse` (turno, fase, cantidad, doble apuesta) por WebSocket |
+| `liquidacionMesa.test.ts`, `liquidacionSQL.test.ts`, `integracionJuegoEconomia.test.ts` | Pagos idempotentes, reintentos, historial en `rondas`/`rondas_jugadores` y saldos contra `movimientos` |
+| `bots.test.ts`, `produccion.test.ts` | Bots jugando rondas completas y cliente servido en el mismo puerto |
+
+Evidencia del motor (6 oct, punta `573171b` en PostgreSQL 16.15): typecheck correcto, 335 de 336 pruebas en verde (la que falla, `servidor.test.ts` «un fallo de limpieza…», pasa al correrla sola). `bun run bots 4 --mesa mesa-1 --rondas 10` jugó 10 rondas sin errores; quedaron 10 filas en `rondas`, 40 en `rondas_jugadores` y 0 usuarios con saldo distinto de la suma de sus `movimientos`.
+
+Pendiente para cerrar T-32/T-50: volver a revisar `GestorMesas` y `aplicacion.ts` cuando la integración resuelva sus conflictos con `main`, ver los diagramas renderizados en GitHub y la confirmación de Hector de que coinciden con el código. La recuperación del asiento en 60 s (T-36) y el límite de 20 mensajes/s (T-37) todavía no existen.
