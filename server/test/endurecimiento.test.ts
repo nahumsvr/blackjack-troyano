@@ -1,7 +1,8 @@
 /** T-37: admisión por conexión, errores aislados y ataque real mientras tres usuarios juegan. */
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import type { Server } from "bun";
-import { MENSAJES_POR_SEGUNDO, VENTANA_MENSAJES_MS, MENSAJE_MAX_BYTES } from "../src/config";
+import { MENSAJES_POR_SEGUNDO, VENTANA_MENSAJES_MS, MENSAJE_MAX_BYTES,
+  RECHAZOS_CONSECUTIVOS_MAX, CONEXION_SIN_PROGRESO_MS, ACCESOS_POR_SEGUNDO, ACCESOS_SIMULTANEOS_MAX } from "../src/config";
 import { Enrutador, type ContextoErrorEnrutador, type DatosConexion, type ManejadoresEnrutador } from "../src/ws/Enrutador";
 import { iniciarServidor } from "../src/ws/servidor";
 import { iniciarAplicacion } from "../src/ws/aplicacion";
@@ -122,6 +123,87 @@ test("un logger que falla no impide ERROR_INTERNO ni la siguiente respuesta", as
 });
 
 const destino = Bun.env.TEST_DATABASE_URL;
+test("el presupuesto de autenticación es global aunque se abran conexiones nuevas", async () => {
+  let llamadas = 0;
+  iniciar({ login: () => { llamadas++; return { type: "ok" }; } });
+  for (let indice = 0; indice < ACCESOS_POR_SEGUNDO; indice++) {
+    const cliente = await conectar();
+    expect(await cliente.enviar({ type: "login", usuario: "prueba", contrasena: "secreto37" })).toMatchObject({ type: "ok" });
+  }
+  const excedente = await conectar();
+  expect(await excedente.enviar({ type: "login", usuario: "prueba", contrasena: "secreto37" })).toMatchObject({ codigo: "DEMASIADAS_SOLICITUDES" });
+  expect(llamadas).toBe(ACCESOS_POR_SEGUNDO);
+  expect(await excedente.enviar({ type: "ping" })).toMatchObject({ type: "pong" });
+  instante = VENTANA_MENSAJES_MS;
+  expect(await excedente.enviar({ type: "login", usuario: "prueba", contrasena: "secreto37" })).toMatchObject({ type: "ok" });
+});
+
+test("hashes colgados conservan el límite global entre ventanas y tras cerrar su socket", async () => {
+  const iniciadas = Promise.withResolvers<void>(); const liberar = Promise.withResolvers<void>();
+  let llamadas = 0;
+  iniciar({ registro: async () => {
+    if (++llamadas === ACCESOS_SIMULTANEOS_MAX) iniciadas.resolve();
+    await liberar.promise; return { type: "ok" };
+  } });
+  const ocupados = await Promise.all(Array.from({ length: ACCESOS_SIMULTANEOS_MAX }, conectar));
+  const respuestas = ocupados.map((cliente, indice) => {
+    const desde = cliente.mensajes.length;
+    cliente.socket.send(JSON.stringify({ type: "registro", usuario: "prueba", contrasena: "secreto37" }));
+    return indice === 0 ? Promise.resolve() : cliente.esperar((mensaje) => mensaje.type === "ok", desde);
+  });
+  const excedente = await conectar();
+  try {
+    await iniciadas.promise;
+    await ocupados[0]!.cerrar();
+    expect(await excedente.enviar({ type: "registro", usuario: "prueba", contrasena: "secreto37" })).toMatchObject({ codigo: "DEMASIADAS_SOLICITUDES" });
+    instante = VENTANA_MENSAJES_MS;
+    expect(await excedente.enviar({ type: "registro", usuario: "prueba", contrasena: "secreto37" })).toMatchObject({ codigo: "DEMASIADAS_SOLICITUDES" });
+    expect(llamadas).toBe(ACCESOS_SIMULTANEOS_MAX);
+  } finally { liberar.resolve(); await Promise.all(respuestas); }
+  expect(await excedente.enviar({ type: "registro", usuario: "prueba", contrasena: "secreto37" })).toMatchObject({ type: "ok" });
+});
+
+test("cierra tras rechazos consecutivos y acota las respuestas con reloj detenido", async () => {
+  iniciar(); const atacante = await conectar(); const sano = await conectar();
+  await Promise.all(Array.from({ length: MENSAJES_POR_SEGUNDO }, () => atacante.enviar({ type: "ping" })));
+  const desde = atacante.mensajes.length;
+  expect(await atacante.enviar({ type: "ping" })).toMatchObject({ codigo: "DEMASIADAS_SOLICITUDES" });
+  const cerrado = new Promise<CloseEvent>((resolve) => atacante.socket.addEventListener("close", resolve, { once: true }));
+  for (let indice = 0; indice < 1000; indice++) atacante.socket.send(JSON.stringify({ type: "ping", reqId: `rechazo-${indice}` }));
+  expect((await cerrado).code).toBe(1008);
+  expect(atacante.mensajes.slice(desde).length).toBeGreaterThan(0);
+  expect(atacante.mensajes.slice(desde).length).toBeLessThanOrEqual(RECHAZOS_CONSECUTIVOS_MAX);
+  expect(await sano.enviar({ type: "ping" })).toMatchObject({ type: "pong" });
+});
+
+test("el watchdog cierra sin liberar una operación colgada ni ejecutar su cola pendiente", async () => {
+  const iniciada = Promise.withResolvers<void>(); const liberar = Promise.withResolvers<void>();
+  const finalizada = Promise.withResolvers<void>();
+  let vencer: (() => void) | undefined; let llamadas = 0;
+  const enrutador = new Enrutador({ registro: async () => {
+    llamadas++; iniciada.resolve(); await liberar.promise; finalizada.resolve(); return { type: "ok" };
+  } }, () => {}, undefined, undefined, () => instante, {
+    programar: (accion, demora) => {
+      expect(demora).toBe(CONEXION_SIN_PROGRESO_MS); vencer = accion;
+      return setTimeout(() => {}, demora).unref();
+    }, cancelar: clearTimeout,
+  });
+  servidor = iniciarServidor(0, enrutador);
+  const lento = await conectar(); const sano = await conectar();
+  const cerrado = new Promise<CloseEvent>((resolve) => lento.socket.addEventListener("close", resolve, { once: true }));
+  try {
+    lento.socket.send(JSON.stringify({ type: "registro", usuario: "prueba", contrasena: "secreto37" }));
+    await iniciada.promise;
+    lento.socket.send(JSON.stringify({ type: "registro", usuario: "prueba", contrasena: "secreto37" }));
+    vencer!();
+    expect((await cerrado).code).toBe(1008);
+    expect(await sano.enviar({ type: "ping" })).toMatchObject({ type: "pong" });
+  } finally { liberar.resolve(); await finalizada.promise; }
+  await Bun.sleep(0);
+  expect(llamadas).toBe(1);
+  expect(lento.mensajes.some((mensaje) => mensaje.type === "ok")).toBe(false);
+});
+
 describe.skipIf(!destino)("T-37 con juego y PostgreSQL reales", () => {
   let base: Awaited<ReturnType<typeof crearBasePruebas>>;
   let sesiones: Sesion[];
@@ -135,7 +217,7 @@ describe.skipIf(!destino)("T-37 con juego y PostgreSQL reales", () => {
     servidor = iniciarAplicacion(base.conexion, 0, (id, nombre, publicar, servicios) => {
       const manual = new TiempoManual(); if (id === "mesa-1") tiempo = manual;
       return new Mesa(id, nombre, publicar, crearZapatoFijo(["10", "10", "10", "10", "7", "7", "7", "7"]), manual.reloj, servicios);
-    });
+    }, () => instante);
   });
   afterAll(async () => { await base.cerrar(); });
   async function autenticar(indice: number) {
@@ -149,28 +231,25 @@ describe.skipIf(!destino)("T-37 con juego y PostgreSQL reales", () => {
     return jugadores;
   }
 
-  test("1000 mensajes basura en <1 s reciben errores y las otras tres conexiones terminan su ronda", async () => {
+  test("1000 mensajes basura cierran al abusivo y las otras tres conexiones terminan su ronda", async () => {
     const jugadores = await sentarTres();
     for (const cliente of jugadores) await cliente.enviar({ type: "apostar", cantidad: 10 });
     tiempo.avanzar(0);
     await Promise.all(jugadores.map((cliente) => cliente.esperar((mensaje) => mensaje.type === "mesa.estado" && mensaje.fase === "TURNOS")));
     const atacante = await conectar(); const desde = atacante.mensajes.length;
-    const completados = Promise.all([19, 999].map((indice) => atacante.esperar((mensaje) => mensaje.reqId === `basura-${indice}`, desde)));
-    const inicio = performance.now();
+    await Promise.all(Array.from({ length: MENSAJES_POR_SEGUNDO }, () => atacante.enviar({ type: "ping" })));
+    expect(await atacante.enviar({ type: "ping" })).toMatchObject({ codigo: "DEMASIADAS_SOLICITUDES" });
+    const cerrado = new Promise<CloseEvent>((resolve) => atacante.socket.addEventListener("close", resolve, { once: true }));
     for (let indice = 0; indice < 1000; indice++) atacante.socket.send(JSON.stringify({ type: "basura", reqId: `basura-${indice}` }));
-    expect(performance.now() - inicio).toBeLessThan(1000);
     const jugar = (async () => {
       for (const cliente of jugadores) expect(await cliente.enviar({ type: "plantarse" })).toMatchObject({ type: "mesa.estado" });
       return jugadores[0]!.esperar((mensaje) => mensaje.type === "ronda.resultado");
     })();
-    await completados;
+    expect((await cerrado).code).toBe(1008);
     const resultado = await jugar;
-    expect(performance.now() - inicio).toBeLessThan(1000);
     const errores = atacante.mensajes.slice(desde).filter((mensaje) => mensaje.type === "error");
-    expect(errores).toHaveLength(1000);
-    expect(errores.filter((mensaje) => mensaje.codigo === "MENSAJE_INVALIDO")).toHaveLength(MENSAJES_POR_SEGUNDO);
-    expect(errores.filter((mensaje) => mensaje.codigo === "DEMASIADAS_SOLICITUDES")).toHaveLength(1000 - MENSAJES_POR_SEGUNDO);
-    expect([...jugadores, atacante].every((cliente) => cliente.socket.readyState === WebSocket.OPEN)).toBe(true);
+    expect(errores.some((mensaje) => mensaje.codigo === "DEMASIADAS_SOLICITUDES")).toBe(true);
+    expect(jugadores.every((cliente) => cliente.socket.readyState === WebSocket.OPEN)).toBe(true);
     if (resultado.type !== "ronda.resultado") throw new Error("Falta resultado");
     const filas = await base.conexion`SELECT usuario_id FROM rondas_jugadores WHERE ronda_id = ${resultado.rondaId}`;
     expect(filas).toHaveLength(3);

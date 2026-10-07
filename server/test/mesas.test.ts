@@ -99,7 +99,9 @@ describe.skipIf(!destino)("GestorMesas con servidor completo", () => {
   });
 
   test("seis uniones simultáneas ocupan solo cinco asientos y rechazan la sexta", async () => {
-    const usuarios = await Promise.all(Array.from({ length: 6 }, () => registrar()));
+    // La carrera que se prueba es por asientos, no por plazas globales de hash/verify.
+    const usuarios: Awaited<ReturnType<typeof registrar>>[] = [];
+    for (let indice = 0; indice < 6; indice++) usuarios.push(await registrar());
     const respuestas = await Promise.all(usuarios.map(({ cliente }) => cliente.enviar({ type: "mesa.unirse", mesaId: "mesa-1" })));
     expect(respuestas.filter((mensaje) => mensaje.type === "mesa.estado")).toHaveLength(5);
     expect(respuestas.filter((mensaje) => mensaje.type === "error")).toMatchObject([{ codigo: "MESA_LLENA" }]);
