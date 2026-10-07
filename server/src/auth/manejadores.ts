@@ -61,6 +61,9 @@ export interface RelojSesion {
  * @param integracion - Vinculación y limpieza de recursos de la aplicación.
  * @param opcionesReloj - Sustituye reloj/timers solo para pruebas de caducidad.
  * @returns Enrutador con validación de sesiones persistentes para intenciones protegidas.
+ * @throws ErrorJuego MENSAJE_INVALIDO | USUARIO_EXISTE | CREDENCIALES_INVALIDAS |
+ * NO_AUTENTICADO | YA_AUTENTICADO | SESION_INVALIDA | ERROR_INTERNO al ejecutar sus handlers;
+ * el enrutador convierte los fallos en respuestas públicas.
  */
 export function crearEnrutadorAutenticado(
   sesiones: Sesiones, adicionales: ManejadoresEnrutador = {}, integracion: IntegracionSesion = {},
@@ -83,20 +86,25 @@ export function crearEnrutadorAutenticado(
   }
   function limpiarSesion(socket: SocketConexion, motivo: "desconexion" | "sesion" = "sesion"): void {
     // Mesas necesita la identidad antes de que auth la elimine (también al caducar).
-    integracion.alCerrar?.(socket, motivo);
-    if (socket.data.usuarioId !== undefined) socket.unsubscribe(topicUsuario(socket.data.usuarioId));
-    if (socket.data.token) {
-      const conexiones = conexionesPorToken.get(socket.data.token);
-      conexiones?.delete(socket);
-      if (conexiones?.size === 0) {
-        conexionesPorToken.delete(socket.data.token);
-        cancelarCaducidad(socket.data.token);
+    try { integracion.alCerrar?.(socket, motivo); }
+    finally {
+      if (socket.data.usuarioId !== undefined) {
+        try { socket.unsubscribe(topicUsuario(socket.data.usuarioId)); }
+        catch (error) { console.error("Error al retirar la suscripcion privada", error); }
       }
+      if (socket.data.token) {
+        const conexiones = conexionesPorToken.get(socket.data.token);
+        conexiones?.delete(socket);
+        if (conexiones?.size === 0) {
+          conexionesPorToken.delete(socket.data.token);
+          cancelarCaducidad(socket.data.token);
+        }
+      }
+      delete socket.data.usuarioId;
+      delete socket.data.token;
+      delete socket.data.usuario;
+      delete socket.data.equipado;
     }
-    delete socket.data.usuarioId;
-    delete socket.data.token;
-    delete socket.data.usuario;
-    delete socket.data.equipado;
   }
   function cancelarCaducidad(token: string): void {
     const caducidad = caducidades.get(token);
@@ -105,9 +113,12 @@ export function crearEnrutadorAutenticado(
   }
   function invalidarToken(token: string, origen?: SocketConexion): void {
     for (const conexion of [...conexionesPorToken.get(token) ?? []]) {
-      limpiarSesion(conexion);
+      // Revocar un token afecta a todas sus pestañas, aunque falle la limpieza de una mesa.
+      try { limpiarSesion(conexion); }
+      catch (error) { console.error("Error al limpiar una sesion revocada", error); }
       if (conexion !== origen && conexion.readyState === WebSocket.OPEN) {
-        conexion.send(JSON.stringify({ type: "error", codigo: "SESION_INVALIDA", mensaje: MENSAJES_ERROR.SESION_INVALIDA }));
+        try { conexion.send(JSON.stringify({ type: "error", codigo: "SESION_INVALIDA", mensaje: MENSAJES_ERROR.SESION_INVALIDA })); }
+        catch (error) { console.error("Error al avisar de una sesion revocada", error); }
       }
     }
   }
@@ -122,18 +133,26 @@ export function crearEnrutadorAutenticado(
   }
   function vincular(socket: SocketConexion, sesion: Sesion): MensajeServidor {
     if (sesion.expiraEn <= reloj.ahora()) throw new ErrorJuego("SESION_INVALIDA");
+    const mesaId = integracion.mesaDeUsuario?.(sesion.usuario.id) ?? null;
     if (socket.readyState === WebSocket.OPEN) {
-      Object.assign(socket.data, { usuarioId: sesion.usuario.id, token: sesion.token, usuario: sesion.usuario, equipado: sesion.equipado });
-      socket.subscribe(topicUsuario(sesion.usuario.id));
-      const conexiones = conexionesPorToken.get(sesion.token) ?? new Set<SocketConexion>();
-      conexiones.add(socket);
-      conexionesPorToken.set(sesion.token, conexiones);
-      programarCaducidad(sesion);
-      integracion.alAutenticar?.(socket, sesion);
+      try {
+        Object.assign(socket.data, { usuarioId: sesion.usuario.id, token: sesion.token, usuario: sesion.usuario, equipado: sesion.equipado });
+        socket.subscribe(topicUsuario(sesion.usuario.id));
+        const conexiones = conexionesPorToken.get(sesion.token) ?? new Set<SocketConexion>();
+        conexiones.add(socket);
+        conexionesPorToken.set(sesion.token, conexiones);
+        programarCaducidad(sesion);
+        integracion.alAutenticar?.(socket, sesion);
+      } catch (error) {
+        // Si la integración falla, el error de login no debe dejar identidad ni suscripciones.
+        try { limpiarSesion(socket); }
+        catch (errorLimpieza) { console.error("Error al revertir la vinculacion", errorLimpieza); }
+        throw error;
+      }
     }
     // expiraEn sirve al timer del servidor; el contrato público continúa estricto y sin metadata.
     return { type: "sesion", token: sesion.token, usuario: sesion.usuario,
-      billetera: sesion.billetera, equipado: sesion.equipado, mesaId: integracion.mesaDeUsuario?.(sesion.usuario.id) ?? null };
+      billetera: sesion.billetera, equipado: sesion.equipado, mesaId };
   }
   return new Enrutador({
     ...adicionales,

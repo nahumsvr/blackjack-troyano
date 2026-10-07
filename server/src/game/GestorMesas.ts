@@ -71,7 +71,8 @@ export class GestorMesas {
   detener(): void { for (const mesa of this.mesas.values()) mesa.detener(); }
 
   /**
-   * Espera las acciones SQL en vuelo antes de cerrar el pool.
+   * Drena las acciones en vuelo; no confirma liquidaciones pendientes.
+   * Para apagar y cerrar el pool SQL se debe usar cerrar(), incluso después de detener().
    * @returns Confirmación de las colas vacías.
    */
   async esperarOperaciones(): Promise<void> { await Promise.all([...this.mesas.values()].map((mesa) => mesa.esperarOperaciones())); }
@@ -79,7 +80,7 @@ export class GestorMesas {
   /**
    * Finaliza todas las liquidaciones pendientes antes de permitir cerrar el pool SQL.
    * @returns Confirmación de las tres mesas, incluso si alguna falla.
-   * @throws Error Propaga el primer fallo persistente una vez terminados todos los intentos.
+   * @throws Error Propaga el primer fallo, incluso transitorio, tras el intento de cierre de todas las mesas.
    */
   async cerrar(): Promise<void> {
     const resultados = await Promise.allSettled([...this.mesas.values()].map((mesa) => mesa.cerrar()));

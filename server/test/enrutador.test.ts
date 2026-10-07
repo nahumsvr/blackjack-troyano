@@ -8,6 +8,15 @@ import { iniciarServidor } from "../src/ws/servidor";
 
 let servidor: Server<DatosConexion>;
 const sockets: WebSocket[] = [];
+
+test("un logger que lanza no impide responder ni continuar con ping", async () => {
+  servidor = iniciarServidor(0, new Enrutador({ login: () => { throw new Error("Fallo de handler"); } },
+    () => { throw new Error("Fallo de logger"); }));
+  const socket = await conectar();
+  expect(await enviar(socket, JSON.stringify({ type: "login", usuario: "prueba", contrasena: "secreto48" })))
+    .toMatchObject({ type: "error", codigo: "ERROR_INTERNO" });
+  expect(await enviar(socket, JSON.stringify({ type: "ping" }))).toMatchObject({ type: "pong" });
+});
 afterEach(() => {
   for (const socket of sockets.splice(0)) socket.close();
   servidor?.stop(true);

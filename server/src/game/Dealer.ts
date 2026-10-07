@@ -21,10 +21,15 @@ export class Dealer {
   /**
    * Completa la mano del dealer aplicando la regla de plantarse configurada.
    * @param baraja - Suministro de cartas del servidor, sustituible por un zapato fijo en tests.
+   * @param alAgregar - Publica el estado después de incorporar cada carta a la mano.
    * @returns Sin valor; conserva las cartas añadidas en su mano.
    * @throws ErrorJuego ERROR_INTERNO si el zapato se agota.
+   * @throws Error Propaga fallos del callback de publicación tras incorporar la carta.
    */
-  jugar(baraja: Pick<Baraja, "sacar">): void {
-    while (this.debePedir()) this.mano.agregar(baraja.sacar());
+  jugar(baraja: Pick<Baraja, "sacar">, alAgregar: () => void = () => {}): void {
+    while (this.debePedir()) {
+      this.mano.agregar(baraja.sacar());
+      alAgregar();
+    }
   }
 }

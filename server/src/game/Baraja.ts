@@ -37,7 +37,8 @@ export class Baraja {
   get restantes(): number { return this.cartas.length; }
 
   /**
-   * Repone y mezcla todos los mazos; el motor la invoca entre rondas.
+   * Repone y mezcla todos los mazos. Llamar solo antes del reparto, nunca durante una mano.
+   * Mesa la invoca al cerrar apuestas únicamente si necesitaRebarajar lo indica.
    * @returns Sin valor.
    */
   barajar(): void {

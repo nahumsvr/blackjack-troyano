@@ -65,12 +65,11 @@ export class Enrutador {
 
   /**
    * Valida tamaño, JSON y esquema; conserva reqId y convierte fallos en error público.
+   * Los fallos del envío y del registrador se aíslan; no rechaza por esos callbacks.
    * @param socket - Conexión que originó la intención.
    * @param datos - Frame textual o binario recibido por Bun.
    * @returns Finalización de la respuesta, o sin envío si el socket ya cerró;
    * los errores de dominio se convierten en mensajes públicos.
-   * @throws Error Si falla el envío o el registrador de errores inyectado; los handlers
-   * y validaciones se capturan y responden con su código o ERROR_INTERNO.
    */
   manejar(socket: SocketConexion, datos: string | Buffer): Promise<void> {
     // Auth y logout de un mismo socket conservan el orden aunque hagan consultas async.
@@ -120,9 +119,15 @@ export class Enrutador {
       else await responder();
     } catch (error) {
       const codigo = error instanceof ErrorJuego ? error.codigo : "ERROR_INTERNO";
-      if (!(error instanceof ErrorJuego)) this.registrarError(error);
-      this.enviar(socket, { type: "error", codigo, mensaje: MENSAJES_ERROR[codigo], reqId });
+      if (!(error instanceof ErrorJuego)) this.registrarFallo(error);
+      try { this.enviar(socket, { type: "error", codigo, mensaje: MENSAJES_ERROR[codigo], reqId }); }
+      catch (errorEnvio) { this.registrarFallo(errorEnvio); }
     }
+  }
+
+  private registrarFallo(error: unknown): void {
+    try { this.registrarError(error); }
+    catch { /* El destino de logs no puede convertir un error aislado en un rechazo del transporte. */ }
   }
 
   private despachar(socket: SocketConexion, mensaje: MensajeCliente): MensajeServidor | Promise<MensajeServidor> {

@@ -42,3 +42,32 @@ T-43 todavía no está acreditada ni existe el tag `v0.9-congelado` al preparar 
 T-45 sigue abierta. Tras el congelamiento, reauditar la versión final y los cambios
 posteriores a esta base, incluidos los PR de T-37/T-38, y obtener la revisión de Massimo.
 Esta evidencia no acredita pruebas de aceptación en tres laptops ni aprobación de otro dev.
+
+## Correcciones de revisión de PR #48 (2026-10-07 CDMX)
+
+La auditoría inicial no detectó frases absorbidas por etiquetas ni todas las diferencias
+entre comentarios y comportamiento. Esta revisión corrige los diez puntos recibidos:
+
+| Comentario | Resolución |
+|---|---|
+| Descripción de pedir/apuesta absorbida por @param | Frases movidas antes del primer parámetro, como sugirió el revisor. |
+| Apagado promete reintentos inexistentes | Documentación de Mesa, GestorMesas, aplicación y guardarRonda ajustada: un único intento adicional al cerrar; cualquier fallo SQL puede rechazar. No se agrega una política nueva de reintentos. |
+| esperarOperaciones no liquida rondas | JSDoc indica su alcance y remite expresamente a cerrar(), según la alternativa propuesta. |
+| Fallo de alCerrar interrumpe revocación | Identidad retirada en finally; invalidación continúa con las demás pestañas y registra cada fallo. |
+| NO_AUTENTICADO omitido | Añadido a registrar/login/validar en Sesiones. |
+| Fallo de alAutenticar deja identidad vinculada | Revierte identidad, suscripciones, registro de conexiones y timer antes de propagar el error. |
+| Error del logger/envío rechaza manejar | Aislamiento dentro del enrutador, como alternativa sugerida; compatible con el arreglo de T-37. |
+| barajar perdió su precondición | Restaurada la prohibición de rebarajar durante una mano; describe el uso condicional antes del reparto. |
+| Dealer.jugar no se usa en producción | Mesa delega en Dealer.jugar y publica tras cada carta incorporada. |
+| Faltan @throws en fábricas | Restauradas etiquetas con ErrorJuego y códigos, aclarando que ocurren al ejecutar handlers. |
+
+Este seguimiento incluye correcciones de comportamiento, no solo comentarios. No cambia
+el contrato, el esquema SQL ni los pagos. Se añadieron regresiones de revocación en dos
+pestañas con callback fallido, vinculación fallida seguida de reanudación y logger fallido.
+
+Validación de las correcciones: `bun run typecheck` correcto; suite completa con PostgreSQL
+y Bun 1.3.13: **366 correctas, 1 omitida por plataforma, 0 fallos**, 4,627 aserciones
+en 38 archivos. Las 23 pruebas de enrutador/Dealer también pasan por separado.
+Code review final: se verificaron limpieza en finally, continuidad de revocación,
+correlación de errores, publicación posterior a cada carta y alcance real del apagado.
+Sin hallazgos pendientes en este diff; la aprobación externa y reauditoría tras T-43 siguen pendientes.

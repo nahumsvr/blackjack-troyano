@@ -31,7 +31,8 @@ export interface ServiciosMesa {
    * Guarda el historial; el avance normal de PAGOS espera los créditos y este guardado.
    * @param ronda - Datos finales retenidos para reintentos con el mismo UUID.
    * @returns Confirmación del guardado idempotente.
-   * @throws Error Propaga fallos de persistencia; Mesa reintenta hasta el tope configurado.
+   * @throws Error Propaga fallos de persistencia; durante PAGOS Mesa reintenta hasta el tope
+   * configurado. Al cerrar hace un único intento adicional, sin reprogramar relojes.
    */
   guardarRonda?: (ronda: RondaTerminada) => Promise<void>;
   /**
@@ -221,9 +222,9 @@ export class Mesa {
 
   /**
    * Pide una carta al zapato autoritativo después de validar el turno y el plazo.
+   * Con 21 se planta; al superar 21 queda PASADO y avanza al siguiente turno.
    * @param usuarioId - Dueño del turno vigente.
    * @param autorizar - Revalidación del socket propietario al ejecutar.
-   * Con 21 se planta; al superar 21 queda PASADO y avanza al siguiente turno.
    * @returns Promesa sin valor cuando termina la acción.
    * @throws ErrorJuego FASE_INCORRECTA | NO_ESTAS_EN_MESA | NO_ES_TU_TURNO | ERROR_INTERNO.
    * @throws Error Propaga fallos de autorizar o de la publicación inyectada.
@@ -266,9 +267,9 @@ export class Mesa {
 
   /**
    * Paso interno posterior al débito confirmado; no implementa la intención WS apostar.
+   * Si ya apostaron todos, programa el cierre anticipado.
    * @param usuarioId - Usuario elegible para esta ronda.
    * @param cantidad - Apuesta ya confirmada por el servicio inyectado; paso de bancos internos.
-   * Si ya apostaron todos, programa el cierre anticipado.
    * @returns Sin valor.
    * @throws ErrorJuego FASE_INCORRECTA | NO_ESTAS_EN_MESA | YA_APOSTASTE | CANTIDAD_INVALIDA.
    */
@@ -373,7 +374,8 @@ export class Mesa {
   /**
    * Drena las acciones y completa una liquidación pendiente antes de cerrar SQL.
    * @returns Confirmación de pagos e historial pendientes, sin nuevos relojes ni resultados públicos.
-   * @throws Error Propaga un fallo persistente de billetera/historial en el último intento.
+   * @throws Error Propaga cualquier fallo de billetera/historial en el único intento de cierre;
+   * no reintenta tras detener los relojes y la liquidación queda sin confirmar.
    */
   async cerrar(): Promise<void> {
     this.detener();
@@ -424,10 +426,7 @@ export class Mesa {
     this.publicarEstado();
     // Un natural ya tiene su resultado frente a cualquier dealer sin natural.
     if (this.participantes().some((jugador) => !jugador.mano.estaPasada() && !jugador.mano.esBlackjack())) {
-      while (this.dealer.debePedir()) {
-        this.dealer.mano.agregar(this.baraja.sacar());
-        this.publicarEstado();
-      }
+      this.dealer.jugar(this.baraja, () => this.publicarEstado());
     }
     this.faseActual = "PAGOS";
     // Basta la billetera: si apostar debitó fichas, la ronda siempre se paga aunque falte historial o transporte.
