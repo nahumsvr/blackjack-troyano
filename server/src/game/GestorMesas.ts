@@ -1,29 +1,40 @@
-/** Asientos autoritativos del lobby; T-18 incorporará el motor de cada mesa. */
-import { ErrorJuego, type Asiento, type Equipado, type MesaEstado, type MesaResumen, type MensajeServidor, type UsuarioVista } from "@blackjack/shared";
+/** Coordina las mesas del motor y la propiedad de los asientos entre conexiones. */
+import { ErrorJuego, type Equipado, type MesaEstado, type MesaResumen, type MensajeServidor, type UsuarioVista } from "@blackjack/shared";
 import { CAPACIDAD_MESA, MESAS, TOPIC_LOBBY, topicMesa } from "../config";
+import { Mesa } from "./Mesa";
 
 /** Mantiene un solo asiento por usuario y una sola conexión propietaria del asiento. */
 export class GestorMesas {
-  private readonly mesas = new Map<string, { nombre: string; asientos: (Asiento | null)[] }>(
-    MESAS.map((mesa) => [mesa.id, { nombre: mesa.nombre, asientos: Array<Asiento | null>(CAPACIDAD_MESA).fill(null) }]),
-  );
+  private readonly mesas: Map<string, Mesa>;
   private readonly ubicaciones = new Map<number, string>();
   private readonly propietarios = new Map<number, string>();
+  private readonly resumenesPublicados = new Map<string, string>(MESAS.map(({ id }) => [id, "ESPERANDO:0"]));
 
   /**
-   * Construye las mesas e informa al transporte cuando otra conexión toma un asiento.
+   * Construye el motor de las tres mesas y mantiene sus índices de ocupación.
    * @param publicar - Transporte pub/sub; recibe mensajes del contrato sin reqId.
-   * @param alReemplazar - Avisa a la conexión anterior; conserva su suscripción como espectadora.
-   * @returns Gestor en memoria, sin acceso a SQL o billeteras.
+   * @param alReemplazar - Avisa a la conexión anterior, que queda como espectadora.
+   * @returns Gestor con las tres mesas y publicaciones nativas, sin importar store/.
    */
   constructor(private readonly publicar: (topic: string, mensaje: MensajeServidor) => void,
-    private readonly alReemplazar: (conexionId: string) => void = () => {}) {}
+    private readonly alReemplazar: (conexionId: string) => void = () => {}) {
+    this.mesas = new Map(MESAS.map(({ id, nombre }) => [id, new Mesa(id, nombre, (mensaje) => {
+      this.sincronizarUbicaciones();
+      this.publicar(topicMesa(id), mensaje);
+      const resumen = `${mensaje.fase}:${mensaje.asientos.filter(Boolean).length}`;
+      // Las cartas y apuestas cambian el snapshot, pero no la fase/ocupación del lobby.
+      if (resumen !== this.resumenesPublicados.get(id)) {
+        this.resumenesPublicados.set(id, resumen);
+        this.publicar(TOPIC_LOBBY, { type: "lobby", mesas: this.listar() });
+      }
+    })]));
+  }
 
-  /** Resume ocupación y capacidad para el lobby. @returns Copia de las tres mesas. */
+  /** Resume ocupación y fase para el lobby. @returns Copia de las tres mesas. */
   listar(): MesaResumen[] {
-    return [...this.mesas].map(([id, mesa]) => ({
-      id, nombre: mesa.nombre, ocupados: mesa.asientos.filter((asiento) => asiento !== null).length,
-      capacidad: CAPACIDAD_MESA, fase: "ESPERANDO",
+    return [...this.mesas.values()].map((mesa) => ({
+      id: mesa.id, nombre: mesa.nombre, ocupados: mesa.snapshot().asientos.filter(Boolean).length,
+      capacidad: CAPACIDAD_MESA, fase: mesa.fase,
     }));
   }
 
@@ -39,11 +50,7 @@ export class GestorMesas {
    * @throws ErrorJuego MESA_NO_EXISTE.
    */
   snapshot(mesaId: string): MesaEstado {
-    const mesa = this.obtener(mesaId);
-    return {
-      id: mesaId, nombre: mesa.nombre, fase: "ESPERANDO", finEn: null, turnoDe: null,
-      dealer: { cartas: [], total: null }, asientos: structuredClone(mesa.asientos),
-    };
+    return this.obtener(mesaId).snapshot();
   }
 
   /**
@@ -59,44 +66,29 @@ export class GestorMesas {
     const mesa = this.obtener(mesaId);
     const actual = this.mesaDeUsuario(usuario.id);
     if (actual !== null && actual !== mesaId) throw new ErrorJuego("YA_EN_OTRA_MESA");
-    let cambiado = false;
-    if (actual === null) {
-      const indice = mesa.asientos.findIndex((asiento) => asiento === null);
-      if (indice < 0) throw new ErrorJuego("MESA_LLENA");
-      mesa.asientos[indice] = {
-        indice: indice as Asiento["indice"], usuarioId: usuario.id, usuario: usuario.usuario,
-        avatar: equipado.avatar, reverso: equipado.reverso, conectado: true,
-        apuesta: 0, cartas: [], total: 0, estado: "ESPERANDO_RONDA",
-      };
-      this.ubicaciones.set(usuario.id, mesaId);
-      cambiado = true;
-    } else {
-      const asiento = mesa.asientos.find((asiento) => asiento?.usuarioId === usuario.id)!;
-      cambiado = asiento.avatar !== equipado.avatar || asiento.reverso !== equipado.reverso || !asiento.conectado;
-      asiento.avatar = equipado.avatar;
-      asiento.reverso = equipado.reverso;
-      asiento.conectado = true;
-    }
+    const snapshot = mesa.unirse(usuario, equipado);
+    this.ubicaciones.set(usuario.id, mesaId);
     const anterior = this.propietarios.get(usuario.id);
-    // El gestor decide la transferencia; el transporte avisa a la espectadora sin retirar su vista.
+    // El gestor transfiere la propiedad; el transporte avisa a la anterior, que queda como espectadora.
     this.propietarios.set(usuario.id, conexionId);
     if (anterior !== undefined && anterior !== conexionId) this.alReemplazar(anterior);
-    if (cambiado) this.publicarCambios(mesaId, actual === null);
-    return this.snapshot(mesaId);
+    return snapshot;
   }
 
   /**
-   * Libera el asiento únicamente cuando la conexión que sale todavía es propietaria.
+   * Retira el asiento del propietario cuando el motor permite liberarlo.
    * @param usuarioId - Usuario que solicita salir.
    * @param conexionId - Debe ser la conexión dueña, no una pestaña espectadora.
-   * @returns Mesa cuyo asiento se liberó.
+   * @returns Mesa de origen; conserva una apuesta activa hasta finalizar PAGOS.
    * @throws ErrorJuego NO_ESTAS_EN_MESA.
    */
   salir(usuarioId: number, conexionId: string): string {
-    const mesaId = this.mesaDeUsuario(usuarioId);
-    if (mesaId === null || this.propietarios.get(usuarioId) !== conexionId) throw new ErrorJuego("NO_ESTAS_EN_MESA");
-    this.liberar(usuarioId, mesaId);
-    return mesaId;
+    const mesa = this.mesaDelPropietario(usuarioId, conexionId);
+    mesa.salir(usuarioId);
+    this.propietarios.delete(usuarioId);
+    // Salida voluntaria: la apuesta sigue hasta PAGOS, pero reanudar ya no vuelve a sentarlo.
+    this.ubicaciones.delete(usuarioId);
+    return mesa.id;
   }
 
   /**
@@ -107,28 +99,44 @@ export class GestorMesas {
    */
   desconectar(usuarioId: number, conexionId: string): void {
     const mesaId = this.mesaDeUsuario(usuarioId);
-    if (mesaId !== null && this.propietarios.get(usuarioId) === conexionId) this.liberar(usuarioId, mesaId);
+    if (mesaId === null || this.propietarios.get(usuarioId) !== conexionId) return;
+    // Caída de red: conserva la ubicación para que reanudar recupere el asiento (PLAN §7.3).
+    this.obtener(mesaId).salir(usuarioId);
+    this.propietarios.delete(usuarioId);
   }
 
-  private obtener(mesaId: string) {
+  /**
+   * Obtiene el motor para los pasos internos del servidor.
+   * @param mesaId - Mesa configurada.
+   * @returns Motor para los pasos internos del servidor; nunca se envía al cliente.
+   * @throws ErrorJuego MESA_NO_EXISTE.
+   */
+  obtener(mesaId: string): Mesa {
     const mesa = this.mesas.get(mesaId);
     if (!mesa) throw new ErrorJuego("MESA_NO_EXISTE");
     return mesa;
   }
 
-  private liberar(usuarioId: number, mesaId: string): void {
-    const mesa = this.obtener(mesaId);
-    const indice = mesa.asientos.findIndex((asiento) => asiento?.usuarioId === usuarioId);
-    if (indice >= 0) mesa.asientos[indice] = null;
-    this.ubicaciones.delete(usuarioId);
-    this.propietarios.delete(usuarioId);
-    // Hito 1 no tiene rondas ni apuestas; T-36 añadirá la reserva de reconexión de 60 s.
-    this.publicarCambios(mesaId);
+  /**
+   * Comprueba la conexión propietaria antes de aceptar intenciones de juego.
+   * @param usuarioId - Identidad autenticada.
+   * @param conexionId - Debe ser el propietario, no una pestaña espectadora.
+   * @returns Motor de su asiento para que T-20 valide y ejecute las acciones.
+   * @throws ErrorJuego NO_ESTAS_EN_MESA.
+   */
+  mesaDelPropietario(usuarioId: number, conexionId: string): Mesa {
+    const mesaId = this.mesaDeUsuario(usuarioId);
+    if (mesaId === null || this.propietarios.get(usuarioId) !== conexionId) throw new ErrorJuego("NO_ESTAS_EN_MESA");
+    return this.obtener(mesaId);
   }
 
-  private publicarCambios(mesaId: string, ocupacionCambio = true): void {
-    this.publicar(topicMesa(mesaId), { type: "mesa.estado", ...this.snapshot(mesaId) });
-    // Transferir propiedad o refrescar cosméticos no cambia el resumen del lobby.
-    if (ocupacionCambio) this.publicar(TOPIC_LOBBY, { type: "lobby", mesas: this.listar() });
+  private sincronizarUbicaciones(): void {
+    // El motor libera salidas al terminar PAGOS; limpiar también el índice del gestor.
+    for (const [usuarioId, mesaId] of this.ubicaciones) {
+      if (!this.obtener(mesaId).contiene(usuarioId)) {
+        this.ubicaciones.delete(usuarioId);
+        this.propietarios.delete(usuarioId);
+      }
+    }
   }
 }
