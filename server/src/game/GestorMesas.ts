@@ -1,7 +1,10 @@
 /** Coordina las mesas del motor y la propiedad de los asientos entre conexiones. */
 import { ErrorJuego, type Equipado, type MesaEstado, type MesaResumen, type MensajeServidor, type UsuarioVista } from "@blackjack/shared";
 import { CAPACIDAD_MESA, MESAS, TOPIC_LOBBY, topicMesa } from "../config";
-import { Mesa } from "./Mesa";
+import { Mesa, type ServiciosMesa } from "./Mesa";
+
+/** Fábrica interna para inyectar zapatos y relojes deterministas en integración. */
+export type FabricaMesa = (id: string, nombre: string, publicar: (mensaje: Extract<MensajeServidor, { type: "mesa.estado" }>) => void, servicios: ServiciosMesa) => Mesa;
 
 /** Mantiene un solo asiento por usuario y una sola conexión propietaria del asiento. */
 export class GestorMesas {
@@ -14,11 +17,14 @@ export class GestorMesas {
    * Construye el motor de las tres mesas y mantiene sus índices de ocupación.
    * @param publicar - Transporte pub/sub; recibe mensajes del contrato sin reqId.
    * @param alReemplazar - Retira la suscripción y avisa a la conexión anterior.
+   * @param servicios - Billetera y publicaciones privadas inyectadas en el motor.
+   * @param crearMesa - Construcción del motor; nunca se expone por WebSocket.
    * @returns Gestor con las tres mesas y publicaciones nativas, sin importar store/.
    */
   constructor(private readonly publicar: (topic: string, mensaje: MensajeServidor) => void,
-    private readonly alReemplazar: (conexionId: string) => void = () => {}) {
-    this.mesas = new Map(MESAS.map(({ id, nombre }) => [id, new Mesa(id, nombre, (mensaje) => {
+    private readonly alReemplazar: (conexionId: string) => void = () => {},
+    servicios: ServiciosMesa = {}, crearMesa: FabricaMesa = (id, nombre, emitir, dependencias) => new Mesa(id, nombre, emitir, undefined, undefined, dependencias)) {
+    this.mesas = new Map(MESAS.map(({ id, nombre }) => [id, crearMesa(id, nombre, (mensaje) => {
       this.sincronizarUbicaciones();
       this.publicar(topicMesa(id), mensaje);
       const resumen = `${mensaje.fase}:${mensaje.asientos.filter(Boolean).length}`;
@@ -27,7 +33,7 @@ export class GestorMesas {
         this.resumenesPublicados.set(id, resumen);
         this.publicar(TOPIC_LOBBY, { type: "lobby", mesas: this.listar() });
       }
-    })]));
+    }, servicios)]));
   }
 
   /** Resume ocupación y fase para el lobby. @returns Copia de las tres mesas. */
@@ -45,6 +51,9 @@ export class GestorMesas {
 
   /** Cancela todos los relojes antes de cerrar el transporte. @returns Sin valor. */
   detener(): void { for (const mesa of this.mesas.values()) mesa.detener(); }
+
+  /** Espera las acciones SQL en vuelo antes de cerrar el pool. @returns Confirmación de las colas vacías. */
+  async esperarOperaciones(): Promise<void> { await Promise.all([...this.mesas.values()].map((mesa) => mesa.esperarOperaciones())); }
 
   /**
    * Obtiene una vista pública sin exponer los asientos internos.
