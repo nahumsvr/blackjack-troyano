@@ -1,6 +1,7 @@
 /** Regresión de HistorialSQL: las cartas se guardan como arreglo jsonb con y sin sentencias preparadas. */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { SQL } from "bun";
+import { ErrorJuego } from "@blackjack/shared";
 import { HistorialSQL } from "../src/db/HistorialSQL";
 import type { RondaTerminada } from "../src/game/RondaTerminada";
 import { crearBasePruebas } from "./soporteHito1";
@@ -27,7 +28,7 @@ describe.skipIf(!destino)("HistorialSQL con PostgreSQL", () => {
 
   // Producción usa sentencias preparadas y las pruebas `prepare: false`; Bun serializa distinto en cada modo.
   for (const prepare of [true, false]) {
-    test(`guarda arreglos jsonb e idempotencia con prepare=${prepare}`, async () => {
+    test(`guarda arreglos jsonb, acepta el reintento igual y rechaza otras cartas con prepare=${prepare}`, async () => {
       const [{ schema }] = await base.conexion`SELECT current_schema() AS schema`;
       const conexion = new SQL(destino!, { max: 2, connection: { search_path: schema }, prepare });
       try {
@@ -41,6 +42,9 @@ describe.skipIf(!destino)("HistorialSQL con PostgreSQL", () => {
           FROM rondas r JOIN rondas_jugadores j ON j.ronda_id = r.id WHERE r.id = ${terminada.id}
         `;
         expect(fila).toEqual({ dealer: "array", jugador: "array", cartas: terminada.dealer.cartas, filas: 1 });
+        // La comparación del reintento también usa ::text::jsonb: unas cartas distintas no deben pasar por iguales.
+        const otrasCartas = { ...terminada, dealer: { cartas: [{ palo: "♠", rango: "10" }, { palo: "♥", rango: "8" }], total: 18 } } as const;
+        expect(await historial.guardar(otrasCartas).catch((error: unknown) => error)).toEqual(new ErrorJuego("ERROR_INTERNO"));
       } finally {
         await conexion.close();
       }

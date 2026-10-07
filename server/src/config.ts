@@ -54,10 +54,20 @@ export const TIEMPO_RESULTADOS_MS = 5_000;
 /** Reintento de un paso de reloj que falló (p. ej. el reparto). */
 export const TIEMPO_REINTENTO_MS = 1_000;
 export const MAX_REINTENTOS_RELOJ = 3;
+/** Reserva de asiento ante pérdida del transporte; nunca descarta apuestas sin liquidar. */
+export const RESERVA_ASIENTO_MS = 60_000;
 /** Reintento interno de liquidación sin abrir otra ronda ni repetir pagos confirmados. */
 export const REINTENTO_PAGOS_MS = 1_000;
 /** Intentos de liquidación antes de registrar la ronda para conciliación manual y liberar la mesa. */
 export const REINTENTOS_PAGOS_MAX = 30;
+/** Bots T-26: diez rondas por defecto; cero en la CLI permite una demo continua. */
+export const BOTS_RONDAS = 10;
+export const BOTS_PLANTARSE_EN = 17;
+export const BOTS_RESPUESTA_MS = 8_000;
+/** Plazo mínimo restante para apostar; debajo, el débito SQL en cola puede llegar tarde. */
+export const BOTS_MARGEN_APUESTA_MS = 1_000;
+/** Incluye turnos humanos y margen SQL para detectar una mesa sin resultados. */
+export const BOTS_SIN_RONDA_MS = 2 * (TIEMPO_APUESTAS_MS + CAPACIDAD_MESA * TIEMPO_TURNO_MS + TIEMPO_RESULTADOS_MS + BOTS_RESPUESTA_MS);
 /*
  * Los límites de cantidad se definen una sola vez en `LIMITES_CANTIDAD` (shared/protocolo.ts)
  * porque el cliente los necesita para validar formularios y `shared/` no puede importar
