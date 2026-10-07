@@ -277,6 +277,8 @@ Camino crítico: **T-01 → T-03 → T-07 → T-18 → T-20 → T-31**. Si algun
 
 ## Extras (NO empezar antes del congelamiento)
 
+- [x] X-0 · Arranque con un solo comando: `docker compose up --build` levanta PostgreSQL 16 y la aplicación completa (`Dockerfile`, servicio `app`, `schema.sql`/`seed.sql` por `initdb.d`, ZIP y manuales actualizados) · Nahum (con Claude) · PR #50 (pendiente de revisión)
+  - **Hecho cuando:** desde un ZIP limpio, `docker compose up --build` deja ambos servicios `healthy` y la app responde en `http://localhost:3000`. Verificado en arm64; sin probar `linux/amd64` ni acceso por LAN. No cambia protocolo, esquema ni lógica de juego.
 - [ ] X-1 · Doblar apuesta
 - [ ] X-2 · Dividir (split)
 - [ ] X-3 · Seguro
