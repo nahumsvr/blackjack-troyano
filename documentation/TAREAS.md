@@ -148,6 +148,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Avance — PR #23 fusionado (2026-10-06):** arquitectura describe auth/router, Carta/Baraja, Mano/Dealer y las 45 columnas SQL. Preparar los diagramas de Mesa/Gestor desde los PR publicados, identificando su base; cierre cuando estén integrados y renderizados/verificados.
   - **Preparación local (2026-10-04):** Borrador docs/arquitectura.md con módulos/clases existentes, ER y máquina de estados prevista. T-18 y revisión/renderizado de GitHub pendientes; no se considera terminada. Incluido en PR #4 (abierto).
   - **Hecho cuando:** los diagramas se ven renderizados en GitHub y coinciden con los nombres de las clases reales.
+  - **Motor documentado (2026-10-06) — PR #41:** `docs/arquitectura.md` incluye `Jugador`, `Mesa`, `RelojMesa`, `GestorMesas`, `HistorialSQL` y `resolver` con sus firmas reales de `main` (PR #29–#32 integrados), incluida la liquidación con tope de 30 reintentos; la máquina de estados ya es la implementada. Falta verlo renderizado en GitHub y la confirmación de Hector.
 
 ---
 
@@ -222,6 +223,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Avance — PR #23 fusionado (2026-10-06):** diccionario de siete tablas/45 columnas y diagramas de módulos/clases disponibles en main. Falta incorporar motor/gestor al fusionarse, exportar diagramas para el ZIP y revisión de Hector.
   - **Preparación local (2026-10-04):** Borrador de arquitectura referencia schema/seed y distingue implementación de diseño pendiente. Motor/auth/router/cliente y revisión de Hector pendientes.
   - **Hecho cuando:** cubre los 3 puntos de la rúbrica (BD con scripts, clases, dependencias) y Hector confirma que coincide con el código.
+  - **Avance (2026-10-06) — PR #41:** módulos, dependencias (con la inyección de `Billetera`/`HistorialSQL` desde `aplicacion.ts`), clases del motor, liquidación de rondas, handlers y topics, máquina de estados y tabla de pruebas actualizados en `docs/arquitectura.md`. Mismos pendientes que T-32.
 
 ---
 
