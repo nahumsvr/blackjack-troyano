@@ -2,7 +2,7 @@
 import { CantidadApuestaSchema, ErrorJuego, type Asiento, type BilleteraEstado, type Equipado, type FaseMesa, type MesaEstado, type MensajeServidor, type UsuarioVista } from "@blackjack/shared";
 import {
   CAPACIDAD_MESA, TIEMPO_APUESTAS_MS, TIEMPO_TURNO_MS, TIEMPO_RESULTADOS_MS, TIEMPO_REINTENTO_MS, MAX_REINTENTOS_RELOJ,
-  REINTENTO_PAGOS_MS, REINTENTOS_PAGOS_MAX, RESERVA_ASIENTO_MS,
+  REINTENTO_PAGOS_MS, REINTENTOS_PAGOS_MAX, RESERVA_ASIENTO_MS, FACTOR_DOBLAR,
 } from "../config";
 import { Baraja } from "./Baraja";
 import { Dealer } from "./Dealer";
@@ -35,6 +35,7 @@ export class Mesa {
   private rondaActual: string | null = null;
   private pendientes: Promise<void> = Promise.resolve();
   private readonly apuestasPendientes = new Set<number>();
+  private readonly doblajesPendientes = new Set<number>();
   private detenida = false;
   /** Vencimiento original de APUESTAS; sobrevive a un cierre anticipado que luego se cancela. */
   private finApuestas = 0;
@@ -127,7 +128,7 @@ export class Mesa {
     } else {
       jugador.conectado = false;
       jugador.salidaPendiente = true;
-      if (jugador.indice === this.turno) { this.avanzarTurno(); return; }
+      if (jugador.indice === this.turno && !this.doblajesPendientes.has(usuarioId)) { this.avanzarTurno(); return; }
     }
     if (this.fase === "APUESTAS") this.cerrarSiTodosApostaron();
     this.publicarEstado();
@@ -145,7 +146,7 @@ export class Mesa {
     jugador.conectado = false;
     jugador.desconectadoDesde = this.reloj.ahora();
     if (!this.detenida) this.reloj.reservar(usuarioId, RESERVA_ASIENTO_MS, () => this.liberarReservaVencida(usuarioId));
-    if (jugador.indice === this.turno) { this.avanzarTurno(); return; }
+    if (jugador.indice === this.turno && !this.doblajesPendientes.has(usuarioId)) { this.avanzarTurno(); return; }
     if (this.fase === "APUESTAS") this.cerrarSiTodosApostaron();
     this.publicarEstado();
   }
@@ -209,6 +210,41 @@ export class Mesa {
    */
   plantarse(usuarioId: number, autorizar: () => void = () => {}): Promise<void> {
     return this.encolar(() => { autorizar(); this.exigirTurno(usuarioId); this.avanzarTurno(); });
+  }
+
+  /**
+   * Cobra otra apuesta igual, entrega una sola carta y termina el turno.
+   * @param usuarioId - Dueño autenticado del turno vigente.
+   * @param autorizar - Revalida el socket propietario tras esperar la cola.
+   * @returns Confirmación del débito y de la mano doblada.
+   * @throws ErrorJuego FASE_INCORRECTA | NO_ESTAS_EN_MESA | NO_ES_TU_TURNO |
+   * NO_PUEDES_DOBLAR | FICHAS_INSUFICIENTES | ERROR_INTERNO.
+   * @throws Error Propaga fallos de billetera, autorización o publicaciones.
+   */
+  doblar(usuarioId: number, autorizar: () => void = () => {}): Promise<void> {
+    return this.encolar(async () => {
+      autorizar();
+      const jugador = this.exigirTurno(usuarioId);
+      if (!jugador.conectado || jugador.salidaPendiente) throw new ErrorJuego("NO_ESTAS_EN_MESA");
+      if (jugador.doblada || jugador.mano.cartas.length !== 2) throw new ErrorJuego("NO_PUEDES_DOBLAR");
+      if (!this.servicios.billetera || !this.rondaActual) throw new ErrorJuego("ERROR_INTERNO");
+      this.doblajesPendientes.add(usuarioId);
+      try {
+        const saldo = await this.servicios.billetera.debitarApuesta(usuarioId, jugador.apuesta, this.rondaActual);
+        // Una salida durante SQL espera esta acción: el dealer nunca liquida la apuesta inicial
+        // mientras el segundo débito está en vuelo. El reloj comparte esta misma cola.
+        jugador.apuesta *= FACTOR_DOBLAR;
+        jugador.doblada = true;
+        jugador.mano.agregar(this.baraja.sacar());
+        jugador.estado = jugador.mano.estaPasada() ? "PASADO" : "PLANTADO";
+        this.avanzarTurno();
+        this.servicios.publicarBilletera?.(usuarioId, saldo);
+      } finally {
+        this.doblajesPendientes.delete(usuarioId);
+        // Si el cobro falló después de salir, plantar conserva la apuesta original.
+        if (!jugador.conectado && jugador.indice === this.turno) this.avanzarTurno();
+      }
+    });
   }
 
   /** @returns Espera las acciones en vuelo; útil para cierre y ensayos con reloj manual. */
@@ -384,7 +420,7 @@ export class Mesa {
         jugadores: this.participantes().map((jugador) => ({
           usuarioId: jugador.usuarioId, asiento: jugador.indice, apuesta: jugador.apuesta,
           cartas: jugador.mano.cartas.map((carta) => carta.aVista()), total: jugador.mano.total(),
-          ...resolver(jugador.mano, this.dealer.mano, jugador.apuesta),
+          ...resolver(jugador.mano, this.dealer.mano, jugador.apuesta, jugador.doblada),
         })),
       };
       this.iniciarLiquidacion();

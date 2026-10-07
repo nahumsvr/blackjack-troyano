@@ -59,6 +59,7 @@ export function crearMensajeClienteSchema(limites: LimitesCantidad = LIMITES_CAN
   z.strictObject({ type: z.literal("mesa.salir"), ...peticion }),
   z.strictObject({ type: z.literal("apostar"), ...peticion, cantidad: apuesta }),
   z.strictObject({ type: z.literal("pedir"), ...peticion }),
+  z.strictObject({ type: z.literal("doblar"), ...peticion }),
   z.strictObject({ type: z.literal("plantarse"), ...peticion }),
   z.strictObject({ type: z.literal("billetera.consultar"), ...peticion }),
   z.strictObject({ type: z.literal("fichas.comprar"), ...peticion, cantidad: compra, clave: UuidSchema }),

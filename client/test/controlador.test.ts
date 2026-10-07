@@ -113,6 +113,15 @@ describe("sesión", () => {
 });
 
 describe("acciones", () => {
+  test("doblar envía solo la intención y libera el estado pendiente", async () => {
+    crear(() => ({ type: "ok" }));
+    transporte.conectar();
+    const promesa = controlador.doblar();
+    expect(estado.pendientes).toEqual(["doblar"]);
+    expect(await promesa).toBe(true);
+    expect(transporte.enviadas.at(-1)).toMatchObject({ type: "doblar" });
+    expect(estado.pendientes).toEqual([]);
+  });
   test("marca la acción como pendiente solo mientras espera", async () => {
     crear(() => ({ type: "ok" }));
     transporte.conectar();

@@ -8,7 +8,7 @@ export const CodigoErrorSchema = z.enum([
   "MESA_LLENA", "YA_EN_OTRA_MESA", "NO_ESTAS_EN_MESA", "FASE_INCORRECTA",
   "NO_ES_TU_TURNO", "YA_APOSTASTE", "CANTIDAD_INVALIDA", "FICHAS_INSUFICIENTES",
   "DINERO_INSUFICIENTE", "LIMITE_DIARIO", "ARTICULO_NO_EXISTE", "YA_POSEIDO",
-  "NO_POSEIDO", "BLOQUEADO_EN_MANO", "ERROR_INTERNO",
+  "NO_POSEIDO", "BLOQUEADO_EN_MANO", "NO_PUEDES_DOBLAR", "ERROR_INTERNO",
 ]);
 export type CodigoError = z.infer<typeof CodigoErrorSchema>;
 /** Mensaje en español para cada código; viaja en `error.mensaje` y el cliente lo muestra tal cual. */
@@ -27,6 +27,7 @@ export const MENSAJES_ERROR = {
   FASE_INCORRECTA: "Esta acción no está disponible en la fase actual",
   NO_ES_TU_TURNO: "No es tu turno",
   YA_APOSTASTE: "Ya apostaste en esta ronda",
+  NO_PUEDES_DOBLAR: "Solo puedes doblar con tus dos cartas iniciales",
   CANTIDAD_INVALIDA: "La cantidad debe ser un entero múltiplo de 10 dentro del rango permitido",
   FICHAS_INSUFICIENTES: "No tienes suficientes fichas",
   DINERO_INSUFICIENTE: "No tienes suficiente dinero",

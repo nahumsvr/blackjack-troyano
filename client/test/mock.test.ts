@@ -103,6 +103,19 @@ describe("ServidorFalso", () => {
     expect(await codigo({ type: "fichas.comprar", cantidad: 10, clave: "44444444-4444-4444-8444-444444444444" })).toBe("LIMITE_DIARIO");
   });
 
+  test("doblar cobra otra apuesta, planta y rechaza otra acción de turno", async () => {
+    await servidor.enviar({ type: "login", usuario: "demo", contrasena: "secreta" });
+    await servidor.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
+    servidor.irAFase("TURNOS");
+    const resultado = await servidor.enviar({ type: "doblar" });
+    expect(resultado.type === "mesa.estado" && resultado.asientos[0]).toMatchObject({ apuesta: 200, estado: "PLANTADO", total: 19 });
+    expect(await servidor.enviar({ type: "billetera.consultar" })).toMatchObject({ fichas: 400 });
+    expect(await codigo({ type: "doblar" })).toBe("NO_ES_TU_TURNO");
+    servidor.irAFase("TURNOS");
+    await servidor.enviar({ type: "pedir" });
+    expect(await codigo({ type: "doblar" })).toBe("NO_PUEDES_DOBLAR");
+  });
+
   test("historial paginado con antesDe", async () => {
     await servidor.enviar({ type: "login", usuario: "demo", contrasena: "secreta" });
     const primera = await servidor.enviar({ type: "movimientos.listar", limite: 5 });

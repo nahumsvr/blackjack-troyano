@@ -1,5 +1,7 @@
 # ESTADO — ¿Dónde vamos?
 
+> Rama de extras `extras-x1-x5` — 2026-10-07: X-1 implementada por Hector, con revisión local, typecheck y 399 pruebas correctas (1 omitida, 0 fallos). Pendiente PR conjunto de X-1…X-5 y revisión de Nahum/Massimo. No suma al avance de main. Evidencia: [X-1-revision.md](../evidencias/X-1-revision.md).
+
 _Última actualización: mié 7 oct 2026 CDMX. Seguimiento de Hector sobre main 8bfe554, integrado con main 727f86e (#43); fechas del registro en America/Mexico_City._
 
 ## Resumen

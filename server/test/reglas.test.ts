@@ -44,3 +44,13 @@ test("rechaza apuestas inválidas incluso si se invoca sin el enrutador", () => 
     expect(() => resolver(mano(["A", "K"]), mano(["10", "9"]), apuesta)).toThrow(new ErrorJuego("CANTIDAD_INVALIDA"));
   }
 });
+
+test("X-1 liquida empate, pérdida y 21 doblado usando el total comprometido", () => {
+  expect(resolver(mano(["10", "8", "2"]), mano(["K", "Q"]), 1000, true)).toEqual({ resultado: "empate", pago: 1000 });
+  expect(resolver(mano(["10", "6", "2"]), mano(["K", "Q"]), 1000, true)).toEqual({ resultado: "pierde", pago: 0 });
+  expect(resolver(mano(["10", "9", "2"]), mano(["A", "K"]), 1000, true)).toEqual({ resultado: "pierde", pago: 0 });
+  for (const apuesta of [10, 30, 1020]) {
+    expect(() => resolver(mano(["10", "9", "2"]), mano(["10", "7"]), apuesta, true)).toThrow(new ErrorJuego("CANTIDAD_INVALIDA"));
+  }
+  expect(() => resolver(mano(["A", "K"]), mano(["10", "7"]), 1000, true)).toThrow(new ErrorJuego("CANTIDAD_INVALIDA"));
+});

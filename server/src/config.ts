@@ -61,6 +61,8 @@ export const UMBRAL_REBARAJAR = 0.25;
 export const DEALER_PLANTARSE_EN = 17;
 /** Pagos totales, incluida la apuesta: victoria 2x y natural 5/2 (ganancia 3:2). */
 export const PAGO_GANADOR = 2;
+/** Apuesta total respecto a la inicial al aceptar X-1. */
+export const FACTOR_DOBLAR = 2;
 export const PAGO_BLACKJACK_NUMERADOR = 5;
 export const PAGO_BLACKJACK_DENOMINADOR = 2;
 /** Plazos autoritativos de las fases del juego (PLAN §1). */

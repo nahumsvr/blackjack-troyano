@@ -187,6 +187,7 @@ El apagado del transporte espera los callbacks de cierre de sus conexiones reale
 | `mesa.salir` | — | Sí | Sentado o espectador. Con mano activa: se planta y el asiento se libera al terminar la ronda. El espectador solo deja de recibir snapshots, sin liberar el asiento ajeno | `ok` + `lobby` | `NO_ESTAS_EN_MESA` |
 | `apostar` | `cantidad` (entero, 10–500, múltiplo de 10) | Sí | Mesa en `APUESTAS`, sentado, sin apuesta en la ronda | `mesa.estado` (a la mesa) + `billetera` | `FASE_INCORRECTA`, `NO_ESTAS_EN_MESA`, `YA_APOSTASTE`, `CANTIDAD_INVALIDA`, `FICHAS_INSUFICIENTES` |
 | `pedir` | — | Sí | Mesa en `TURNOS` y `turnoDe` = este usuario | `mesa.estado` | `FASE_INCORRECTA`, `NO_ES_TU_TURNO`, `NO_ESTAS_EN_MESA` |
+| `doblar` | — | Sí | Igual que `pedir`, conectado, con exactamente dos cartas iniciales y saldo para otra apuesta igual | `mesa.estado` + `billetera` | `FASE_INCORRECTA`, `NO_ES_TU_TURNO`, `NO_ESTAS_EN_MESA`, `NO_PUEDES_DOBLAR`, `FICHAS_INSUFICIENTES` |
 | `plantarse` | — | Sí | Igual que `pedir` | `mesa.estado` | `FASE_INCORRECTA`, `NO_ES_TU_TURNO`, `NO_ESTAS_EN_MESA` |
 | `billetera.consultar` | — | Sí | Cualquiera | `billetera` | `NO_AUTENTICADO` |
 | `fichas.comprar` | `cantidad` (entero, 10–5,000, múltiplo de 10), `clave` (UUID nuevo por cada clic) | Sí | Cualquiera (no altera la mesa) | `billetera` | `CANTIDAD_INVALIDA`, `DINERO_INSUFICIENTE`, `LIMITE_DIARIO` |
@@ -256,6 +257,7 @@ La carta oculta del dealer **nunca** viaja al cliente antes de la fase `DEALER` 
 | `USUARIO_EXISTE` / `CREDENCIALES_INVALIDAS` / `SESION_INVALIDA` | Autenticación |
 | `MESA_NO_EXISTE` / `MESA_LLENA` / `YA_EN_OTRA_MESA` / `NO_ESTAS_EN_MESA` | Asientos |
 | `FASE_INCORRECTA` / `NO_ES_TU_TURNO` / `YA_APOSTASTE` | Flujo del juego |
+| `NO_PUEDES_DOBLAR` | Doblar después de pedir o sobre una mano ya doblada |
 | `CANTIDAD_INVALIDA` | Cantidad presente de tipo incorrecto, cero, negativo, decimal, no múltiplo de 10, fuera de rango (si es el único error estructural) |
 | `FICHAS_INSUFICIENTES` / `DINERO_INSUFICIENTE` / `LIMITE_DIARIO` | Economía |
 | `ARTICULO_NO_EXISTE` / `YA_POSEIDO` / `NO_POSEIDO` / `BLOQUEADO_EN_MANO` | Tienda / inventario |
@@ -628,3 +630,7 @@ La aceptación del alcance reducido se documenta en `TAREAS.md` y `CHECKLIST_ENT
 ## 11. Extras (fuera de alcance)
 
 Doblar apuesta · Dividir (split) · Seguro · Chat en la mesa · Ranking global. **No se empiezan antes del congelamiento (dom 4 oct, 22:00)** y solo si el checklist de funcionamiento está completo.
+
+**Ampliación autorizada por Hector — 7 oct 2026:** desarrollar X-1…X-5 en la rama `extras-x1-x5`, desde `main` con `v0.9-congelado` existente, revisar cada extra y abrir un único PR cuando estén los cinco integrados. Esta autorización permite iniciar los extras aunque el checklist de aceptación siga pendiente; no acredita la entrega ni altera sus contadores.
+
+**X-1 — Doblar:** intención `doblar` sin cantidad ni identidad. Solo durante el turno y antes de pedir; los naturales no tienen turno. El servidor debita otra apuesta igual usando `Billetera.debitarApuesta`, con transacción, bloqueo de usuario y movimiento `apuesta` referido a la misma ronda. La apuesta inicial sigue limitada a 10–500; el total doblado puede llegar a 1,000. Recibe exactamente una carta y queda PLANTADO o PASADO, incluso con menos de 21. El pago y el historial usan el total doblado; un 21 de tres cartas paga como victoria ordinaria. No cambia el esquema SQL ni los campos del snapshot. Relojes y acciones comparten cola; salir/desconectar durante el débito espera su resolución antes de avanzar. Cambios de contrato a señalar en el PR final: intención `doblar` y código `NO_PUEDES_DOBLAR`; requieren revisión de Massimo, y el cliente requiere revisión de Nahum.

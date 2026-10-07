@@ -278,6 +278,8 @@ Camino crítico: **T-01 → T-03 → T-07 → T-18 → T-20 → T-31**. Si algun
 ## Extras (NO empezar antes del congelamiento)
 
 - [ ] X-1 · Doblar apuesta
+  - **Hecho cuando:** solo con dos cartas iniciales y turno propio; segundo débito transaccional, una carta y fin de turno; pagos/historial sobre la apuesta total; doble clic, saldo y desconexión probados.
+  - **Avance 2026-10-07 — Hector:** implementada en `extras-x1-x5`; code review local en `../evidencias/X-1-revision.md`, typecheck y 399 pruebas correctas, 1 omitida por plataforma, 0 fallos. PR conjunto pendiente de X-2…X-5; la casilla se cierra al aprobar/fusionar.
 - [ ] X-2 · Dividir (split)
 - [ ] X-3 · Seguro
 - [ ] X-4 · Chat en la mesa

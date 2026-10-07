@@ -87,4 +87,46 @@ describe.skipIf(!destino)("T-20 por WebSocket y SQL", () => {
     expect(await jugadores[0]!.enviar({ type: "apostar", cantidad: 10 })).toMatchObject({ type: "error", codigo: "NO_ESTAS_EN_MESA" });
     expect(await nueva.enviar({ type: "apostar", cantidad: 10 })).toMatchObject({ type: "mesa.estado" });
   });
+
+  test("X-1 por WS duplica 500, concilia dos débitos y guarda/paga 1000", async () => {
+    const jugadores = await sentarTres();
+    const jugador = jugadores[0]!;
+    const usuarioId = sesiones[0]!.usuario.id;
+    const usuarioTres = sesiones[2]!.usuario.id;
+    await base.conexion`UPDATE usuarios SET fichas = 500 WHERE id = ${usuarioTres}`;
+    await jugador.enviar({ type: "fichas.comprar", cantidad: 1000, clave: crypto.randomUUID() });
+    const saldoAntes = await jugador.enviar({ type: "billetera.consultar" });
+    if (saldoAntes.type !== "billetera") throw new Error("Falta billetera");
+    expect(await jugador.enviar({ type: "doblar" })).toMatchObject({ type: "error", codigo: "FASE_INCORRECTA" });
+    await jugador.enviar({ type: "apostar", cantidad: 500 });
+    await jugadores[1]!.enviar({ type: "apostar", cantidad: 10 });
+    await jugadores[2]!.enviar({ type: "apostar", cantidad: 10 });
+    tiempo.avanzar(0);
+    await jugador.esperar((mensaje) => mensaje.type === "mesa.estado" && mensaje.fase === "TURNOS");
+    const nueva = await conectar(0);
+    await nueva.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
+    expect(await jugador.enviar({ type: "doblar" })).toMatchObject({ type: "error", codigo: "NO_ESTAS_EN_MESA" });
+    expect(await jugadores[1]!.enviar({ type: "doblar" })).toMatchObject({ type: "error", codigo: "NO_ES_TU_TURNO" });
+    const desde = jugadores[1]!.mensajes.length;
+    const respuestas = await Promise.all([nueva.enviar({ type: "doblar" }), nueva.enviar({ type: "doblar" })]);
+    expect(respuestas[0]).toMatchObject({ type: "mesa.estado", turnoDe: sesiones[1]!.usuario.id });
+    expect(respuestas[1]).toMatchObject({ type: "error", codigo: "NO_ES_TU_TURNO" });
+    const publico = await jugadores[1]!.esperar((mensaje) => mensaje.type === "mesa.estado" && mensaje.asientos[0]?.apuesta === 1000, desde);
+    expect(publico.type === "mesa.estado" && publico.asientos[0]).toMatchObject({ apuesta: 1000, total: 19, estado: "PLANTADO" });
+    expect(await nueva.enviar({ type: "billetera.consultar" })).toMatchObject({ fichas: saldoAntes.fichas - 1000 });
+    await jugadores[1]!.enviar({ type: "plantarse" }); await jugadores[2]!.enviar({ type: "plantarse" });
+    const resultado = await nueva.esperar((mensaje) => mensaje.type === "ronda.resultado");
+    if (resultado.type !== "ronda.resultado") throw new Error("Falta resultado");
+    expect(resultado.resultados.find((fila) => fila.usuarioId === usuarioId)).toMatchObject({ apuesta: 1000, pago: 2000, resultado: "gana" });
+    const [guardado] = await base.conexion<{ apuesta: number; pago: number }[]>`
+      SELECT apuesta, pago FROM rondas_jugadores WHERE ronda_id = ${resultado.rondaId} AND usuario_id = ${usuarioId}
+    `;
+    expect(guardado).toMatchObject({ apuesta: 1000, pago: 2000 });
+    const movimientos = await base.conexion<{ tipo: string; delta: number }[]>`
+      SELECT tipo, delta_fichas::int AS delta FROM movimientos
+      WHERE usuario_id = ${usuarioId} AND referencia = ${`ronda:${resultado.rondaId}`} ORDER BY id
+    `;
+    expect(movimientos).toEqual([{ tipo: "apuesta", delta: -500 }, { tipo: "apuesta", delta: -500 }, { tipo: "pago", delta: 2000 }]);
+    expect(await nueva.enviar({ type: "billetera.consultar" })).toMatchObject({ fichas: saldoAntes.fichas + 1000 });
+  });
 });

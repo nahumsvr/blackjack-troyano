@@ -216,6 +216,7 @@ export class ServidorFalso implements Transporte {
         return this.apostar(mensaje.cantidad);
       case "pedir":
       case "plantarse":
+      case "doblar":
         return this.jugar(mensaje.type);
       case "billetera.consultar":
         return { type: "billetera", ...this.billetera };
@@ -272,22 +273,32 @@ export class ServidorFalso implements Transporte {
   }
 
   /**
-   * Simula pedir o plantarse en el turno del usuario.
-   * @param accion - `pedir` agrega un 2♣; `plantarse` termina el turno.
+   * Simula las acciones de turno, incluido el segundo débito de doblar.
+   * @param accion - `pedir`/`doblar` agregan un 2♣; doblar termina el turno.
    * @returns Snapshot actualizado o error.
    */
-  private jugar(accion: "pedir" | "plantarse"): MensajeServidor {
+  private jugar(accion: "pedir" | "plantarse" | "doblar"): MensajeServidor {
     if (!this.sentado) return error("NO_ESTAS_EN_MESA");
     if (this.mesa.fase !== "TURNOS") return error("FASE_INCORRECTA");
     if (this.mesa.turnoDe !== ID_DEMO) return error("NO_ES_TU_TURNO");
+    if (accion === "doblar") {
+      const propio = this.mesa.asientos.find((asiento) => asiento?.usuarioId === ID_DEMO);
+      if (!propio) return error("NO_ESTAS_EN_MESA");
+      if (propio.cartas.length !== 2 || propio.estado !== "JUGANDO") return error("NO_PUEDES_DOBLAR");
+      if (this.billetera.fichas < propio.apuesta) return error("FICHAS_INSUFICIENTES");
+      this.billetera = { ...this.billetera, fichas: this.billetera.fichas - propio.apuesta };
+      this.emitir({ type: "billetera", ...this.billetera });
+    }
     this.mesa = {
       ...this.mesa,
-      turnoDe: accion === "plantarse" ? null : this.mesa.turnoDe,
+      turnoDe: accion === "plantarse" || accion === "doblar" ? null : this.mesa.turnoDe,
       asientos: this.mesa.asientos.map((asiento) => {
         if (asiento?.usuarioId !== ID_DEMO) return asiento;
         if (accion === "plantarse") return { ...asiento, estado: "PLANTADO" };
         const total = asiento.total + 2;
-        return { ...asiento, cartas: [...asiento.cartas, { rango: "2", palo: "♣" }], total, estado: total > 21 ? "PASADO" : "JUGANDO" };
+        return { ...asiento, apuesta: accion === "doblar" ? asiento.apuesta * 2 : asiento.apuesta,
+          cartas: [...asiento.cartas, { rango: "2", palo: "♣" }], total,
+          estado: total > 21 ? "PASADO" : accion === "doblar" ? "PLANTADO" : "JUGANDO" };
       }),
     };
     return { type: "mesa.estado", ...this.mesa };

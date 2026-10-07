@@ -1,4 +1,4 @@
-/** Conecta las tres intenciones de juego con el dueño autoritativo de cada asiento. */
+/** Conecta las intenciones de juego con el dueño autoritativo de cada asiento. */
 import { ErrorJuego } from "@blackjack/shared";
 import type { GestorMesas } from "../game/GestorMesas";
 import type { ManejadoresEnrutador, SocketConexion } from "./Enrutador";
@@ -21,6 +21,11 @@ export function crearManejadoresJuego(gestor: GestorMesas): ManejadoresEnrutador
     return { mesa, usuarioId, autorizar };
   }
   return {
+    doblar: async (socket) => {
+      const { mesa, usuarioId, autorizar } = propietario(socket);
+      await mesa.doblar(usuarioId, autorizar);
+      return { type: "mesa.estado", ...mesa.snapshot() };
+    },
     apostar: async (socket, mensaje) => {
       const { mesa, usuarioId, autorizar } = propietario(socket);
       await mesa.apostar(usuarioId, mensaje.cantidad, autorizar);

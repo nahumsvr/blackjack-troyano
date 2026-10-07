@@ -48,6 +48,7 @@ const clientes: Record<EntradaMensajeCliente["type"], Ejemplo> = {
   "mesa.salir": { valido: {}, invalido: { mesaId: "mesa-1" } },
   apostar: { valido: { cantidad: 10 }, invalido: { cantidad: 15 } },
   pedir: { valido: {}, invalido: { cantidad: 10 } },
+  doblar: { valido: {}, invalido: { cantidad: 10 } },
   plantarse: { valido: {}, invalido: { reqId: null } },
   "billetera.consultar": { valido: {}, invalido: { usuarioId: 1 } },
   "fichas.comprar": { valido: { cantidad: 5000, clave: uuid }, invalido: { cantidad: 10, clave: "x" } },

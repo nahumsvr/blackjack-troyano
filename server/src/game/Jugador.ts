@@ -6,6 +6,7 @@ import { Mano } from "./Mano";
 export class Jugador {
   mano = new Mano();
   apuesta = 0;
+  doblada = false;
   conectado = true;
   desconectadoDesde: number | null = null;
   salidaPendiente = false;
@@ -32,6 +33,7 @@ export class Jugador {
   reiniciarRonda(): void {
     this.mano = new Mano();
     this.apuesta = 0;
+    this.doblada = false;
     this.estado = "SIN_APUESTA";
   }
 

@@ -255,6 +255,7 @@ export class Enrutador {
       case "mesa.salir": return this.ejecutar("mesa.salir", socket, mensaje);
       case "apostar": return this.ejecutar("apostar", socket, mensaje);
       case "pedir": return this.ejecutar("pedir", socket, mensaje);
+      case "doblar": return this.ejecutar("doblar", socket, mensaje);
       case "plantarse": return this.ejecutar("plantarse", socket, mensaje);
       case "billetera.consultar": return this.ejecutar("billetera.consultar", socket, mensaje);
       case "fichas.comprar": return this.ejecutar("fichas.comprar", socket, mensaje);

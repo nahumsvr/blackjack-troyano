@@ -69,11 +69,13 @@ export function PantallaMesa({ alAbrirMenu }: PropsPantallaMesa): ReactNode {
 
   const propio = mesa.asientos.find((asiento) => asiento !== null && asiento.usuarioId === miId) ?? null;
   const conectado = estado.conexion === "conectado";
-  const ocupado = estado.pendientes.some((accion) => accion === "apostar" || accion === "pedir" || accion === "plantarse");
+  const ocupado = estado.pendientes.some((accion) => accion === "apostar" || accion === "pedir" || accion === "plantarse" || accion === "doblar");
   const puedeActuar = conectado && !estado.espectador && !ocupado && propio !== null;
 
   const validacionApuesta = validarApuesta(textoApuesta, estado.billetera?.fichas ?? 0);
   const esMiTurno = puedeActuar && mesa.fase === "TURNOS" && mesa.turnoDe === miId;
+  const puedeDoblar = esMiTurno && propio?.estado === "JUGANDO" && propio.cartas.length === 2
+    && (estado.billetera?.fichas ?? 0) >= propio.apuesta;
   const jugadorEnTurno = mesa.asientos.find((asiento) => asiento !== null && asiento.usuarioId === mesa.turnoDe) ?? null;
   const resultadoVisible = datosResultado !== null && rondaCerrada !== datosResultado.rondaId;
   // Pistas para el jugador propio; no dependen de peticiones pendientes para no parpadear al hacer clic.
@@ -171,8 +173,12 @@ export function PantallaMesa({ alAbrirMenu }: PropsPantallaMesa): ReactNode {
               <BotonJuego variante="rojo" icono="✋" llamando={esMiTurno} disabled={!esMiTurno} onClick={() => void acciones.plantarse()}>
                 Plantarse
               </BotonJuego>
+              <BotonJuego variante="verde" icono="×2" disabled={!puedeDoblar} onClick={() => void acciones.doblar()}>
+                Doblar
+              </BotonJuego>
             </div>
             <p className="text-sm text-emerald-200">{textoTurno(mesa.fase, turnoPropio, jugadorEnTurno?.usuario ?? null)}</p>
+            {turnoPropio && <p className="text-xs text-emerald-200">Doblar cobra otra apuesta igual, da una carta y termina tu turno.</p>}
           </>
         ) : (
           <p className="text-emerald-200">{TEXTO_ESPERA[mesa.fase]}</p>

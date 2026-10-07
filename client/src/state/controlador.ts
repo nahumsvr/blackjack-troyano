@@ -132,6 +132,14 @@ export class ControladorJuego {
     return this.ejecutar({ type: "pedir" });
   }
 
+  /**
+   * Envía la intención de doblar; el servidor valida turno, mano y saldo.
+   * @returns true si el servidor confirmó la mano doblada.
+   */
+  doblar(): Promise<boolean> {
+    return this.ejecutar({ type: "doblar" });
+  }
+
   /** @returns `true` si el servidor registró el plantarse. */
   plantarse(): Promise<boolean> {
     return this.ejecutar({ type: "plantarse" });
