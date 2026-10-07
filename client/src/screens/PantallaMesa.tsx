@@ -4,6 +4,7 @@
  * La mesa se dibuja con `MesaVisual` (dealer al centro, jugadores alrededor). Al centro del paño
  * aparecen pistas de qué hacer ("Haz tu apuesta", "¡Te toca!") y, tras cerrar el resultado de la
  * ronda, una píldora para volver a verlo. El resultado se muestra con `OverlayResultado` (T-29).
+ * Todo lo que dibuja pasa por `useMesaPresentada`, que espacia los cambios del servidor en el tiempo.
  */
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { colorDeAsiento } from "../components/colorJugador";
@@ -16,6 +17,7 @@ import type { PestanaMenu } from "../components/MenuLateral";
 import { OverlayResultado, type DatosResultado } from "../components/OverlayResultado";
 import { Ficha } from "../components/Ficha";
 import { Reloj } from "../components/Reloj";
+import { useMesaPresentada } from "../components/useMesaPresentada";
 import { SelectorApuesta } from "../components/SelectorApuesta";
 import { useJuego } from "../state/store";
 import { validarApuesta } from "../state/validacion";
@@ -57,14 +59,15 @@ export function PantallaMesa({ alAbrirMenu }: PropsPantallaMesa): ReactNode {
   // Ronda cuyo resultado el usuario ya cerró (la píldora central permite reabrirlo).
   const [rondaCerrada, setRondaCerrada] = useState<string | null>(null);
   const miId = estado.sesion?.usuario.id ?? null;
-  const ronda = estado.resultado;
+  // La mesa y el resultado se dibujan con ritmo (pausa antes de repartir, dealer carta por carta,
+  // resultado tras la última carta); lo que el servidor decidió ya no cambia.
+  const { mesa, resultado: ronda } = useMesaPresentada(estado.mesa, estado.resultado);
   const datosResultado = useMemo<DatosResultado | null>(() => {
     const propio = ronda?.resultados.find((resultado) => resultado.usuarioId === miId);
     return ronda === null || propio === undefined ? null : { rondaId: ronda.rondaId, propio, dealer: ronda.dealer };
   }, [ronda, miId]);
   const cerrarResultado = useCallback(() => setRondaCerrada(ronda?.rondaId ?? null), [ronda]);
 
-  const mesa = estado.mesa;
   if (mesa === null) return null;
 
   const propio = mesa.asientos.find((asiento) => asiento !== null && asiento.usuarioId === miId) ?? null;
