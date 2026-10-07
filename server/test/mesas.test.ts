@@ -83,7 +83,7 @@ describe.skipIf(!destino)("GestorMesas con servidor completo", () => {
     const snapshot = await usuarios[0]!.cliente.enviar({ type: "mesa.unirse", mesaId: "mesa-1" });
     await Promise.all(esperas);
     expect(performance.now() - inicio).toBeLessThan(1000);
-    expect(snapshot).toMatchObject({ type: "mesa.estado", fase: "ESPERANDO", asientos: [{ usuarioId: usuarios[0]!.sesion.usuario.id }, null, null, null, null] });
+    expect(snapshot).toMatchObject({ type: "mesa.estado", fase: "APUESTAS", asientos: [{ usuarioId: usuarios[0]!.sesion.usuario.id }, null, null, null, null] });
     esperas = otros.map((cliente) => cliente.esperar((mensaje) => ocupados(mensaje, 0), cliente.mensajes.length));
     expect(await usuarios[0]!.cliente.enviar({ type: "mesa.salir" })).toMatchObject({ type: "ok" });
     await Promise.all(esperas);

@@ -1,0 +1,261 @@
+{
+  "fecha": "2026-10-05",
+  "navegador": "Paneles de navegador de Codex",
+  "pestanas": [
+    "uno",
+    "dos",
+    "tres"
+  ],
+  "pasos": 6,
+  "frames": [
+    {
+      "fase": "APUESTAS",
+      "turnoDe": null,
+      "dealer": {
+        "cartas": [],
+        "total": null
+      },
+      "recepcionesMs": {
+        "tres": 5.523500000002969,
+        "dos": 7.844300000004296,
+        "uno": 7.999400000000605
+      }
+    },
+    {
+      "fase": "APUESTAS",
+      "turnoDe": null,
+      "dealer": {
+        "cartas": [],
+        "total": null
+      },
+      "recepcionesMs": {
+        "tres": 9.144499999994878,
+        "dos": 10.224499999996624,
+        "uno": 10.951199999995879
+      }
+    },
+    {
+      "fase": "APUESTAS",
+      "turnoDe": null,
+      "dealer": {
+        "cartas": [],
+        "total": null
+      },
+      "recepcionesMs": {
+        "dos": 10.768199999998615,
+        "uno": 10.950700000001234,
+        "tres": 11.957300000001851
+      }
+    },
+    {
+      "fase": "APUESTAS",
+      "turnoDe": null,
+      "dealer": {
+        "cartas": [],
+        "total": null
+      },
+      "recepcionesMs": {
+        "tres": 4.223700000002282,
+        "dos": 5.940399999999499,
+        "uno": 6.082200000004377
+      }
+    },
+    {
+      "fase": "APUESTAS",
+      "turnoDe": null,
+      "dealer": {
+        "cartas": [],
+        "total": null
+      },
+      "recepcionesMs": {
+        "dos": 7.767100000004575,
+        "uno": 7.908800000004703,
+        "tres": 7.984700000000885
+      }
+    },
+    {
+      "fase": "APUESTAS",
+      "turnoDe": null,
+      "dealer": {
+        "cartas": [],
+        "total": null
+      },
+      "recepcionesMs": {
+        "dos": 9.249400000000605,
+        "tres": 10.27440000000206,
+        "uno": 10.396099999998114
+      }
+    },
+    {
+      "fase": "REPARTO",
+      "turnoDe": null,
+      "dealer": {
+        "cartas": [
+          {
+            "palo": "♠",
+            "rango": "6"
+          },
+          {
+            "oculta": true
+          }
+        ],
+        "total": null
+      },
+      "recepcionesMs": {
+        "tres": 10.589899999999034,
+        "dos": 11.439899999997579,
+        "uno": 12.701999999997497
+      }
+    },
+    {
+      "fase": "TURNOS",
+      "turnoDe": 1,
+      "dealer": {
+        "cartas": [
+          {
+            "palo": "♠",
+            "rango": "6"
+          },
+          {
+            "oculta": true
+          }
+        ],
+        "total": null
+      },
+      "recepcionesMs": {
+        "tres": 14.980900000002293,
+        "uno": 15.106500000001688,
+        "dos": 15.282599999998638
+      }
+    },
+    {
+      "fase": "TURNOS",
+      "turnoDe": 2,
+      "dealer": {
+        "cartas": [
+          {
+            "palo": "♠",
+            "rango": "6"
+          },
+          {
+            "oculta": true
+          }
+        ],
+        "total": null
+      },
+      "recepcionesMs": {
+        "tres": 9.485099999998056,
+        "dos": 16.71140000000014,
+        "uno": 20.90950000000157
+      }
+    },
+    {
+      "fase": "TURNOS",
+      "turnoDe": 3,
+      "dealer": {
+        "cartas": [
+          {
+            "palo": "♠",
+            "rango": "6"
+          },
+          {
+            "oculta": true
+          }
+        ],
+        "total": null
+      },
+      "recepcionesMs": {
+        "tres": 3.3826000000044587,
+        "dos": 4.442800000004354,
+        "uno": 5.592500000006112
+      }
+    },
+    {
+      "fase": "DEALER",
+      "turnoDe": null,
+      "dealer": {
+        "cartas": [
+          {
+            "palo": "♠",
+            "rango": "6"
+          },
+          {
+            "palo": "♠",
+            "rango": "10"
+          }
+        ],
+        "total": 16
+      },
+      "recepcionesMs": {
+        "tres": 4.278800000000047,
+        "dos": 5.928799999994226,
+        "uno": 6.41820000000007
+      }
+    },
+    {
+      "fase": "DEALER",
+      "turnoDe": null,
+      "dealer": {
+        "cartas": [
+          {
+            "palo": "♠",
+            "rango": "6"
+          },
+          {
+            "palo": "♠",
+            "rango": "10"
+          },
+          {
+            "palo": "♠",
+            "rango": "A"
+          }
+        ],
+        "total": 17
+      },
+      "recepcionesMs": {
+        "dos": 5.243300000001909,
+        "tres": 5.342600000003586,
+        "uno": 6.035500000005413
+      }
+    },
+    {
+      "fase": "PAGOS",
+      "turnoDe": null,
+      "dealer": {
+        "cartas": [
+          {
+            "palo": "♠",
+            "rango": "6"
+          },
+          {
+            "palo": "♠",
+            "rango": "10"
+          },
+          {
+            "palo": "♠",
+            "rango": "A"
+          }
+        ],
+        "total": 17
+      },
+      "recepcionesMs": {
+        "tres": 6.783999999999651,
+        "dos": 6.9223000000056345,
+        "uno": 7.025500000003376
+      }
+    },
+    {
+      "fase": "APUESTAS",
+      "turnoDe": null,
+      "dealer": {
+        "cartas": [],
+        "total": null
+      },
+      "recepcionesMs": {
+        "tres": 3.1303999999945518,
+        "dos": 5.782599999998638,
+        "uno": 6.7598999999972875
+      }
+    }
+  ]
+}
