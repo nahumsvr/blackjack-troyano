@@ -17,18 +17,19 @@ export class HistorialSQL {
    */
   async guardar(ronda: RondaTerminada): Promise<void> {
     await enTransaccion(this.conexion, async (sql) => {
-      // Bun serializa los arreglos como JSON; pasar JSON.stringify(...) guardaría un string jsonb, no un arreglo.
+      // ::text::jsonb guarda un arreglo jsonb con y sin sentencias preparadas: con `prepare: false`
+      // Bun envía un arreglo directo como "[object Object]"; con preparadas, JSON.stringify(...)::jsonb guarda un string.
       const [insertada] = await sql<{ id: string }[]>`
         INSERT INTO rondas (id, mesa_id, iniciada_en, terminada_en, cartas_dealer, total_dealer)
         VALUES (${ronda.id}, ${ronda.mesaId}, ${ronda.iniciadaEn}, ${ronda.terminadaEn},
-          ${ronda.dealer.cartas}::jsonb, ${ronda.dealer.total})
+          ${JSON.stringify(ronda.dealer.cartas)}::text::jsonb, ${ronda.dealer.total})
         ON CONFLICT (id) DO NOTHING RETURNING id
       `;
       if (!insertada) {
         const [misma] = await sql<{ id: string }[]>`
           SELECT id FROM rondas WHERE id = ${ronda.id} AND mesa_id = ${ronda.mesaId}
             AND iniciada_en = ${ronda.iniciadaEn}::timestamptz AND terminada_en = ${ronda.terminadaEn}::timestamptz
-            AND cartas_dealer = ${ronda.dealer.cartas}::jsonb AND total_dealer = ${ronda.dealer.total}
+            AND cartas_dealer = ${JSON.stringify(ronda.dealer.cartas)}::text::jsonb AND total_dealer = ${ronda.dealer.total}
         `;
         if (!misma) throw new ErrorJuego("ERROR_INTERNO");
         const jugadores = await sql<{ usuarioId: number; asiento: number; apuesta: number; cartas: RondaTerminada["jugadores"][number]["cartas"]; total: number; resultado: string; pago: number }[]>`
@@ -54,7 +55,7 @@ export class HistorialSQL {
         await sql`
           INSERT INTO rondas_jugadores (ronda_id, usuario_id, asiento, apuesta, cartas, total, resultado, pago)
           VALUES (${ronda.id}, ${jugador.usuarioId}, ${jugador.asiento}, ${jugador.apuesta},
-            ${jugador.cartas}::jsonb, ${jugador.total}, ${jugador.resultado}, ${jugador.pago})
+            ${JSON.stringify(jugador.cartas)}::text::jsonb, ${jugador.total}, ${jugador.resultado}, ${jugador.pago})
         `;
       }
     });
