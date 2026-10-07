@@ -3,6 +3,7 @@ import { ErrorJuego, type CartaVisible, type MesaEstado } from "@blackjack/share
 import { EQUIPADO_INICIAL } from "../server/src/config";
 import { Carta } from "../server/src/game/Carta";
 import { Mesa } from "../server/src/game/Mesa";
+import { RelojMesa } from "../server/src/game/RelojMesa";
 
 const rangos: CartaVisible["rango"][] = ["10", "8", "9", "6", "7", "10", "8", "10", "A"];
 const cartas = rangos.map((rango) => new Carta("♠", rango));
@@ -16,7 +17,7 @@ const mesa = new Mesa("mesa-1", "Mesa 1", (mensaje) => {
 }, {
   sacar: () => { const carta = cartas.shift(); if (!carta) throw new ErrorJuego("ERROR_INTERNO"); return carta; },
   necesitaRebarajar: () => false, barajar: () => {},
-});
+}, new RelojMesa({ ahora: Date.now, programar: () => null, cancelar: () => {} }));
 const pasos = [
   () => { for (let id = 1; id <= 3; id++) mesa.unirse({ id, usuario: `jugador${id}` }, EQUIPADO_INICIAL); },
   () => { for (let id = 1; id <= 3; id++) mesa.registrarApuestaConfirmada(id, 10); mesa.cerrarApuestas(); },

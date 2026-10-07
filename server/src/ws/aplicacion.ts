@@ -1,33 +1,52 @@
-/** Compone auth, consulta de billetera y asientos sin modificar sus contratos. */
+/** Compone autenticación, economía y partidas sobre transporte y contrato compartidos. */
 import type { SQL, Server } from "bun";
-import { ErrorJuego } from "@blackjack/shared";
+import { ErrorJuego, type MensajeServidor } from "@blackjack/shared";
 import { Sesiones } from "../auth/Sesiones";
 import { crearEnrutadorAutenticado } from "../auth/manejadores";
-import { PUERTO, topicMesa } from "../config";
-import { GestorMesas } from "../game/GestorMesas";
+import { PUERTO, topicMesa, topicUsuario } from "../config";
+import { GestorMesas, type FabricaMesa } from "../game/GestorMesas";
+import type { Billetera } from "../game/Billetera";
 import { BilleteraSQL } from "../store/BilleteraSQL";
 import { Tienda } from "../store/Tienda";
 import { crearManejadoresEconomia } from "../store/manejadores";
 import type { DatosConexion, SocketConexion } from "./Enrutador";
 import { iniciarServidor } from "./servidor";
+import { crearManejadoresJuego } from "./juego";
 
 /**
- * Compone sesiones persistentes, economía y asientos sobre el transporte compartido.
+ * Compone sesiones persistentes, economía y juego sobre el transporte compartido.
  * @param conexion - Pool SQL persistente que el llamador debe cerrar al apagar.
  * @param puerto - Puerto público; cero asigna uno libre para las pruebas.
- * @returns Servidor del Hito 1 con publicaciones nativas Bun.
+ * @param crearMesa - Fábrica interna de pruebas; producción usa el zapato criptográfico.
+ * @returns Servidor de partidas con publicaciones nativas Bun y cierre ordenado.
  * @throws Error Si el puerto no está disponible; los errores de dominio se responden por WS.
  */
-export function iniciarAplicacion(conexion: SQL, puerto = PUERTO): Server<DatosConexion> {
+export function iniciarAplicacion(conexion: SQL, puerto = PUERTO, crearMesa?: FabricaMesa): Server<DatosConexion> {
   let servidor: Server<DatosConexion>;
   const conexiones = new Map<string, SocketConexion>();
-  const gestor = new GestorMesas((topic, mensaje) => servidor.publish(topic, JSON.stringify(mensaje)), (conexionId) => {
+  const billetera = new BilleteraSQL(conexion);
+  const publicar = (topic: string, mensaje: MensajeServidor) => servidor.publish(topic, JSON.stringify(mensaje));
+  const economia = crearManejadoresEconomia(billetera, new Tienda(conexion), publicar);
+  function operarJuego(operacion: "debitarApuesta" | "acreditarPago" | "comprarFichas", usuarioId: number, cantidad: number, referencia: string) {
+    return economia.serializarUsuario(usuarioId, async () => {
+      const estado = await billetera[operacion](usuarioId, cantidad, referencia);
+      // La cola cubre también publicar: una compra concurrente no puede adelantar este saldo.
+      publicar(topicUsuario(usuarioId), { type: "billetera", ...estado });
+      return estado;
+    });
+  }
+  const billeteraJuego: Billetera = {
+    consultar: (usuarioId) => economia.serializarUsuario(usuarioId, () => billetera.consultar(usuarioId)),
+    comprarFichas: (usuarioId, cantidad, clave) => operarJuego("comprarFichas", usuarioId, cantidad, clave),
+    debitarApuesta: (usuarioId, cantidad, rondaId) => operarJuego("debitarApuesta", usuarioId, cantidad, rondaId),
+    acreditarPago: (usuarioId, cantidad, rondaId) => operarJuego("acreditarPago", usuarioId, cantidad, rondaId),
+  };
+  const gestor = new GestorMesas(publicar, (conexionId) => {
     const anterior = conexiones.get(conexionId);
     if (!anterior) return;
     // PLAN §7.5: perder la propiedad no retira la vista ni sus snapshots.
     anterior.send(JSON.stringify({ type: "error", codigo: "NO_ESTAS_EN_MESA", mensaje: "Otra pestaña tomó tu asiento; ahora solo miras la mesa." }));
-  });
-  const billetera = new BilleteraSQL(conexion);
+  }, { billetera: billeteraJuego }, crearMesa);
   function desuscribirMesa(socket: SocketConexion): void {
     if (socket.data.mesaId !== undefined) socket.unsubscribe(topicMesa(socket.data.mesaId));
     delete socket.data.mesaId;
@@ -44,8 +63,8 @@ export function iniciarAplicacion(conexion: SQL, puerto = PUERTO): Server<DatosC
     gestor.desconectar(socket.data.usuarioId, socket.data.conexionId!);
   }
   const enrutador = crearEnrutadorAutenticado(new Sesiones(conexion), {
-    ...crearManejadoresEconomia(billetera, new Tienda(conexion),
-      (topic, mensaje) => servidor.publish(topic, JSON.stringify(mensaje))),
+    ...crearManejadoresJuego(gestor),
+    ...economia,
     "lobby.listar": () => ({ type: "lobby", mesas: gestor.listar() }),
     "mesa.unirse": (socket, mensaje) => {
       const { usuario, equipado, conexionId } = socket.data;
@@ -78,5 +97,11 @@ export function iniciarAplicacion(conexion: SQL, puerto = PUERTO): Server<DatosC
     alCerrar: limpiarMesa,
   });
   servidor = iniciarServidor(puerto, enrutador, limpiarMesa);
+  const detenerTransporte = servidor.stop.bind(servidor);
+  servidor.stop = async (cerrarConexiones) => {
+    gestor.detener();
+    await detenerTransporte(cerrarConexiones);
+    await gestor.esperarOperaciones();
+  };
   return servidor;
 }

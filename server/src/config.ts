@@ -47,6 +47,13 @@ export const DEALER_PLANTARSE_EN = 17;
 export const PAGO_GANADOR = 2;
 export const PAGO_BLACKJACK_NUMERADOR = 5;
 export const PAGO_BLACKJACK_DENOMINADOR = 2;
+/** Plazos autoritativos de las fases del juego (PLAN §1). */
+export const TIEMPO_APUESTAS_MS = 15_000;
+export const TIEMPO_TURNO_MS = 20_000;
+export const TIEMPO_RESULTADOS_MS = 5_000;
+/** Reintento de un paso de reloj que falló (reparto o liquidación). */
+export const TIEMPO_REINTENTO_MS = 1_000;
+export const MAX_REINTENTOS_RELOJ = 3;
 /*
  * Los límites de cantidad se definen una sola vez en `LIMITES_CANTIDAD` (shared/protocolo.ts)
  * porque el cliente los necesita para validar formularios y `shared/` no puede importar

@@ -6,6 +6,7 @@ import { Carta } from "../src/game/Carta";
 import { Mesa, type ZapatoMesa } from "../src/game/Mesa";
 import { GestorMesas } from "../src/game/GestorMesas";
 import { ClienteWsPrueba } from "./soporteHito1";
+import { TiempoManual } from "./soporteMesa";
 
 type EstadoPublicado = Extract<MensajeServidor, { type: "mesa.estado" }>;
 test("salir con apuesta no se revierte al reanudar; una caída sí conserva el asiento", () => {
@@ -36,7 +37,7 @@ function preparar(rangos: readonly CartaVisible["rango"][] = TRES_MANOS, cantida
   const mesa = new Mesa("mesa-1", "Mesa 1", (mensaje) => {
     expect(MesaEstadoSchema.safeParse(mesa.snapshot()).success).toBe(true);
     publicaciones.push(mensaje);
-  }, zapatoFijo(rangos));
+  }, zapatoFijo(rangos), new TiempoManual().reloj);
   for (let id = 1; id <= cantidad; id++) mesa.unirse({ id, usuario: `jugador${id}` }, EQUIPADO_INICIAL);
   const apostar = () => { for (let id = 1; id <= cantidad; id++) mesa.registrarApuestaConfirmada(id, 10); };
   return { mesa, publicaciones, apostar };
@@ -231,7 +232,7 @@ test("tres sockets reciben snapshots idénticos de cada transición en menos de 
   const mesa = new Mesa("mesa-1", "Mesa 1", (mensaje) => {
     publicados.push(mensaje);
     servidor.publish("mesa:mesa-1", JSON.stringify(mensaje));
-  }, zapatoFijo(TRES_MANOS));
+  }, zapatoFijo(TRES_MANOS), new TiempoManual().reloj);
   const servidor = Bun.serve<{ espectador: boolean }>({
     hostname: "127.0.0.1", port: 0,
     fetch: (peticion, actual) => actual.upgrade(peticion, { data: { espectador: true } }) ? undefined : new Response("WS", { status: 426 }),
