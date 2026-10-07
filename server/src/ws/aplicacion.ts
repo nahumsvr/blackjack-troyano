@@ -47,8 +47,8 @@ export function iniciarAplicacion(conexion: SQL, puerto = PUERTO, crearMesa?: Fa
   const gestor = new GestorMesas(publicar, (conexionId) => {
     const anterior = conexiones.get(conexionId);
     if (!anterior) return;
-    desuscribirMesa(anterior);
-    anterior.send(JSON.stringify({ type: "error", codigo: "NO_ESTAS_EN_MESA", mensaje: "Otra pestaña tomó tu asiento. Volviste al lobby." }));
+    // PLAN §7.5: perder la propiedad no retira la vista ni sus snapshots.
+    anterior.send(JSON.stringify({ type: "error", codigo: "NO_ESTAS_EN_MESA", mensaje: "Otra pestaña tomó tu asiento; ahora solo miras la mesa." }));
   }, {
     billetera: billeteraJuego,
     guardarRonda: (ronda) => historial.guardar(ronda),
@@ -66,11 +66,11 @@ export function iniciarAplicacion(conexion: SQL, puerto = PUERTO, crearMesa?: Fa
     socket.subscribe(topicMesa(mesaId));
     socket.data.mesaId = mesaId;
   }
-  function limpiarMesa(socket: SocketConexion): void {
+  function limpiarMesa(socket: SocketConexion, motivo: "desconexion" | "sesion"): void {
     conexiones.delete(socket.data.conexionId!);
     desuscribirMesa(socket);
     if (socket.data.usuarioId === undefined) return;
-    gestor.desconectar(socket.data.usuarioId, socket.data.conexionId!);
+    gestor.desconectar(socket.data.usuarioId, socket.data.conexionId!, motivo === "desconexion");
   }
   const enrutador = crearEnrutadorAutenticado(new Sesiones(conexion), {
     ...crearManejadoresJuego(gestor),
@@ -84,7 +84,13 @@ export function iniciarAplicacion(conexion: SQL, puerto = PUERTO, crearMesa?: Fa
       return { type: "mesa.estado", ...snapshot };
     },
     "mesa.salir": (socket) => {
-      gestor.salir(socket.data.usuarioId!, socket.data.conexionId!);
+      try {
+        gestor.salir(socket.data.usuarioId!, socket.data.conexionId!);
+      } catch (error) {
+        // Una espectadora puede dejar su vista sin liberar el asiento de la dueña,
+        // incluso cuando esta ya salió. mesaId identifica la suscripción, no la propiedad.
+        if (!(error instanceof ErrorJuego) || error.codigo !== "NO_ESTAS_EN_MESA" || socket.data.mesaId === undefined) throw error;
+      }
       desuscribirMesa(socket);
       return { type: "ok" };
     },
@@ -100,7 +106,7 @@ export function iniciarAplicacion(conexion: SQL, puerto = PUERTO, crearMesa?: Fa
     },
     alCerrar: limpiarMesa,
   });
-  servidor = iniciarServidor(puerto, enrutador, limpiarMesa);
+  servidor = iniciarServidor(puerto, enrutador, (socket) => limpiarMesa(socket, "desconexion"));
   const detenerTransporte = servidor.stop.bind(servidor);
   servidor.stop = async (cerrarConexiones) => {
     cerrando = true;
