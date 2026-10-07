@@ -3,6 +3,8 @@
 Se revisa completa el **lunes 5 oct** (T-44) y otra vez el **martes 6 oct** con el `.zip` final. Último repaso documental: 6 oct; las casillas de aceptación de la demo siguen pendientes de ejecución y firma.
 Cada casilla la marca **alguien distinto de quien construyó esa parte**. Anotar quién probó y cuándo.
 
+**Alcance de entrega — corte confirmado por Hector, 6 oct 2026 (PLAN §10, PR #47):** T-35/T-39/T-40 quedan fuera. `[CORTE]` identifica un requisito excluido de la aceptación interna: su casilla sigue abierta y no equivale a una prueba aprobada ni a cumplir la rúbrica original. T-44 revisa las casillas conservadas; estas requieren evidencia o issue con dueño y fecha. El backend de compras T-34 se conserva y se comprueba por WebSocket, sin exigir la UI cortada. El recorte y sus limitaciones se explican en el manual y la exposición.
+
 ---
 
 ## 1. Funcionamiento — 50 %
@@ -62,13 +64,13 @@ Cada casilla la marca **alguien distinto de quien construyó esa parte**. Anotar
 - [ ] La suma de `movimientos` de cada usuario coincide con su saldo actual (consulta SQL de verificación)
 
 ### 1.6 Tienda e inventario
-- [ ] Comprar un artículo descuenta fichas y aparece en el inventario
-- [ ] Comprar un artículo ya poseído → error (también con doble clic y con 2 pestañas)
-- [ ] Comprar sin fichas suficientes → error
-- [ ] Equipar avatar/reverso: los otros jugadores de la mesa lo ven
-- [ ] Equipar durante reparto/turnos/dealer/pagos → "no puedes cambiarlo en medio de una mano"
-- [ ] Equipar algo que no tienes (mensaje manual) → error
-- [ ] Historial muestra compras de fichas, apuestas, ganancias y compras en tienda con saldos correctos
+- [ ] Backend T-34 por WebSocket: comprar un artículo descuenta fichas y aparece en `inventario.listar`; compra desde la UI excluida por T-39
+- [ ] Backend T-34 por WebSocket: dos compras simultáneas del mismo artículo → una compra, un error y un solo cobro; comprobar dos conexiones del mismo usuario
+- [ ] Backend T-34 por WebSocket: comprar sin fichas suficientes → error sin cambiar saldo ni inventario
+- [ ] [CORTE T-35/T-40] Equipar avatar/reverso: los otros jugadores de la mesa lo ven
+- [ ] [CORTE T-35] Equipar durante reparto/turnos/dealer/pagos → "no puedes cambiarlo en medio de una mano"
+- [ ] [CORTE T-35] Equipar algo que no tienes (mensaje manual) → error
+- [ ] T-41: historial del cliente real muestra compra de fichas, apuestas y pagos cuando corresponda; compra de artículo preparada por WebSocket (T-34) también aparece, con saldos correctos y paginación sin duplicados
 
 Probado por: ______ · Fecha: ______
 
@@ -81,7 +83,7 @@ Probado por: ______ · Fecha: ______
 - [ ] **Los 3 hablan** y cada uno tiene su parte clara (guion en `docs/exposicion.md`)
 - [ ] Duración **< 10 min** cronometrada en el ensayo 1 (____) y en el ensayo 2 (____)
 - [ ] Nadie lee las diapositivas (≤ 25 palabras por diapositiva)
-- [ ] Demo en vivo con 3 laptops: ronda completa, compra de fichas con límite, tienda, desconexión
+- [ ] Demo en vivo con 3 laptops: ronda completa, compra de fichas con límite, historial, catálogo de solo lectura y desconexión; explicar el corte de compra/equipamiento de artículos
 - [ ] Plan B probado: hotspot del celular + video de respaldo en USB
 - [ ] Laptops cargadas, servidor y BD levantados **antes** de pasar; usuarios de demo creados
 - [ ] Respuestas preparadas: ¿por qué WebSocket?, ¿qué pasa si dos compran a la vez?, ¿cómo evitan trampas?, ¿qué pasa si alguien se desconecta?
@@ -106,8 +108,8 @@ Revisado por: ______ (distinto del autor)
 
 - [ ] `docs/manual-instalacion.md`: requisitos con versiones, pasos, `.env`, Docker, BD, arranque, conexión desde otra laptop, problemas comunes
 - [ ] Manual de instalación **probado por alguien que no lo escribió**, en una máquina limpia: ______
-- [ ] `docs/manual-usuario.md` con capturas: registro, lobby, jugar, comprar fichas, tienda, inventario, historial, desconexión
-- [ ] Manual de usuario **probado por alguien que no lo escribió**: ______
+- [ ] `docs/manual-usuario.md` con capturas: registro, lobby, jugar, comprar fichas, catálogo de solo lectura, historial y desconexión; explica el corte de compra/equipamiento y de inventario editable
+- [ ] Manual de usuario **probado por alguien que no lo escribió**: ______; juega una ronda, compra fichas y consulta el historial siguiendo solo el manual (T-49)
 - [ ] Las capturas corresponden a la versión final
 
 ---

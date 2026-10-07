@@ -173,12 +173,12 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 ### Nahum
 - [ ] T-39 · Tienda: catálogo por tipo con precio, "poseído" y compra con confirmación · Nahum · depende de: T-34
   - **Hecho cuando:** comprar un artículo descuenta fichas, aparece como poseído y el botón ya no deja comprarlo otra vez.
-  - **⏸ Pospuesta (2026-10-05):** Nahum la pospone (no se elimina) según el criterio de corte de PLAN §10, pendiente de confirmar en la decisión de corte del equipo. Se retoma solo si las tareas P0 del cliente están fusionadas, T-31 pasó y T-34 está conectada al enrutador.
+  - **⏸ Fuera de esta entrega — corte confirmado (2026-10-06):** PLAN §10 confirma el corte de T-39 junto con T-35/T-40. La tarea permanece abierta, no suma al avance ni bloquea T-43; cualquier retomada corresponde a una entrega posterior. El catálogo de solo lectura existente se conserva.
 - [ ] T-40 · Inventario y equipar; avatar y reverso de los demás visibles en la mesa; tema de mesa aplicado localmente · Nahum · depende de: T-35
   - **Hecho cuando:** A equipa `avatar_robot` en el lobby, entra a la mesa y B y C ven el robot en el asiento de A.
-  - **⏸ Pospuesta (2026-10-05):** igual que T-39; además requiere T-35.
+  - **⏸ Fuera de esta entrega — corte confirmado (2026-10-06):** igual que T-39; T-35/T-40 no se contabilizan como hechas ni bloquean el congelamiento del alcance reducido.
 - [ ] T-41 · Historial de movimientos (tabla con tipo, cambio en fichas/dinero, saldo resultante, fecha en hora local; "ver más") · Nahum · depende de: T-34 · rama de PR #7 (avance original de #10)
-  - **Hecho cuando:** tras comprar fichas, apostar y comprar un artículo, aparecen las 3 filas en orden con los saldos correctos.
+  - **Hecho cuando — alcance de entrega (PLAN §10):** tras comprar fichas y jugar una ronda, el historial muestra compra, apuesta y pago cuando corresponda, en orden y con saldos correctos; "ver más" pagina sin duplicar filas. La compra de artículos desde la UI queda fuera por T-39; el historial de `compra_articulo` del backend T-34 se verifica con una compra por WebSocket y luego se consulta en el cliente real, sin exigir una pantalla de compra.
   - **Avance integrado en PR #7 (original #10, 2026-10-05):** historial compacto en el menú lateral con tipo, Δ fichas, Δ dinero, saldo y hora local; "Ver más" con `antesDe` y `hayMas`. Verificado en el mock. Falta `movimientos.listar` por WebSocket (T-34 + T-07).
 - [ ] T-42 · Indicador de conexión propia (conectado / reconectando) y de jugadores desconectados en su asiento · Nahum · depende de: T-36
   - **Hecho cuando:** al apagar el Wi-Fi de una laptop, las otras dos ven a ese jugador como "desconectado" en < 2 s.
@@ -193,8 +193,9 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Corte confirmado por Hector (2026-10-06 CDMX):** T-35 queda fuera de esta entrega conforme a PLAN §10, junto con T-39/T-40. No se implementará equipamiento ni se contará como hecha; se conserva el historial y la compra de fichas. El recorte no acredita congelamiento ni aceptación del checklist.
   - **Preparación local (2026-10-04):** Bloqueada por GestorMesas (T-18). No se implementa equipamiento sin validación autoritativa de fase ni publicación del snapshot.
   - **Hecho cuando:** equipar en fase `TURNOS` → `BLOQUEADO_EN_MANO`; en `APUESTAS` → los demás ven el cambio en < 1 s; equipar algo no poseído → `NO_POSEIDO`.
-- [ ] T-43 · Congelamiento: todas las tareas del Hito 3 fusionadas, `main` estable, tag `v0.9-congelado` · Massimo · depende de: T-36…T-42, T-34, T-35
-  - **Hecho cuando:** existe el tag y, a partir de aquí, solo entran PRs de corrección de bugs y documentación.
+- [ ] T-43 · Congelamiento del alcance de entrega de PLAN §10: `main` estable, tag `v0.9-congelado` · Massimo · depende de: T-34, T-36, T-37, T-38, T-41, T-42
+  - **Hecho cuando:** las seis dependencias conservadas están fusionadas y tienen su criterio de aceptación acreditado; `bun run typecheck` y `bun test` con PostgreSQL pasan sobre la versión a etiquetar, existe el tag y, a partir de aquí, solo entran PRs de corrección de bugs y documentación.
+  - **Ajuste por corte — PR #47 (2026-10-06):** T-35/T-39/T-40 quedan excluidas de las dependencias por PLAN §10 y siguen abiertas. El corte por sí solo no acepta las tareas conservadas, no crea el tag y no acredita la rúbrica original completa.
 
 ---
 
@@ -208,19 +209,19 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 - [ ] T-47 · JSDoc/comentarios en hooks de red, store y componentes principales del cliente · Nahum · depende de: T-43
   - **Hecho cuando:** `useSocket`, el store y las 5 pantallas tienen comentario de propósito; revisado por Hector.
   - **Avance (2026-10-05):** todo el código del cliente en los PRs #6 a #12 tiene comentario de cabecera y JSDoc en clases, funciones exportadas y componentes. Falta la revisión final de Hector tras el congelamiento.
-- [ ] T-49 · `docs/manual-usuario.md` con capturas: registro, lobby, cómo jugar una ronda, comprar fichas, tienda, inventario, historial, qué pasa si te desconectas · Nahum · depende de: T-43
-  - **Hecho cuando:** Hector (que no lo escribió) juega una ronda y compra un artículo siguiendo solo el manual.
+- [ ] T-49 · `docs/manual-usuario.md` con capturas: registro, lobby, cómo jugar una ronda, comprar fichas, catálogo de solo lectura, historial y desconexión; limitaciones del corte de PLAN §10 · Nahum · depende de: T-43
+  - **Hecho cuando — alcance de entrega:** Hector (que no lo escribió) juega una ronda, compra fichas y consulta el historial siguiendo solo el manual. El manual explica que comprar/equipar artículos e inventario editable quedan fuera de esta entrega; no pide realizar acciones de T-35/T-39/T-40.
 - [ ] T-51 · Diapositivas (≤ 8, más imágenes que texto): problema, arquitectura, protocolo, juego, economía/transacciones, demo, cierre · Nahum · depende de: T-33
   - **Hecho cuando:** ninguna diapositiva tiene más de 25 palabras y las 3 personas las aprobaron.
 
 ### Massimo
 - [ ] T-44 · Pasar **completa** la sección de Funcionamiento de `CHECKLIST_ENTREGA.md`; cada fallo → issue asignado · Massimo · depende de: T-43
-  - **Hecho cuando:** todas las casillas de Funcionamiento están en `[x]` o tienen issue abierto con dueño y fecha.
-- [x] T-46 · JSDoc completo en `server/src/store`, `server/src/db` y `shared/` · Massimo · depende de: T-43
-  - **Hecha — revisión de Hector (2026-10-06 CDMX):** PR #40 fusionado en a68c62c. Hector revisa las clases, métodos públicos, funciones, esquemas y constantes de shared/, db/ y store/: documentación presente y acorde con el código. Revisión de este alcance completa; no acredita T-45/T-47 ni el congelamiento T-43.
+  - **Hecho cuando — alcance de entrega:** todas las casillas de Funcionamiento conservadas están en `[x]` o tienen issue abierto con dueño y fecha. Las casillas `[CORTE]` se registran como excluidas por PLAN §10, permanecen sin marcar y no se presentan como pruebas aprobadas ni cumplimiento de la rúbrica original completa.
+- [ ] T-46 · JSDoc completo en `server/src/store`, `server/src/db` y `shared/` · Massimo · depende de: T-43
+  - **Revisión realizada — cierre pendiente (2026-10-06 CDMX):** PR #40 fusionado en a68c62c. Hector revisó clases, métodos públicos, funciones, esquemas y constantes de shared/, db/ y store/: 62 declaraciones públicas con JSDoc. Falta T-43 y confirmar la documentación de la versión congelada, incluidos cambios posteriores a esta revisión; no se cuenta como hecha.
   - **Trabajo disponible (2026-10-06):** se puede preparar auditoría JSDoc de shared/db/store y de los handlers nuevos de #21. No sustituye congelamiento ni revisión final de Hector.
   - **Preparación local (2026-10-04):** Los nuevos archivos shared/db/store incluyen comentarios de propósito y documentación de APIs. Revisión final de Hector y gate T-43 pendientes. Incluido en PR #4 (abierto).
-  - **Hecho cuando:** ninguna función exportada queda sin JSDoc (revisado por Hector).
+  - **Hecho cuando:** T-43 está hecha y ninguna función exportada de la versión congelada queda sin JSDoc (revisado por Hector).
   - **Lista para revisión de Hector (2026-10-06) — PR #40:** todas las clases, métodos públicos y funciones exportadas de `store/`, `db/` y `shared/` ya tenían JSDoc; se agregó JSDoc de una línea a los 31 esquemas y constantes exportados de `shared/` (significado de cada contrato, no repetición del código) y a `Saldos`. Los tipos `z.infer` llevan un comentario de grupo. Escaneo de exportaciones sin JSDoc: 0. Typecheck y 129 pruebas de shared/cliente sin fallos.
 - [ ] T-48 · `docs/manual-instalacion.md`: requisitos con versiones, clonar/descomprimir, `.env`, Docker, `db:reset`, `build`, `start`, cómo conectarse desde otra laptop, problemas comunes (puerto ocupado, firewall) · Massimo · depende de: T-38
   - **Avance — PR #23 fusionado (2026-10-06):** documentación corregida y entorno Bun 1.3.13/PostgreSQL 16 comprobado. Producción de #24 ya está en `main` (con #22); la instalación desde cero por Nahum siguiendo únicamente el manual continúa pendiente.
@@ -240,7 +241,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 
 - [ ] T-52 · Ensayo 1 cronometrado de la exposición con demo en vivo + retroalimentación · **Equipo** · depende de: T-51
   - **Hecho cuando:** duración anotada en `ESTADO.md`, lista de ajustes escrita.
-- [ ] T-53 · Video de respaldo de la demo (≈3 min, 3 jugadores, ronda completa, compra de fichas, tienda) · Nahum · depende de: T-44
+- [ ] T-53 · Video de respaldo de la demo (≈3 min, 3 jugadores, ronda completa, compra de fichas, catálogo de solo lectura y desconexión; corte de PLAN §10) · Nahum · depende de: T-44
   - **Hecho cuando:** el video se reproduce desde USB y desde la nube sin internet de la escuela (descargado).
 - [x] T-54 · Script `bun run empaquetar` → `blackjack-equipo.zip` sin `node_modules`, `.env`, `dist` ni `.git`, con `docs/` y `README` · Massimo · depende de: T-48
   - **Hecha — PR #20 (2026-10-06 CDMX):** fusionada en `c2daf78`. Bun 1.3.13 genera ZIP real de fuentes (124 archivos, 272,903 bytes en la rama documental); `unzip -t` del sistema valida el archivo y pesa <20 MB. Diez regresiones del empaquetador verifican exclusiones y alternativas. T-48/T-55, prueba en Windows y paquete final con juego continúan pendientes; esta casilla acredita el script y su criterio, no la aceptación de la entrega.
