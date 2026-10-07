@@ -2,7 +2,7 @@
 import { expect, spyOn, test } from "bun:test";
 import { EQUIPADO_INICIAL, TIEMPO_APUESTAS_MS, TIEMPO_TURNO_MS, TIEMPO_RESULTADOS_MS, TIEMPO_REINTENTO_MS } from "../src/config";
 import { Mesa } from "../src/game/Mesa";
-import { crearZapatoFijo, TiempoManual } from "./soporteMesa";
+import { BilleteraMemoria, crearZapatoFijo, TiempoManual } from "./soporteMesa";
 
 function preparar() {
   const tiempo = new TiempoManual();
@@ -132,17 +132,22 @@ test("si el reparto falla en el reloj, la mesa reintenta y no queda sin timeout"
 
 test("PAGOS no avanza hasta que la liquidación se resuelve", async () => {
   const tiempo = new TiempoManual();
-  let liquidar!: () => void;
-  const mesa = new Mesa("mesa-1", "Mesa 1", () => {}, crearZapatoFijo(["10", "9", "10", "7", "8", "7"]), tiempo.reloj,
-    { liquidar: () => new Promise<void>((resolver) => { liquidar = resolver; }) });
+  let guardar!: () => void;
+  let iniciar!: () => void;
+  const iniciada = new Promise<void>((resolver) => { iniciar = resolver; });
+  const mesa = new Mesa("mesa-1", "Mesa 1", () => {}, crearZapatoFijo(["10", "9", "10", "7", "8", "7"]), tiempo.reloj, {
+    billetera: new BilleteraMemoria(),
+    guardarRonda: () => new Promise<void>((resolver) => { guardar = resolver; iniciar(); }),
+  });
   mesa.unirse({ id: 1, usuario: "uno" }, EQUIPADO_INICIAL);
   mesa.registrarApuestaConfirmada(1, 10);
-  tiempo.avanzar(0);
-  mesa.avanzarTurno();
+  tiempo.avanzar(0); await mesa.esperarOperaciones();
+  await mesa.plantarse(1);
+  await iniciada;
   tiempo.avanzar(TIEMPO_RESULTADOS_MS);
-  expect(mesa.fase).toBe("PAGOS");
-  liquidar();
-  await Bun.sleep(0);
+  expect(mesa.snapshot()).toMatchObject({ fase: "PAGOS", finEn: null });
+  guardar(); await mesa.esperarOperaciones();
+  tiempo.avanzar(TIEMPO_RESULTADOS_MS); await mesa.esperarOperaciones();
   expect(mesa.fase).toBe("APUESTAS");
 });
 

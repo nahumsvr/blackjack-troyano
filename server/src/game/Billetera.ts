@@ -32,7 +32,7 @@ export interface Billetera {
   debitarApuesta(usuarioId: number, cantidad: number, rondaId: string): Promise<BilleteraEstado>;
   /**
    * Acredita el pago total, incluida la apuesta; un pago cero no crea movimiento.
-   * El juego es responsable de liquidar una sola vez cada jugador y ronda.
+   * Repetir un pago positivo del mismo jugador y ronda devuelve saldo sin duplicarlo.
    * @param usuarioId - Jugador liquidado.
    * @param cantidad - Pago entero no negativo calculado por las reglas.
    * @param rondaId - UUID de la ronda liquidada.

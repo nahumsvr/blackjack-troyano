@@ -9,7 +9,7 @@ import { crearZapatoFijo } from "./soporteMesa";
 
 const destino = process.env.TEST_DATABASE_URL;
 describe.skipIf(!destino)("Juego y economía integrados", () => {
-  test.each(["debitarApuesta"] as const)("%s no publica saldo anterior después de una compra", async (operacion) => {
+  test.each(["debitarApuesta", "acreditarPago"] as const)("%s no publica saldo anterior después de una compra", async (operacion) => {
     const base = await crearBasePruebas(destino!);
     const confirmado = Promise.withResolvers<void>();
     const liberar = Promise.withResolvers<void>();

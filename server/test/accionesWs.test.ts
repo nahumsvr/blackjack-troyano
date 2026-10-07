@@ -27,7 +27,7 @@ describe.skipIf(!destino)("T-20 por WebSocket y SQL", () => {
       return new Mesa(id, nombre, publicar, crearZapatoFijo(["10", "8", "9", "10", "7", "9", "8", "7", "2"]), reloj.reloj, servicios);
     });
   });
-  afterEach(async () => { await Promise.all(clientes.splice(0).map((cliente) => cliente.cerrar())); servidor.stop(true); });
+  afterEach(async () => { await Promise.all(clientes.splice(0).map((cliente) => cliente.cerrar())); await servidor.stop(true); });
   afterAll(async () => { await base.cerrar(); });
   async function conectar(indice: number) {
     const cliente = await ClienteWsPrueba.conectar(`ws://127.0.0.1:${servidor.port}/ws`);

@@ -56,6 +56,7 @@ export class BilleteraMemoria implements Billetera {
   readonly fichas = new Map<number, number>();
   readonly debitos: number[] = [];
   readonly pagos: number[] = [];
+  private readonly pagosPorRonda = new Map<string, number>();
   /** @param usuarioId - Usuario del ensayo. @returns Snapshot del saldo en memoria. */
   async consultar(usuarioId: number): Promise<BilleteraEstado> {
     return { dinero: 10000, fichas: this.fichas.get(usuarioId) ?? 500, compradoHoy: 0,
@@ -70,9 +71,16 @@ export class BilleteraMemoria implements Billetera {
     return this.consultar(usuarioId);
   }
   /** @param usuarioId - Jugador. @param cantidad - Pago. @param rondaId - Referencia. @returns Saldo. */
-  async acreditarPago(usuarioId: number, cantidad: number, _rondaId: string): Promise<BilleteraEstado> {
+  async acreditarPago(usuarioId: number, cantidad: number, rondaId: string): Promise<BilleteraEstado> {
     const estado = await this.consultar(usuarioId);
+    const clave = `${usuarioId}:${rondaId}`;
+    const previo = this.pagosPorRonda.get(clave);
+    if (previo !== undefined) {
+      if (previo !== cantidad) throw new ErrorJuego("ERROR_INTERNO");
+      return estado;
+    }
     this.fichas.set(usuarioId, estado.fichas + cantidad);
+    this.pagosPorRonda.set(clave, cantidad);
     this.pagos.push(usuarioId);
     return this.consultar(usuarioId);
   }
