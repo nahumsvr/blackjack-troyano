@@ -3,6 +3,7 @@ import { TIMEOUT_PETICION_MS, urlWebSocket } from "../src/config";
 import { Conexion } from "../src/net/conexion";
 import { ControladorJuego } from "../src/state/controlador";
 import { ESTADO_INICIAL, reducir, type EstadoJuego } from "../src/state/reductor";
+import { LIMITES_CANTIDAD } from "@blackjack/shared";
 
 // Solo se altera este proceso cliente: el servidor conserva su Crypto normal.
 Object.defineProperty(crypto, "randomUUID", { value: undefined, configurable: true });
@@ -23,7 +24,7 @@ try {
   if (!await controlador.registrar("lan38_http", "secreto38")) {
     throw new Error(modelo.estado.avisos.at(-1)?.texto ?? "El registro LAN falló.");
   }
-  if (!await controlador.comprarFichas(10) || !await controlador.comprarFichas(10)
+  if (!await controlador.comprarFichas(LIMITES_CANTIDAD.compraMin) || !await controlador.comprarFichas(LIMITES_CANTIDAD.compraMin)
     || !await controlador.listarLobby()) throw new Error("Las intenciones LAN fallaron.");
   console.info(JSON.stringify({ conexion: modelo.estado.conexion, usuario: modelo.estado.sesion?.usuario.usuario,
     fichas: modelo.estado.billetera?.fichas, dinero: modelo.estado.billetera?.dinero,

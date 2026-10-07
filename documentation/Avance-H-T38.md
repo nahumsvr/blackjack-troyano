@@ -19,3 +19,12 @@
 ## Aceptación
 
 Después de la corrección, el usuario confirmó que la prueba solicitada funcionó desde dos dispositivos distintos y autorizó enviar el PR. Code review final del diff realizado sin hallazgos pendientes. T-38 mantiene su casilla abierta hasta la fusión del PR.
+
+## Comentarios de PR #46 atendidos (2026-10-06)
+
+- Prueba pura `client/test/identificadores.test.ts`: 256 UUID únicos con formato v4 y reqId aceptado por shared, con `randomUUID` ausente; ejecutada sin PostgreSQL.
+- Integración trasladada a `server/test/lanHttpReal.test.ts`; el proceso cliente conserva su helper sin importar internos del servidor. Cantidad mínima, saldos iniciales, tasa y cantidad de mesas se derivan de configuración.
+- `verificar:produccion` recorre todos los archivos de `client/dist/assets`, comprueba MIME, caché correspondiente al nombre y hash. Regresiones cubren un SVG no referenciado, su alteración remota y ausencia del build local.
+- README y evidencia aclaran que el comando se ejecuta en la máquina servidor, desde la copia que generó el build. El despliegue actual sirve desde la raíz del origen HTTP, como exige PLAN §1.
+- TAREAS y ESTADO conservan un estado vigente: aceptación LAN completada, pendiente aprobación/fusión; no se cierra la casilla de T-38 antes de la fusión.
+- Verificación del diff corregido: `bun run build` correcto; suite de servidor/cliente con PostgreSQL y Bun 1.3.13: 368 pruebas correctas, 0 fallos y 1 omitida por enlaces a archivo en Windows.
