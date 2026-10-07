@@ -134,7 +134,7 @@ test("PAGOS no avanza hasta que la liquidación se resuelve", async () => {
   const tiempo = new TiempoManual();
   let liquidar!: () => void;
   const mesa = new Mesa("mesa-1", "Mesa 1", () => {}, crearZapatoFijo(["10", "9", "10", "7", "8", "7"]), tiempo.reloj,
-    () => new Promise<void>((resolver) => { liquidar = resolver; }));
+    { liquidar: () => new Promise<void>((resolver) => { liquidar = resolver; }) });
   mesa.unirse({ id: 1, usuario: "uno" }, EQUIPADO_INICIAL);
   mesa.registrarApuestaConfirmada(1, 10);
   tiempo.avanzar(0);

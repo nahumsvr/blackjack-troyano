@@ -550,6 +550,7 @@ Reglas clave:
 
 ## 7. Desconexión y varias pestañas
 
+Revisión T-20 (6 oct, PR #31): las acciones validan propiedad, fase, plazo, cantidad y turno dentro de la cola de la mesa. La billetera inyectada comparte la cola por usuario de los handlers económicos hasta publicar cada saldo, evitando que una compra adelante una publicación anterior del juego. Se conserva la revocación de #21: limpiar todas las identidades del token y avisar `SESION_INVALIDA` a sus pares. El contrato `Billetera` vive en `game/` y se re-exporta desde `store/`; requiere revisión de Massimo. No cambian mensajes ni tablas.
 1. Al cerrarse el socket: `Mesa.marcarDesconectado(usuarioId)` → `conectado = false`. Si era su turno, se planta en ese momento; si su turno llega después, se planta al llegar.
 2. En `APUESTAS` sin apuesta: no juega esa ronda. Si ya apostó, su apuesta sigue y se liquida normalmente.
 3. Si se reconecta (`reanudar` con su token) dentro de 60 s: recupera el asiento y recibe el snapshot actual.

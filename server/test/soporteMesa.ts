@@ -1,5 +1,6 @@
 /** Reloj y zapato deterministas; permiten ensayar rondas y carreras sin demoras reales. */
-import { ErrorJuego, type CartaVisible } from "@blackjack/shared";
+import { ErrorJuego, type BilleteraEstado, type CartaVisible } from "@blackjack/shared";
+import type { Billetera } from "../src/game/Billetera";
 import { Carta } from "../src/game/Carta";
 import type { ZapatoMesa } from "../src/game/Mesa";
 import { RelojMesa, type TemporizadorMesa } from "../src/game/RelojMesa";
@@ -48,4 +49,37 @@ export function crearZapatoFijo(rangos: readonly CartaVisible["rango"][]): Zapat
     sacar: () => { const carta = cartas.shift(); if (!carta) throw new ErrorJuego("ERROR_INTERNO"); return carta; },
     barajar: () => {}, necesitaRebarajar: () => false,
   };
+}
+
+/** Billetera inyectable para probar el motor sin importar store/ ni SQL. */
+export class BilleteraMemoria implements Billetera {
+  readonly fichas = new Map<number, number>();
+  readonly debitos: number[] = [];
+  readonly pagos: number[] = [];
+  /** @param usuarioId - Usuario del ensayo. @returns Snapshot del saldo en memoria. */
+  async consultar(usuarioId: number): Promise<BilleteraEstado> {
+    return { dinero: 10000, fichas: this.fichas.get(usuarioId) ?? 500, compradoHoy: 0,
+      disponibleHoy: 5000, limiteDiario: 5000, reinicioEn: "2026-10-06T06:00:00.000Z" };
+  }
+  /** @param usuarioId - Jugador. @param cantidad - Débito. @param rondaId - Referencia. @returns Saldo. @throws ErrorJuego FICHAS_INSUFICIENTES. */
+  async debitarApuesta(usuarioId: number, cantidad: number, _rondaId: string): Promise<BilleteraEstado> {
+    const estado = await this.consultar(usuarioId);
+    if (estado.fichas < cantidad) throw new ErrorJuego("FICHAS_INSUFICIENTES");
+    this.fichas.set(usuarioId, estado.fichas - cantidad);
+    this.debitos.push(usuarioId);
+    return this.consultar(usuarioId);
+  }
+  /** @param usuarioId - Jugador. @param cantidad - Pago. @param rondaId - Referencia. @returns Saldo. */
+  async acreditarPago(usuarioId: number, cantidad: number, _rondaId: string): Promise<BilleteraEstado> {
+    const estado = await this.consultar(usuarioId);
+    this.fichas.set(usuarioId, estado.fichas + cantidad);
+    this.pagos.push(usuarioId);
+    return this.consultar(usuarioId);
+  }
+  /** @param usuarioId - Usuario. @param cantidad - Compra. @param clave - Intención. @returns Saldo. */
+  async comprarFichas(usuarioId: number, cantidad: number, _clave: string): Promise<BilleteraEstado> {
+    const estado = await this.consultar(usuarioId);
+    this.fichas.set(usuarioId, estado.fichas + cantidad);
+    return this.consultar(usuarioId);
+  }
 }
