@@ -17,7 +17,17 @@ Cerrar la pestaña reserva el asiento durante 60 segundos y planta al jugador si
 
 El modo `http://localhost:5173/?mock=1` permite recorrer la interfaz sin backend. Sin `?mock=1`, el cliente usa el servidor real y PostgreSQL.
 
-## Requisitos y arranque
+## Arranque con un solo comando (Docker)
+
+Requisito único: Docker con Compose v2 (Docker Desktop en Windows/macOS). Desde la raíz del proyecto:
+
+```bash
+docker compose up --build
+```
+
+La primera vez descarga imágenes y compila el cliente (necesita internet). Cuando aparezca `Servidor escuchando`, abre `http://localhost:3000`; desde otra laptop de la red, `http://<IP-del-equipo>:3000`. Los datos persisten entre reinicios; `docker compose down -v` los borra y la siguiente subida vuelve a cargar esquema y catálogo. Tras cambiar código usa siempre `--build`.
+
+## Requisitos y arranque para desarrollo (con Bun)
 
 - [Bun](https://bun.sh/) 1.3.13 (versión indicada en `package.json`).
 - Docker Engine con Docker Compose v2 o compatible; la base usa PostgreSQL 16.
@@ -28,7 +38,7 @@ Desde la raíz del repositorio:
 
 ```bash
 cp .env.example .env
-docker compose up -d --wait
+docker compose up -d postgres --wait
 bun install
 bun run db:reset
 bun run dev

@@ -1,4 +1,5 @@
-# PostgreSQL de desarrollo; el volumen conserva datos entre reinicios.
+# `docker compose up --build` levanta PostgreSQL 16 y la aplicación (cliente + servidor en :3000).
+# Solo la BD para desarrollo con Bun local: `docker compose up -d postgres --wait`.
 services:
   postgres:
     image: postgres:16
@@ -8,11 +9,33 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-blackjack_local}
       POSTGRES_DB: ${POSTGRES_DB:-blackjack}
     ports:
-      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Se ejecutan solo al crear el volumen (BD vacía); `docker compose down -v` reinicia los datos.
+      - ./server/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./server/db/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      # -h 127.0.0.1 (TCP): el servidor temporal del initdb solo escucha por socket Unix, así que
+      # no se declara sano hasta que terminaron schema.sql y seed.sql.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Host = nombre del servicio y puerto interno 5432, sin depender del .env del anfitrión.
+      DATABASE_URL: postgres://${POSTGRES_USER:-blackjack}:${POSTGRES_PASSWORD:-blackjack_local}@postgres:5432/${POSTGRES_DB:-blackjack}
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 5s
       timeout: 5s
       retries: 10
