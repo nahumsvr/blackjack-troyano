@@ -1,24 +1,26 @@
 # ESTADO — ¿Dónde vamos?
 
-_Última actualización: mar 6 oct 2026 CDMX. Auditoría iniciada sobre `main` en `04802be` y actualizada con `main` en `42b5b65` (#35, #28 y #22 fusionados). Fechas del registro en America/Mexico_City._
+_Última actualización: mar 6 oct 2026, noche CDMX, sobre `main` en `c07c9de`. Casillas recontadas desde `TAREAS.md` y PRs consultados en GitHub. Fechas del registro en America/Mexico_City (las fusiones de las 00:xx UTC del 7 oct son del 6 oct en CDMX)._
 
 ## Resumen
 
-`main` contiene contrato/BD/economía SQL (PR #4/#14), cliente y mock (#6/#7/#16), guion (#17), enrutador/auth (#18/#19), Carta/Baraja y Mano/Dealer (#25/#27), empaquetado (#20), documentación (#23), aceptación visual T-06 (#26), reconexión con la misma sesión T-11 (#34), muestrario T-27 (#35), resolución de resultados y pagos T-17 (#28) y tres mesas con asientos T-09 (#22, que trae también la economía WebSocket #21 y la producción #24). `main` está protegida: cada PR necesita 1 aprobación de otro dev y se fusiona con squash.
+`main` contiene: contrato/BD/economía SQL (#4/#14), cliente y mock (#6/#7/#16), guion (#17), enrutador/auth (#18/#19), Carta/Baraja y Mano/Dealer (#25/#27), empaquetado (#20), evidencia T-06 (#26), reconexión T-11 (#34), muestrario T-27 (#35), resultados y pagos T-17 (#28), tres mesas T-09 (#22, con la economía por WebSocket #21 y la producción en un puerto #24), **el motor de partidas**: máquina de estados T-18 (#29), relojes T-19 (#30, que integra las acciones T-20 de #31) y liquidación e historial T-21 (#32); además carga del `.env` raíz (#38), manual/README (#39), JSDoc de `shared/` (#40) y arquitectura con el motor (#41) y cierre de T-22 (#42). `main` está protegida: 1 aprobación de otro dev y fusión con squash.
 
-El camino crítico **T-01 → T-03 → T-07 → T-18 → T-20 → T-31** espera la integración de T-18/T-20. Hay código publicado en la cadena #29 → #30 → #31 → #32 → #33, pero sus tareas conservan casillas abiertas hasta cumplir fusión y aceptación. T-38 sigue abierta hasta jugar desde otra laptop por IP.
+**PRs abiertos:** #33 (T-26 bots; su rama ya contiene #37, desconexión y recuperación de asiento T-36, que **todavía no está en `main`**), #43 (corrección de `HistorialSQL`, ver Verificación) y este seguimiento.
+
+El camino crítico **T-01 → T-03 → T-07 → T-18 → T-20 → T-31** ya tiene todo su código en `main`. T-18 y T-20 conservan la casilla abierta hasta acreditar su criterio con pestañas reales; el siguiente paso es T-31 (sesión con 3 laptops).
 
 ## Hito actual
 
 **Hito 5 — mar 6 oct:** ensayos y ZIP probado. Entrega **mié 7 oct, 13:00 CDMX**; objetivo de subida **antes de las 11:00**.
 
-Estado: 🔴 **Atrasados**. H1/H2/H3/H4 no se cerraron en sus fechas y no existe el tag `v0.9-congelado`. Las pruebas unitarias e integración parcial no acreditan cinco rondas en tres laptops, instalación independiente ni aceptación de la entrega.
+Estado: 🔴 **Atrasados**. H1 a H4 no se cerraron en sus fechas y no existe el tag `v0.9-congelado`. Las pruebas automáticas no acreditan cinco rondas en tres laptops, instalación independiente ni aceptación de la entrega.
 
-El líder debe confirmar el criterio de corte de PLAN §10 y la fecha/condiciones del congelamiento. T-39/T-40 están pospuestas; no se cambia el alcance en esta auditoría.
+El líder debe confirmar el criterio de corte de PLAN §10 y la fecha/condiciones del congelamiento. T-39/T-40 están pospuestas y T-35 no tiene implementación.
 
 ## Avance
 
-Solo se cuentan tareas con código fusionado en `main` y criterio comprobado.
+Solo se cuentan tareas con código fusionado en `main` y criterio comprobado (casillas `[x]` de `TAREAS.md`).
 
 | Dev | Completadas | Total | % |
 |---|---|---|---|
@@ -34,39 +36,41 @@ Avance por hito: H1 12/14 (86 %) · H2 9/19 (47 %) · H3 1/10 (10 %) · H4 0/8 �
 - **Nahum:** T-10/T-11/T-12/T-27; T-11 acreditada en PR #34 con cliente real, PostgreSQL y capturas; T-27 en PR #35.
 - **Massimo:** T-03/T-04/T-05/T-22/T-23/T-24/T-25/T-34/T-54. T-03 se acredita con PR #4 (contrato), #14 (límites) y #7 (cliente que consume `@blackjack/shared`). T-54 acredita el script ZIP, no T-55 ni el paquete final.
 - **T-22:** hecha; interfaz y `db/` en #4, consumida por `Mesa` y por `BilleteraMemoria` en #29–#32.
-- **T-14/T-48:** requieren instalación independiente de Nahum. La fusión de #23 aportó documentación, no esa aceptación.
-- **PR #7 ya está en `main`:** T-28–T-30 y T-41 tienen implementación integrada; conservan casilla abierta cuando falta su criterio de aceptación completo.
+- **Incongruencia para Hector:** T-19 está `[x]`, pero su dependencia T-18 sigue `[ ]`; T-20 y T-21 también siguen `[ ]` aunque #29–#32 están en `main`. Cerrarlas (o desmarcar T-19) en su propio PR de seguimiento.
+- **Código en `main`, criterio pendiente:** T-14/T-48 (manual en #39; falta la instalación independiente de Nahum), T-32/T-50 (arquitectura en #41; falta verla renderizada y la confirmación de Hector), T-46 (JSDoc en #40, aprobado por Nahum; el criterio pide la revisión de Hector), T-28–T-30, T-38 y T-41 (cliente y producción integrados; falta probarlos contra el servidor real en 3 laptops).
 
-## Verificación de esta auditoría
+## Verificación
 
-Sobre `main` en `04802be` (anterior a #35, #28 y #22; no se repitió tras fusionarlos), con **Bun 1.3.13 y PostgreSQL 16.15**: typecheck, **236 pruebas / 3,540 aserciones**, cero fallos/omisiones, y build del cliente correctos. Se usaron schemas aleatorios de pruebas; no se ejecutó `db:reset`. El Bun global sigue en 1.4.2; la comprobación usó un ejecutable 1.3.13 aislado.
+Sobre `main` en `c619262` (#42 solo cambió documentación), con PostgreSQL 16.15: typecheck correcto y **340 pruebas correctas, 7 fallos**, igual con Bun 1.3.13 (versión fijada) que con 1.4.2. Fallan las pruebas de liquidación, juego con economía y acciones por WebSocket con `invalid input syntax for type json`. Causa: desde #32, `HistorialSQL` pasa las cartas como arreglo directo, que Bun envía como `"[object Object]"` en conexiones `prepare: false` (las de las pruebas). En producción (sentencias preparadas) el historial sí se guarda como arreglo. **PR #43** lo corrige con `JSON.stringify(...)::text::jsonb` y agrega una regresión para los dos modos: **349 pruebas, 0 fallos** con Bun 1.3.13 y con 1.4.2.
+
+Verificaciones anteriores de esta sesión:
+- **ZIP de `main` `3e185d1`** extraído en carpeta limpia: instalación con lockfile fijo, `db:reset`, build y start; HTTP 200 por la IP de la LAN y registro/lobby/mesa por WebSocket. No es la prueba en otra laptop.
+- **Motor antes de integrarse** (punta `573171b`): `bun run bots 4 --mesa mesa-1 --rondas 10` sin errores; 10 filas en `rondas`, 40 en `rondas_jugadores` y 0 usuarios con saldo distinto de la suma de `movimientos`.
 
 ## Bloqueos activos
 
-- **Cadena del motor #29–#33:** #28 ya está en `main`; falta actualizar cada rama sobre la nueva base y revisarla. #31 aún contiene auth/economía anteriores a las correcciones de #21; conservar logout compartido, caducidad, saldos ordenados, respuestas sin duplicados y servidor estático de #24 al resolver los cruces.
-- **T-13/T-30/T-38:** #22 ya está en `main`; falta verificarlas contra el servidor real (lobby, compra de 1,000 fichas y juego desde otra laptop por IP).
-- **T-28/T-29/T-31/T-41:** esperan acciones y rondas reales integradas. El historial final requiere compras, apuestas y artículos con saldos correctos.
-- **T-36/T-37/T-42:** falta aceptación de desconexión/reserva de 60 s y endurecimiento de 20 mensajes/s; la reconexión de sesión T-11 no prueba recuperación de asiento/mano.
-- **T-35:** espera T-18 integrado y validación autoritativa de fase; coordinar con el alcance que confirme el líder para cosméticos/tienda.
-- **T-43/T-44/T-45/T-46/T-47:** falta congelamiento y revisión final por otro integrante. Se puede preparar auditoría/checklist sin marcar el cierre.
-- **T-33/T-51/T-52/T-53/T-56:** falta aprobación del guion/diapositivas, ensayos cronometrados y video de respaldo.
-- **T-48/T-50/T-55/T-57:** manual independiente, arquitectura final revisada, ZIP jugable en máquina limpia y subida/verificación final.
+- **Suite en rojo en `main`:** 7 fallos hasta fusionar #43.
+- **T-26/T-36 → T-42:** los bots y la recuperación de asiento esperan la fusión de #33 (que contiene #37). T-42 espera T-36.
+- **T-37:** el límite de 20 mensajes/s no está implementado.
+- **T-13/T-18/T-20/T-21/T-28–T-31/T-38/T-41:** el código está en `main`; falta acreditar sus criterios en la sesión con 3 laptops (lobby real, mismo estado en < 1 s, turnos, compras, historial, juego por IP).
+- **T-35:** sin implementación; su consumidor T-40 está pospuesto. Corte según PLAN §10 pendiente de confirmar por el líder.
+- **T-43 → T-44/T-45/T-46/T-47:** el congelamiento espera #33 y T-37; las revisiones de JSDoc y el checklist dependen de él.
+- **T-14/T-48/T-55:** instalación independiente siguiendo el manual y prueba del ZIP en máquina limpia.
+- **T-33/T-51/T-52/T-53/T-56/T-57:** aprobación del guion, diapositivas, ensayos, video de respaldo y subida final.
 
-## Hoy le toca a… (mar 6 oct, después de T-09/T-17/T-27)
+## Hoy le toca a… (mar 6 oct noche → mié 7 oct mañana)
 
 - **Hector:**
-  - T-09/T-17 hechas (PR #22/#28); T-18 en PR #29 y T-19/T-20/T-21/T-26 en PR #30–#33, pendientes de revisión/fusión; no cuentan todavía. Las prioridades y el alcance corresponden al líder.
+  - Revisar #43; fusionar #33 (bots + T-36).
+  - T-37: límite de 20 mensajes/s.
+  - Seguimiento de casillas T-18/T-20/T-21 (y la incongruencia de T-19); revisar T-46 y confirmar la arquitectura (T-50).
 - **Nahum:**
-  - T-33 guion de exposición (PR #17 fusionado, pendiente de aprobación del grupo).
-  - T-27 hecha (PR #35) → borradores de T-49 (manual) y T-51 (diapositivas) con capturas del mock y del muestrario.
-  - T-11 hecha (reconexión con la misma sesión verificada con T-08); T-09 ya está en `main`: verificar T-13 contra el servidor real.
+  - Revisar #43.
+  - Instalar desde cero siguiendo solo el manual (T-14/T-48).
+  - En la sesión de 3 laptops: T-13, T-28–T-30, T-41 contra el servidor real y grabar el video (T-53). Diapositivas (T-51).
 - **Massimo:**
-  - Preparar la verificación de checklist T-44 cuando el equipo acuerde el corte.
-  - Revisar la economía y el contrato en #31 contra lo que #21 ya dejó en `main` (logout compartido, caducidad, cola por usuario, estáticos de #24).
-  - Auditoría JSDoc de `shared/`, `db/` y `store/` (T-46) y matriz de Funcionamiento de T-44, según [Avance-M-06.md](Avance-M-06.md).
-  - Adelantar empaquetado y documentación; las decisiones de alcance permanecen con el líder.
-
-Plan para la sesión y hasta la entrega: [Avance-M-06.md](Avance-M-06.md). Las decisiones de alcance permanecen con el líder.
+  - Coordinar la sesión de 3 laptops: T-31 y la sección de Funcionamiento del checklist (T-44) en una sola pasada.
+  - Congelamiento (T-43) cuando entren #33 y T-37; luego ZIP final (T-55 con Hector) y subida (T-57) antes de las 11:00.
 
 ## Registro diario
 
@@ -122,7 +126,7 @@ Plan para la sesión y hasta la entrega: [Avance-M-06.md](Avance-M-06.md). Las d
 | 2026-10-06 | Nahum: revisión de PR #36 aplicada: `ESTADO.md` sin bloque duplicado de avance; T-38/T-48 y `Avance-M-06.md` reflejan que #21/#24 llegaron a `main` con #22 (`42b5b65`); tareas de Massimo actualizadas. Sin cambios de casillas: 21/57. |
 | 2026-10-06 | Massimo: T-46 lista para revisión de Hector: JSDoc en los esquemas y constantes exportados de `shared/` y en `Saldos`; 0 exportaciones sin JSDoc en store/db/shared. Typecheck y pruebas de shared/cliente en verde. Sin casillas nuevas: 21/57. |
 | 2026-10-06 | Hector: revisión 5435739214 de T-18 atendida en PR #29 sobre main `3e185d1`, conservando el modo espectador. Salida voluntaria separada de caída de red; regresión falla antes y pasa después. Typecheck correcto y suite PostgreSQL 16.15/Bun 1.3.13: 311 pruebas correctas, cero fallos, una omitida por enlaces a archivo en Windows. Evidencia visual histórica conservada; pendiente aprobación/fusión, sin recalcular contadores. |
-| 2026-10-07 | Revisión de código de PR #30 (T-19) atendida (incluye #31): rama integrada sobre main tras el squash de #29 (se descartan los commits duplicados y se conserva el modo espectador de #22). Reintento acotado si falla el reparto, plazo de apuestas restaurado si alguien llega tras un cierre anticipado y PAGOS espera la liquidación. Typecheck y suite completa con PostgreSQL de pruebas (322 pruebas, 0 fallos). Casilla de T-19 abierta hasta fusión. |
+| 2026-10-06 | Revisión de código de PR #30 (T-19) atendida (incluye #31): rama integrada sobre main tras el squash de #29 (se descartan los commits duplicados y se conserva el modo espectador de #22). Reintento acotado si falla el reparto, plazo de apuestas restaurado si alguien llega tras un cierre anticipado y PAGOS espera la liquidación. Typecheck y suite completa con PostgreSQL de pruebas (322 pruebas, 0 fallos). Casilla de T-19 abierta hasta fusión. |
 | 2026-10-06 | Hector: revisión de T-20 atendida en PR #31; conserva limpieza/aviso de token compartido de #21 y cola económica común para apuestas/compras. Typecheck y 319 pruebas SQL sin fallos; pendiente revisión de Massimo y fusión. |
 | 2026-10-06 | Hector: revisión de T-21 atendida en PR #32; apagar completa liquidaciones pendientes, conserva UUID/créditos y espera todas las mesas. Regresión SQL falla con el apagado anterior y pasa tras la corrección; typecheck y 332 pruebas PostgreSQL sin fallos. Pendiente revisión de Massimo y fusión. |
 | 2026-10-06 | Nahum: corrige la revisión de T-21 en PR #32 (jsonb como arreglo, tope de reintentos en PAGOS, apagado con `finally`). Typecheck y 333 pruebas PostgreSQL sin fallos. Pendiente revisión de Massimo y fusión. |
@@ -130,3 +134,4 @@ Plan para la sesión y hasta la entrega: [Avance-M-06.md](Avance-M-06.md). Las d
 | 2026-10-06 | Nahum: revisión de PR #39 aplicada: integra main `16f7e32` (#29–#32) resolviendo el conflicto del registro; README indica que las rondas completas ya están en `main` y solo faltan los bots (#33); manual con Bun 1.3.13 como en `package.json` y `copy` para `cmd` de Windows. Sin casillas nuevas. |
 | 2026-10-06 | Massimo: `docs/arquitectura.md` actualizado con el motor ya integrado en `main` (PR #29–#32): clases y firmas reales, dependencias, liquidación idempotente, handlers/topics, máquina de estados implementada y pruebas. T-32/T-50 esperan la revisión de Hector. Sin casillas nuevas: 21/57. |
 | 2026-10-06 | T-22 hecha por Massimo: interfaz `Billetera` en `main` usada por `Mesa` y por `BilleteraMemoria` en las pruebas del motor (PR #29–#32). Contadores recalculados con T-19, ya marcada en TAREAS: 23/57 (40 %), Hector 10/19, Massimo 9/19, H2 9/19. |
+| 2026-10-06 | Massimo: seguimiento sobre `main` `c07c9de` (#42 fusionado). Resumen, bloqueos y "Hoy le toca" actualizados con #29–#32 y #38–#41 fusionados y #33 (con #37/T-36) abierto. Suite: 340 correctas y 7 fallos por `HistorialSQL` con `prepare: false`; corrección en #43 (349/0 con Bun 1.3.13 y 1.4.2). Fecha del registro de #30 corregida a CDMX. Sin casillas nuevas además de T-22: 23/57 (40 %). |
