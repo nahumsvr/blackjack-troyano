@@ -74,6 +74,7 @@ Plan para la sesión y hasta la entrega: [Avance-M-06.md](Avance-M-06.md). Las d
 
 | Fecha (CDMX) | Nota |
 |---|---|
+| 2026-10-06 | T-37 implementada por Hector en `t-37-endurecimiento-websocket`: ventana móvil de 20 mensajes/s, cola acotada y logs de errores internos con contexto. Ráfaga de 1,000 mensajes y tres jugadores con PostgreSQL real superan el criterio de <1 s; espectadora sin cambios de estado/dinero. Typecheck y 372 pruebas/4,682 aserciones sin fallos; una omitida por plataforma. Autorrevisión final sin hallazgos pendientes. PR abierto; pendiente aprobación externa/fusión, sin sumar a main. Ver Avance-H-T37.md. |
 | 2026-10-06 | T-36 implementada por Hector en PR #37 (borrador), con reserva exacta de 60 s, auto-plantado, recuperación de mano/saldo y transferencia a espectadora. Bun 1.3.13/PostgreSQL 16.15: typecheck y 357 pruebas/4,564 aserciones sin fallos/omisiones. Incluye 12 casos nuevos y sockets reales; revisión/fusión y aceptación Wi-Fi de T-42 pendientes. Ver Avance-H-T36.md. |
 | 2026-09-29 | Plan aprobado: `PLAN.md`, `TAREAS.md`, `ESTADO.md`, `CHECKLIST_ENTREGA.md`, `CLAUDE.md` creados. 57 tareas, 0 % completado. |
 | 2026-10-01 | Hector: T-01 preparada localmente en t-01-monorepo-bun. bun install en clon limpio y typecheck correctos. Sin tests aun. PR #1 abierto; no se contabiliza como fusionada. |

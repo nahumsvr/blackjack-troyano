@@ -166,6 +166,10 @@ flowchart TB
 
 Formato: JSON de texto. Todo mensaje del cliente puede llevar `reqId?: string` (máx. 36 caracteres); el servidor lo repite en la respuesta directa o en el `error`. Límite de tamaño: 16 KB por mensaje. Límite de ritmo: 20 mensajes/s por conexión.
 
+T-37 aplica una ventana móvil de 1,000 ms por socket con reloj monótono del servidor. Cuenta cada frame admitido, incluidos `ping` y mensajes inválidos, antes de encolarlo o consultar SQL. También admite como máximo 20 operaciones pendientes por conexión; el exceso recibe `DEMASIADAS_SOLICITUDES` sin entrar en la cola. Recupera capacidad cuando vence la ventana y hay espacio en la cola. Los límites viven en `server/src/config.ts`.
+
+El rechazo por exceso refleja únicamente un `reqId` validado con el esquema compartido, extraído de texto dentro del límite de tamaño. Los errores inesperados responden `ERROR_INTERNO` sin divulgar la excepción y se registran en el servidor con conexión, usuario, mesa, tipo y `reqId`, sin copiar el frame, contraseña o token. Un fallo al registrar o enviar el error queda aislado de las demás conexiones. La autorización de espectadores se comprueba en el servidor antes de ejecutar la intención y después de esperar la cola de la mesa.
+
 ### 3.1 Cliente → Servidor
 
 | `type` | Campos | Sesión | Fase / condición válida | Respuesta | Errores posibles |

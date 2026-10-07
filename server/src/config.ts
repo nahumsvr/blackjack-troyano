@@ -38,6 +38,11 @@ export const MESAS = [
 ] as const;
 /** Límite del protocolo medido en bytes UTF-8, antes de decodificar JSON. */
 export const MENSAJE_MAX_BYTES = 16 * 1024;
+/** Ventana móvil de admisión por conexión, incluidos frames inválidos y ping. */
+export const MENSAJES_POR_SEGUNDO = 20;
+export const VENTANA_MENSAJES_MS = 1_000;
+/** Una consulta lenta no permite acumular una cola ilimitada en el mismo socket. */
+export const MENSAJES_PENDIENTES_MAX = MENSAJES_POR_SEGUNDO;
 /** Zapato de cuatro mazos; reposición entre rondas por debajo del 25 %. */
 export const NUM_MAZOS = 4;
 export const UMBRAL_REBARAJAR = 0.25;

@@ -1,10 +1,10 @@
-/** Valida el contrato compartido y despacha intenciones sin depender de SQL (T-07). */
+/** Limita la admisión, valida el contrato y aísla errores por conexión sin depender de SQL. */
 import {
-  crearErrorValidacion, ErrorJuego, MENSAJES_ERROR, MensajeClienteSchema,
+  crearErrorValidacion, ErrorJuego, MENSAJES_ERROR, MensajeClienteSchema, ReqIdSchema,
   type Equipado, type MensajeCliente, type MensajeServidor, type UsuarioVista,
 } from "@blackjack/shared";
 import type { ServerWebSocket } from "bun";
-import { MENSAJE_MAX_BYTES } from "../config";
+import { MENSAJE_MAX_BYTES, MENSAJES_POR_SEGUNDO, VENTANA_MENSAJES_MS, MENSAJES_PENDIENTES_MAX } from "../config";
 
 /** Sesión asociada por los handlers de autenticación, nunca por entrada del cliente. */
 export interface DatosConexion {
@@ -16,6 +16,15 @@ export interface DatosConexion {
   equipado?: Equipado;
 }
 export type SocketConexion = ServerWebSocket<DatosConexion>;
+/** Contexto de diagnóstico del servidor; no registra frames, contraseñas ni tokens. */
+export interface ContextoErrorEnrutador {
+  conexionId?: string;
+  usuarioId?: number;
+  mesaId?: string;
+  tipo?: MensajeCliente["type"];
+  reqId?: string;
+}
+type TraficoConexion = { llegadas: number[]; pendientes: number };
 type TipoManejado = Exclude<MensajeCliente["type"], "ping">;
 /** Cada handler recibe solo su intención validada y devuelve la respuesta directa. */
 type ManejadoresIntenciones = Partial<{
@@ -31,18 +40,22 @@ export type ManejadoresEnrutador = ManejadoresIntenciones & {
 /** Enrutador común; los servicios de auth, mesa y economía se conectan por inyección. */
 export class Enrutador {
   private readonly pendientes = new WeakMap<SocketConexion, Promise<void>>();
+  private readonly trafico = new WeakMap<SocketConexion, TraficoConexion>();
   /**
+   * Crea el punto común de admisión, validación y despacho por conexión.
    * @param manejadores - Intenciones implementadas por las tareas siguientes.
-   * @param registrarError - Registra excepciones inesperadas solo en el servidor.
+   * @param registrarError - Registra excepciones inesperadas y su contexto solo en el servidor.
    * @param validarSesion - Comprueba vigencia/revocación antes de ejecutar intenciones protegidas.
    * @param limpiarConexion - Libera recursos de la conexión al cerrar el transporte.
+   * @param ahora - Reloj monótono del servidor; inyectable para probar fronteras sin esperas.
    * @returns Enrutador con ping disponible incluso sin servicios instalados.
    */
   constructor(
     private readonly manejadores: ManejadoresEnrutador = {},
-    private readonly registrarError: (error: unknown) => void = (error) => console.error("Error interno en Enrutador", error),
+    private readonly registrarError: (error: unknown, contexto: ContextoErrorEnrutador) => void = (error, contexto) => console.error("Error interno en Enrutador", contexto, error),
     private readonly validarSesion?: (socket: SocketConexion) => Promise<void>,
     private readonly limpiarConexion?: (socket: SocketConexion) => void,
+    private readonly ahora: () => number = () => performance.now(),
   ) {}
 
   /**
@@ -50,20 +63,31 @@ export class Enrutador {
    * @param socket - Conexión cerrada; su identidad sigue disponible para el callback.
    * @returns Nada.
    */
-  cerrar(socket: SocketConexion): void { this.limpiarConexion?.(socket); }
+  cerrar(socket: SocketConexion): void { this.trafico.delete(socket); this.limpiarConexion?.(socket); }
 
   /**
-   * Valida tamaño, JSON y esquema; conserva reqId y convierte fallos en error público.
+   * Admite antes de encolar; valida tamaño/JSON/Zod y convierte fallos en error público.
    * @param socket - Conexión que originó la intención.
    * @param datos - Frame textual o binario recibido por Bun.
    * @returns Finalización de la respuesta; los errores de dominio no se propagan.
    */
   manejar(socket: SocketConexion, datos: string | Buffer): Promise<void> {
+    let trafico: TraficoConexion;
+    try {
+      if (socket.readyState !== WebSocket.OPEN) return Promise.resolve();
+      trafico = this.admitir(socket);
+    } catch (error) {
+      this.responderError(socket, error, this.contexto(socket, undefined, this.extraerReqId(datos)));
+      return Promise.resolve();
+    }
     // Auth y logout de un mismo socket conservan el orden aunque hagan consultas async.
     const anterior = this.pendientes.get(socket) ?? Promise.resolve();
     const actual = anterior.catch(() => {}).then(() => this.procesar(socket, datos));
     this.pendientes.set(socket, actual);
-    const limpiar = () => { if (this.pendientes.get(socket) === actual) this.pendientes.delete(socket); };
+    const limpiar = () => {
+      trafico.pendientes--;
+      if (this.pendientes.get(socket) === actual) this.pendientes.delete(socket);
+    };
     void actual.then(limpiar, limpiar);
     return actual;
   }
@@ -71,6 +95,7 @@ export class Enrutador {
   private async procesar(socket: SocketConexion, datos: string | Buffer): Promise<void> {
     if (socket.readyState !== WebSocket.OPEN) return;
     let reqId: string | undefined;
+    let tipo: MensajeCliente["type"] | undefined;
     try {
       // No fijar maxPayloadLength a 16 KB: Bun cerraría el socket antes de responder
       // al frame de 1 MB exigido por T-07. Se conserva el techo nativo de 16 MB.
@@ -90,6 +115,7 @@ export class Enrutador {
       }
       const mensaje = validado.data;
       reqId = mensaje.reqId;
+      tipo = mensaje.type;
       const esAcceso = mensaje.type === "registro" || mensaje.type === "login" || mensaje.type === "reanudar";
       if (esAcceso && socket.data.usuarioId !== undefined) throw new ErrorJuego("YA_AUTENTICADO");
       if (!esAcceso && mensaje.type !== "ping" && socket.data.usuarioId === undefined) {
@@ -105,10 +131,50 @@ export class Enrutador {
       if (this.manejadores.serializar) await this.manejadores.serializar(socket, mensaje, responder);
       else await responder();
     } catch (error) {
-      const codigo = error instanceof ErrorJuego ? error.codigo : "ERROR_INTERNO";
-      if (!(error instanceof ErrorJuego)) this.registrarError(error);
-      this.enviar(socket, { type: "error", codigo, mensaje: MENSAJES_ERROR[codigo], reqId });
+      this.responderError(socket, error, this.contexto(socket, tipo, reqId));
     }
+  }
+
+  private admitir(socket: SocketConexion): TraficoConexion {
+    const ahora = this.ahora();
+    const trafico = this.trafico.get(socket) ?? { llegadas: [], pendientes: 0 };
+    trafico.llegadas = trafico.llegadas.filter((llegada) => ahora - llegada < VENTANA_MENSAJES_MS);
+    this.trafico.set(socket, trafico);
+    // Contar al llegar impide que una consulta SQL lenta difiera el control de ritmo.
+    // Solo conservamos timestamps admitidos; los rechazos no generan trabajo en la cola.
+    if (trafico.llegadas.length >= MENSAJES_POR_SEGUNDO || trafico.pendientes >= MENSAJES_PENDIENTES_MAX) {
+      throw new ErrorJuego("DEMASIADAS_SOLICITUDES");
+    }
+    trafico.llegadas.push(ahora);
+    trafico.pendientes++;
+    return trafico;
+  }
+
+  private extraerReqId(datos: string | Buffer): string | undefined {
+    if (typeof datos !== "string" || Buffer.byteLength(datos, "utf8") > MENSAJE_MAX_BYTES) return;
+    try {
+      const entrada: unknown = JSON.parse(datos);
+      if (typeof entrada !== "object" || entrada === null || !("reqId" in entrada)) return;
+      const reqId = ReqIdSchema.safeParse(entrada.reqId);
+      if (reqId.success) return reqId.data;
+    } catch { /* Un frame malformado saturado responde sin correlación inventada. */ }
+  }
+
+  private contexto(socket: SocketConexion, tipo?: MensajeCliente["type"], reqId?: string): ContextoErrorEnrutador {
+    const { conexionId, usuarioId, mesaId } = socket.data;
+    return { conexionId, usuarioId, mesaId, tipo, reqId };
+  }
+
+  private registrarFallo(error: unknown, contexto: ContextoErrorEnrutador): void {
+    try { this.registrarError(error, contexto); }
+    catch { /* El fallo del destino de logs no puede impedir la respuesta ni tumbar el transporte. */ }
+  }
+
+  private responderError(socket: SocketConexion, error: unknown, contexto: ContextoErrorEnrutador): void {
+    const codigo = error instanceof ErrorJuego ? error.codigo : "ERROR_INTERNO";
+    if (!(error instanceof ErrorJuego)) this.registrarFallo(error, contexto);
+    try { this.enviar(socket, { type: "error", codigo, mensaje: MENSAJES_ERROR[codigo], reqId: contexto.reqId }); }
+    catch (errorEnvio) { this.registrarFallo(errorEnvio, contexto); }
   }
 
   private despachar(socket: SocketConexion, mensaje: MensajeCliente): MensajeServidor | Promise<MensajeServidor> {
