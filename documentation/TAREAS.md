@@ -73,7 +73,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 - [ ] T-14 · README con requisitos (Bun, Docker) y los 4 comandos para arrancar (borrador del manual de instalación) · Massimo · depende de: T-05
   - **Preparación local (2026-10-04):** README y docs/manual-instalacion.md actualizados con los comandos existentes y límites actuales. Pendiente que Nahum arranque independientemente siguiendo el README. Incluido en PR #4 (abierto).
   - **Hecho cuando:** Nahum levanta el proyecto en su máquina solo con el README, sin preguntar.
-  - **Listo para la prueba de Nahum (2026-10-06):** README sin enlaces rotos ni estado de ramas viejas; los 4 comandos verificados desde el ZIP de `main` `3e185d1` (ver T-48).
+  - **Listo para la prueba de Nahum (2026-10-06) — PR #39:** README sin enlaces rotos ni estado de ramas viejas; los 4 comandos verificados desde el ZIP de `main` `3e185d1` (ver T-48).
 
 ---
 
@@ -212,7 +212,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Avance — PR #23 fusionado (2026-10-06):** documentación corregida y entorno Bun 1.3.13/PostgreSQL 16 comprobado. Producción de #24 ya está en `main` (con #22); la instalación desde cero por Nahum siguiendo únicamente el manual continúa pendiente.
   - **Preparación local (2026-10-04):** Borrador docs/manual-instalacion.md disponible; build/start, PostgreSQL 16 y prueba independiente de Nahum pendientes. Incluido en PR #4 (abierto).
   - **Hecho cuando:** Nahum instala desde cero en su laptop siguiendo solo el manual.
-  - **Listo para la prueba de Nahum (2026-10-06):** ruta rápida de 6 comandos, sección de conexión desde otra laptop (IP, hotspot, reglas de firewall para Windows/Linux/macOS), puerto ocupado y «Cliente no compilado» en problemas habituales; historial de evidencias retirado del manual. Verificado desde el ZIP de `main` `3e185d1` en carpeta limpia: `bun install --frozen-lockfile` (5 s), `db:reset`, `build`, `start`; `GET /` → 200 por `localhost` y por la IP de LAN, y por WebSocket registro → `sesion`, `lobby.listar` → `lobby`, `mesa.unirse` → `mesa.estado`. Falta que Nahum lo siga solo en su laptop.
+  - **Listo para la prueba de Nahum (2026-10-06) — PR #39:** ruta rápida de 6 comandos, sección de conexión desde otra laptop (IP, hotspot, reglas de firewall para Windows/Linux/macOS), puerto ocupado y «Cliente no compilado» en problemas habituales; historial de evidencias retirado del manual. Verificado desde el ZIP de `main` `3e185d1` en carpeta limpia: `bun install --frozen-lockfile` (5 s), `db:reset`, `build`, `start`; `GET /` → 200 por `localhost` y por la IP de LAN, y por WebSocket registro → `sesion`, `lobby.listar` → `lobby`, `mesa.unirse` → `mesa.estado`. Falta que Nahum lo siga solo en su laptop.
 - [ ] T-50 · `docs/arquitectura.md` final: descripción de cada tabla + `schema.sql`/`seed.sql` referenciados, diagrama de clases, diagrama de dependencias, protocolo, máquina de estados, decisiones de diseño · Massimo · depende de: T-32, T-45
   - **Avance — PR #23 fusionado (2026-10-06):** diccionario de siete tablas/45 columnas y diagramas de módulos/clases disponibles en main. Falta incorporar motor/gestor al fusionarse, exportar diagramas para el ZIP y revisión de Hector.
   - **Preparación local (2026-10-04):** Borrador de arquitectura referencia schema/seed y distingue implementación de diseño pendiente. Motor/auth/router/cliente y revisión de Hector pendientes.
