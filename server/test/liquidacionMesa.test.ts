@@ -1,7 +1,7 @@
 /** T-21: resultados, salida, reintentos y plazo de resultados después de confirmar persistencia. */
 import { expect, test } from "bun:test";
 import { ErrorJuego, MensajeServidorSchema } from "@blackjack/shared";
-import { EQUIPADO_INICIAL, REINTENTO_PAGOS_MS, TIEMPO_RESULTADOS_MS } from "../src/config";
+import { EQUIPADO_INICIAL, REINTENTO_PAGOS_MS, REINTENTOS_PAGOS_MAX, TIEMPO_RESULTADOS_MS } from "../src/config";
 import { Mesa } from "../src/game/Mesa";
 import type { ResultadoMesa, RondaTerminada } from "../src/game/RondaTerminada";
 import { BilleteraMemoria, crearZapatoFijo, TiempoManual } from "./soporteMesa";
@@ -170,4 +170,27 @@ test("cerrar reconoce un pago con respuesta perdida y reporta un fallo persisten
   expect((await billetera.consultar(1)).fichas).toBe(515);
   expect(guardadas).toHaveLength(0);
   expect(tiempo.pendientes.size).toBe(0);
+});
+
+test("un fallo persistente agota los reintentos, registra la ronda y libera la mesa sin perder pagos confirmados", async () => {
+  const { mesa, tiempo, billetera, resultados, errores, servicios, repartir } = preparar();
+  servicios.guardarRonda = async () => { throw new ErrorJuego("ERROR_INTERNO"); };
+  const rondaId = mesa.rondaId;
+  await repartir();
+  mesa.salir(1);
+  await mesa.plantarse(2); await mesa.plantarse(3); await mesa.esperarOperaciones();
+  for (let intento = 1; intento < REINTENTOS_PAGOS_MAX; intento++) {
+    expect(mesa.fase).toBe("PAGOS");
+    tiempo.avanzar(REINTENTO_PAGOS_MS); await mesa.esperarOperaciones();
+  }
+  expect(mesa.fase).toBe("PAGOS");
+  expect(errores).toHaveLength(REINTENTOS_PAGOS_MAX);
+  tiempo.avanzar(REINTENTO_PAGOS_MS); await mesa.esperarOperaciones();
+  expect(mesa.fase).toBe("APUESTAS");
+  expect(mesa.rondaId).not.toBe(rondaId);
+  expect(mesa.snapshot().asientos[0]).toBeNull();
+  expect(String(errores.at(-1))).toContain(`ronda ${rondaId}`);
+  expect(resultados).toEqual([]);
+  expect(billetera.pagos).toEqual([1, 2, 3]);
+  expect(tiempo.maximo).toBe(1);
 });

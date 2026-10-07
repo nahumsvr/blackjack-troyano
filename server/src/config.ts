@@ -53,6 +53,8 @@ export const TIEMPO_TURNO_MS = 20_000;
 export const TIEMPO_RESULTADOS_MS = 5_000;
 /** Reintento interno sin abrir otra ronda ni repetir pagos confirmados. */
 export const REINTENTO_PAGOS_MS = 1_000;
+/** Intentos de liquidación antes de registrar la ronda para conciliación manual y liberar la mesa. */
+export const REINTENTOS_PAGOS_MAX = 30;
 /*
  * Los límites de cantidad se definen una sola vez en `LIMITES_CANTIDAD` (shared/protocolo.ts)
  * porque el cliente los necesita para validar formularios y `shared/` no puede importar

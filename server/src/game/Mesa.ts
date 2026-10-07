@@ -1,6 +1,6 @@
 /** Máquina de estados y relojes autoritativos; el transporte inyecta dinero y persistencia. */
 import { CantidadApuestaSchema, ErrorJuego, type Asiento, type BilleteraEstado, type Equipado, type FaseMesa, type MesaEstado, type MensajeServidor, type UsuarioVista } from "@blackjack/shared";
-import { CAPACIDAD_MESA, TIEMPO_APUESTAS_MS, TIEMPO_TURNO_MS, TIEMPO_RESULTADOS_MS, REINTENTO_PAGOS_MS } from "../config";
+import { CAPACIDAD_MESA, TIEMPO_APUESTAS_MS, TIEMPO_TURNO_MS, TIEMPO_RESULTADOS_MS, REINTENTO_PAGOS_MS, REINTENTOS_PAGOS_MAX } from "../config";
 import { Baraja } from "./Baraja";
 import { Dealer } from "./Dealer";
 import { Jugador } from "./Jugador";
@@ -36,6 +36,7 @@ export class Mesa {
   private liquidacion: RondaTerminada | null = null;
   private liquidacionConfirmada = false;
   private readonly pagados = new Set<number>();
+  private intentosLiquidacion = 0;
 
   /**
    * Crea una mesa con reloj, billetera y persistencia inyectados.
@@ -295,6 +296,7 @@ export class Mesa {
     this.iniciadaEn = this.rondaActual ? new Date(this.reloj.ahora()).toISOString() : null;
     this.liquidacion = null;
     this.liquidacionConfirmada = false;
+    this.intentosLiquidacion = 0;
     this.pagados.clear();
     this.reloj.cancelar();
     if (this.fase === "APUESTAS") this.programar(TIEMPO_APUESTAS_MS, () => this.cerrarApuestas());
@@ -329,8 +331,8 @@ export class Mesa {
       }
     }
     this.faseActual = "PAGOS";
-    this.reloj.cancelar();
-    if (this.servicios.billetera && this.servicios.guardarRonda && this.servicios.publicarResultado) {
+    // Basta la billetera: si apostar debitó fichas, la ronda siempre se paga aunque falte historial o transporte.
+    if (this.servicios.billetera) {
       this.liquidacion = {
         id: this.rondaActual!, mesaId: this.id, iniciadaEn: this.iniciadaEn!,
         terminadaEn: new Date(this.reloj.ahora()).toISOString(),
@@ -384,14 +386,31 @@ export class Mesa {
 
   private iniciarLiquidacion(): void {
     void this.encolar(() => this.liquidar()).catch((error: unknown) => {
-      if (this.servicios.registrarError) this.servicios.registrarError(error);
-      else console.error(`Error al liquidar ${this.id}`, error);
+      this.registrarError(error);
       // Retener cartas y resultados: nunca empezar otra ronda con pagos/historial incompletos.
       if (!this.detenida && this.fase === "PAGOS") {
-        this.programar(REINTENTO_PAGOS_MS, () => this.iniciarLiquidacion(), false);
+        // Un error determinista nunca se resolvería; sin tope la mesa y sus jugadores quedarían atrapados hasta reiniciar.
+        const siguiente = ++this.intentosLiquidacion < REINTENTOS_PAGOS_MAX
+          ? () => this.iniciarLiquidacion() : () => this.abandonarLiquidacion();
+        this.programar(REINTENTO_PAGOS_MS, siguiente, false);
         this.publicarEstado();
       }
     });
+  }
+
+  /** Registra la ronda sin confirmar para conciliarla a mano y libera la mesa; los pagos confirmados se conservan. */
+  private abandonarLiquidacion(): void {
+    const ronda = this.liquidacion!;
+    const sinPago = ronda.jugadores.filter(({ usuarioId }) => !this.pagados.has(usuarioId)).map(({ usuarioId }) => usuarioId);
+    this.registrarError(new Error(`Liquidación de la ronda ${ronda.id} (${this.id}) abandonada tras ${REINTENTOS_PAGOS_MAX} intentos; `
+      + `pagos sin confirmar: [${sinPago.join(", ")}]; historial ${this.liquidacionConfirmada ? "guardado" : "sin guardar"}`));
+    this.liquidacion = null;
+    this.finalizarPagos();
+  }
+
+  private registrarError(error: unknown): void {
+    if (this.servicios.registrarError) this.servicios.registrarError(error);
+    else console.error(`Error al liquidar ${this.id}`, error);
   }
 
   private async liquidar(alCerrar = false): Promise<void> {
@@ -404,11 +423,11 @@ export class Mesa {
         this.pagados.add(jugador.usuarioId);
         if (!this.detenida) this.servicios.publicarBilletera?.(jugador.usuarioId, estado);
       }
-      await this.servicios.guardarRonda!(ronda);
+      await this.servicios.guardarRonda?.(ronda);
       this.liquidacionConfirmada = true;
     }
     if (this.detenida) return;
-    this.servicios.publicarResultado!({
+    this.servicios.publicarResultado?.({
       type: "ronda.resultado", rondaId: ronda.id,
       dealer: { cartas: [...ronda.dealer.cartas], total: ronda.dealer.total },
       resultados: ronda.jugadores.map(({ usuarioId, resultado, apuesta, pago }) => ({ usuarioId, resultado, apuesta, pago })),
