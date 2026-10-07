@@ -20,6 +20,7 @@ export class Baraja {
   private cartas: Carta[] = [];
 
   /**
+   * Construye los mazos configurados y mezcla el zapato completo.
    * @param numMazos - Cantidad de mazos completos; por defecto la configuración.
    * @returns Zapato completo barajado.
    * @throws ErrorJuego ERROR_INTERNO si la configuración no es un entero positivo.
@@ -29,10 +30,16 @@ export class Baraja {
     this.barajar();
   }
 
-  /** @returns Número de cartas disponibles sin exponer ni alterar su orden. */
+  /**
+   * Consulta el tamaño actual del zapato sin extraer cartas.
+   * @returns Número de cartas disponibles sin exponer ni alterar su orden.
+   */
   get restantes(): number { return this.cartas.length; }
 
-  /** @returns Repone todos los mazos y mezcla en sitio; llamar solo antes del reparto. */
+  /**
+   * Repone y mezcla todos los mazos; el motor la invoca entre rondas.
+   * @returns Sin valor.
+   */
   barajar(): void {
     this.cartas = [];
     for (let mazo = 0; mazo < this.numMazos; mazo++) {
@@ -45,6 +52,7 @@ export class Baraja {
   }
 
   /**
+   * Extrae la siguiente carta sin reponer el zapato durante una mano.
    * @returns Siguiente carta; nunca repone el zapato a mitad de una mano.
    * @throws ErrorJuego ERROR_INTERNO si se intenta sacar de un zapato agotado.
    */
@@ -54,7 +62,10 @@ export class Baraja {
     return carta;
   }
 
-  /** @returns true solo por debajo del umbral configurado (51 de 208 con cuatro mazos). */
+  /**
+   * Comprueba si quedan menos cartas que el umbral configurado.
+   * @returns true solo por debajo del umbral configurado (51 de 208 con cuatro mazos).
+   */
   necesitaRebarajar(): boolean {
     return this.restantes < this.numMazos * PALOS.length * RANGOS.length * UMBRAL_REBARAJAR;
   }

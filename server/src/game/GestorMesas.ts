@@ -3,7 +3,15 @@ import { ErrorJuego, type Equipado, type MesaEstado, type MesaResumen, type Mens
 import { CAPACIDAD_MESA, MESAS, TOPIC_LOBBY, topicMesa } from "../config";
 import { Mesa, type ServiciosMesa } from "./Mesa";
 
-/** Fábrica interna para inyectar zapatos y relojes deterministas en integración. */
+/**
+ * Fábrica interna para inyectar zapatos y relojes deterministas en integración.
+ * @param id - Identificador configurado de la mesa.
+ * @param nombre - Nombre público de la mesa.
+ * @param publicar - Emite snapshots del contrato sin reqId.
+ * @param servicios - Billetera, persistencia y publicaciones del motor.
+ * @returns Mesa con las dependencias recibidas.
+ * @throws Error Propaga fallos de construcción de la mesa o sus dependencias.
+ */
 export type FabricaMesa = (id: string, nombre: string, publicar: (mensaje: Extract<MensajeServidor, { type: "mesa.estado" }>) => void, servicios: ServiciosMesa) => Mesa;
 
 /** Mantiene un solo asiento por usuario y una sola conexión propietaria del asiento. */
@@ -36,7 +44,10 @@ export class GestorMesas {
     }, servicios)]));
   }
 
-  /** Resume ocupación y fase para el lobby. @returns Copia de las tres mesas. */
+  /**
+   * Resume ocupación y fase para el lobby.
+   * @returns Copia de las tres mesas.
+   */
   listar(): MesaResumen[] {
     return [...this.mesas.values()].map((mesa) => ({
       id: mesa.id, nombre: mesa.nombre, ocupados: mesa.snapshot().asientos.filter(Boolean).length,
@@ -44,15 +55,25 @@ export class GestorMesas {
     }));
   }
 
-  /** Localiza el asiento autoritativo. @param usuarioId - Identidad autenticada. @returns Mesa ocupada o null. */
+  /**
+   * Localiza el asiento autoritativo.
+   * @param usuarioId - Identidad autenticada.
+   * @returns Mesa ocupada o null.
+   */
   mesaDeUsuario(usuarioId: number): string | null {
     return this.ubicaciones.get(usuarioId) ?? null;
   }
 
-  /** Cancela todos los relojes antes de cerrar el transporte. @returns Sin valor. */
+  /**
+   * Cancela todos los relojes antes de cerrar el transporte.
+   * @returns Sin valor.
+   */
   detener(): void { for (const mesa of this.mesas.values()) mesa.detener(); }
 
-  /** Espera las acciones SQL en vuelo antes de cerrar el pool. @returns Confirmación de las colas vacías. */
+  /**
+   * Espera las acciones SQL en vuelo antes de cerrar el pool.
+   * @returns Confirmación de las colas vacías.
+   */
   async esperarOperaciones(): Promise<void> { await Promise.all([...this.mesas.values()].map((mesa) => mesa.esperarOperaciones())); }
 
   /**

@@ -195,6 +195,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 
 ### Hector
 - [ ] T-45 · JSDoc completo en `server/src/game`, `server/src/ws`, `server/src/auth` (clases, métodos públicos, parámetros, errores que lanza) + comentario de cabecera por archivo · Hector · depende de: T-43
+  - **Preparación (2026-10-06 CDMX):** JSDoc completado sobre `main` `8bfe554`; auditoría TypeScript de 18 archivos y 116 declaraciones públicas sin omisiones de descripción, parámetros ni retornos. Typecheck y 363 pruebas correctas, 1 omitida, 0 fallos con PostgreSQL. Code review del diff sin hallazgos pendientes; evidencia en `evidencias/T-45-revision.md`. Casilla abierta hasta T-43 y revisión de Massimo sobre la versión congelada; reauditar cambios posteriores, incluidos T-37/T-38.
   - **Hecho cuando:** ninguna clase o función exportada de esas carpetas queda sin JSDoc (revisado por Massimo).
 
 ### Nahum

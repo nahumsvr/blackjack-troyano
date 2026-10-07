@@ -18,11 +18,33 @@ export type ZapatoMesa = Pick<Baraja, "sacar" | "barajar" | "necesitaRebarajar">
 
 /** Dependencias del motor; ninguna implementación SQL ni transporte vive en game/. */
 export interface ServiciosMesa {
+  /** Servicio autoritativo de saldo; sin él solo se permiten pasos internos de pruebas. */
   billetera?: Billetera;
+  /**
+   * Publica el saldo después de confirmar el movimiento económico.
+   * @param usuarioId - Dueño de la billetera actualizada.
+   * @param estado - Saldo confirmado por el servicio inyectado.
+   * @returns Sin valor.
+   */
   publicarBilletera?: (usuarioId: number, estado: BilleteraEstado) => void;
-  /** Historial de la ronda; PAGOS no avanza hasta confirmar créditos y este guardado. */
+  /**
+   * Guarda el historial; el avance normal de PAGOS espera los créditos y este guardado.
+   * @param ronda - Datos finales retenidos para reintentos con el mismo UUID.
+   * @returns Confirmación del guardado idempotente.
+   * @throws Error Propaga fallos de persistencia; Mesa reintenta hasta el tope configurado.
+   */
   guardarRonda?: (ronda: RondaTerminada) => Promise<void>;
+  /**
+   * Publica resultados después de confirmar pagos e historial.
+   * @param mensaje - Resultado público sin datos internos de persistencia.
+   * @returns Sin valor.
+   */
   publicarResultado?: (mensaje: ResultadoMesa) => void;
+  /**
+   * Registra fallos de liquidación para diagnóstico y conciliación.
+   * @param error - Excepción original o detalle de la liquidación abandonada.
+   * @returns Sin valor.
+   */
   registrarError?: (error: unknown) => void;
 }
 
@@ -66,13 +88,23 @@ export class Mesa {
     private readonly servicios: ServiciosMesa = {},
   ) {}
 
-  /** @returns Fase autoritativa para validar acciones y equipamiento. */
+  /**
+   * Consulta la fase autoritativa actual de la mesa.
+   * @returns Fase autoritativa para validar acciones y equipamiento.
+   */
   get fase(): FaseMesa { return this.faseActual; }
 
-  /** @returns UUID de ronda generado al abrir apuestas, o null antes de la primera ronda. */
+  /**
+   * Consulta la referencia estable usada en apuestas, pagos e historial.
+   * @returns UUID de la ronda actual, o null cuando la mesa queda en ESPERANDO.
+   */
   get rondaId(): string | null { return this.rondaActual; }
 
-  /** @param usuarioId - Identidad autenticada. @returns true si todavía ocupa un asiento. */
+  /**
+   * Comprueba si el usuario todavía ocupa un asiento en esta mesa.
+   * @param usuarioId - Identidad autenticada.
+   * @returns true si todavía ocupa un asiento.
+   */
   contiene(usuarioId: number): boolean { return this.asientos.some((jugador) => jugador?.usuarioId === usuarioId); }
 
   /**
@@ -111,7 +143,7 @@ export class Mesa {
    * Conserva una apuesta activa hasta finalizar pagos, para no perderla al liberar el asiento.
    * @param usuarioId - Usuario que sale; la propiedad del socket la valida GestorMesas.
    * @returns Libera ahora si no apostó; de lo contrario marca salida al final de la ronda.
-   * @throws ErrorJuego NO_ESTAS_EN_MESA.
+   * @throws ErrorJuego NO_ESTAS_EN_MESA; ERROR_INTERNO si al avanzar al dealer se agota el zapato.
    */
   salir(usuarioId: number): void {
     const jugador = this.obtenerJugador(usuarioId);
@@ -137,7 +169,8 @@ export class Mesa {
    * Reserva el asiento cerrado y planta inmediatamente al dueño del turno.
    * @param usuarioId - Dueño autenticado del socket que se cerró.
    * @returns Conserva cartas y apuesta; los demás reciben conectado=false.
-   * @throws ErrorJuego NO_ESTAS_EN_MESA si el asiento ya fue liberado.
+   * @throws ErrorJuego NO_ESTAS_EN_MESA si el asiento ya fue liberado;
+   * ERROR_INTERNO si al avanzar al dealer se agota el zapato.
    */
   marcarDesconectado(usuarioId: number): void {
     const jugador = this.obtenerJugador(usuarioId);
@@ -155,8 +188,10 @@ export class Mesa {
    * @param usuarioId - Jugador autenticado y dueño del asiento.
    * @param cantidad - Entero de 10 a 500, múltiplo de 10.
    * @param autorizar - Revalida el dueño al ejecutar la acción, después de esperar la cola.
-   * @returns Apuesta registrada solo después de confirmar el débito SQL.
-   * @throws ErrorJuego FASE_INCORRECTA | NO_ESTAS_EN_MESA | YA_APOSTASTE | CANTIDAD_INVALIDA | FICHAS_INSUFICIENTES | ERROR_INTERNO.
+   * @returns Promesa sin valor que confirma el registro tras el débito de la billetera.
+   * @throws ErrorJuego FASE_INCORRECTA | NO_ESTAS_EN_MESA | YA_APOSTASTE | CANTIDAD_INVALIDA
+   * | FICHAS_INSUFICIENTES | NO_AUTENTICADO | MENSAJE_INVALIDO | ERROR_INTERNO.
+   * @throws Error Propaga fallos de la billetera, de autorizar o de las publicaciones inyectadas.
    */
   apostar(usuarioId: number, cantidad: number, autorizar: () => void = () => {}): Promise<void> {
     return this.encolar(async () => {
@@ -185,10 +220,13 @@ export class Mesa {
   }
 
   /**
+   * Pide una carta al zapato autoritativo después de validar el turno y el plazo.
    * @param usuarioId - Dueño del turno vigente.
    * @param autorizar - Revalidación del socket propietario al ejecutar.
-   * @returns Añade una carta; con 21 se planta y al superar 21 queda PASADO.
+   * Con 21 se planta; al superar 21 queda PASADO y avanza al siguiente turno.
+   * @returns Promesa sin valor cuando termina la acción.
    * @throws ErrorJuego FASE_INCORRECTA | NO_ESTAS_EN_MESA | NO_ES_TU_TURNO | ERROR_INTERNO.
+   * @throws Error Propaga fallos de autorizar o de la publicación inyectada.
    */
   pedir(usuarioId: number, autorizar: () => void = () => {}): Promise<void> {
     return this.encolar(() => {
@@ -202,16 +240,22 @@ export class Mesa {
   }
 
   /**
+   * Cierra voluntariamente el turno validado del jugador.
    * @param usuarioId - Dueño del turno vigente.
    * @param autorizar - Revalidación del socket propietario al ejecutar.
-   * @returns Planta al jugador y selecciona el siguiente turno elegible.
-   * @throws ErrorJuego FASE_INCORRECTA | NO_ESTAS_EN_MESA | NO_ES_TU_TURNO.
+   * @returns Promesa sin valor tras plantar al jugador y avanzar al siguiente turno elegible.
+   * @throws ErrorJuego FASE_INCORRECTA | NO_ESTAS_EN_MESA | NO_ES_TU_TURNO | ERROR_INTERNO
+   * si al avanzar al dealer se agota el zapato.
+   * @throws Error Propaga fallos de autorizar o de la publicación inyectada.
    */
   plantarse(usuarioId: number, autorizar: () => void = () => {}): Promise<void> {
     return this.encolar(() => { autorizar(); this.exigirTurno(usuarioId); this.avanzarTurno(); });
   }
 
-  /** @returns Espera las acciones en vuelo; útil para cierre y ensayos con reloj manual. */
+  /**
+   * Drena la cola y vuelve a comprobarla si llegaron operaciones durante la espera.
+   * @returns Promesa sin valor cuando la cola termina, incluso si una acción fue rechazada.
+   */
   async esperarOperaciones(): Promise<void> {
     for (;;) {
       const pendientes = this.pendientes;
@@ -224,7 +268,8 @@ export class Mesa {
    * Paso interno posterior al débito confirmado; no implementa la intención WS apostar.
    * @param usuarioId - Usuario elegible para esta ronda.
    * @param cantidad - Apuesta ya confirmada por el servicio inyectado; paso de bancos internos.
-   * @returns Registra y publica la apuesta; si ya apostaron todos, programa el cierre anticipado.
+   * Si ya apostaron todos, programa el cierre anticipado.
+   * @returns Sin valor.
    * @throws ErrorJuego FASE_INCORRECTA | NO_ESTAS_EN_MESA | YA_APOSTASTE | CANTIDAD_INVALIDA.
    */
   registrarApuestaConfirmada(usuarioId: number, cantidad: number): void {
@@ -241,7 +286,8 @@ export class Mesa {
 
   /**
    * Reparte por vueltas, publica REPARTO y selecciona el primer turno elegible.
-   * @returns Sin apuestas reinicia la ronda; con apuestas reparte sin filtrar la carta oculta.
+   * Sin apuestas reinicia la ronda; con apuestas reparte sin filtrar la carta oculta.
+   * @returns Sin valor.
    * @throws ErrorJuego FASE_INCORRECTA | ERROR_INTERNO si falla el suministro de cartas.
    *   Llamado por el reloj, el fallo se reintenta (ver `programar`) y las apuestas quedan intactas.
    */
@@ -270,8 +316,10 @@ export class Mesa {
 
   /**
    * Paso interno disparado por una acción validada, salida o vencimiento del servidor.
-   * @returns Planta el turno vigente y pasa al siguiente, o a DEALER/PAGOS.
-   * @throws ErrorJuego FASE_INCORRECTA si no hay un turno de jugador activo.
+   * Planta el turno vigente y pasa al siguiente, o a DEALER/PAGOS.
+   * @returns Sin valor.
+   * @throws ErrorJuego FASE_INCORRECTA si no hay un turno de jugador activo;
+   * ERROR_INTERNO si al avanzar al dealer se agota el zapato.
    */
   avanzarTurno(): void {
     this.exigirFase("TURNOS");
@@ -283,7 +331,8 @@ export class Mesa {
 
   /**
    * Paso interno que el reloj invoca después de confirmar pagos e historial.
-   * @returns Limpia manos, libera salidas pendientes y abre APUESTAS o ESPERANDO.
+   * Limpia manos, libera salidas pendientes y abre APUESTAS o ESPERANDO.
+   * @returns Sin valor.
    * @throws ErrorJuego FASE_INCORRECTA fuera de PAGOS | ERROR_INTERNO si la liquidación sigue pendiente.
    */
   finalizarPagos(): void {
@@ -298,7 +347,10 @@ export class Mesa {
     this.abrirApuestas();
   }
 
-  /** @returns Copia pública; fuera de DEALER/PAGOS oculta todas las cartas tras la primera. */
+  /**
+   * Construye la vista pública protegiendo la carta oculta del dealer.
+   * @returns Copia pública; fuera de DEALER/PAGOS oculta todas las cartas tras la primera.
+   */
   snapshot(): MesaEstado {
     const revelar = this.fase === "DEALER" || this.fase === "PAGOS";
     return {
@@ -312,7 +364,10 @@ export class Mesa {
     };
   }
 
-  /** @returns Cancela el reloj al detener el servidor o el banco de pruebas. */
+  /**
+   * Detiene la mesa y cancela tanto el reloj de fase como las reservas.
+   * @returns Sin valor; las liquidaciones pendientes se completan con cerrar.
+   */
   detener(): void { this.detenida = true; this.reloj.detener(); }
 
   /**

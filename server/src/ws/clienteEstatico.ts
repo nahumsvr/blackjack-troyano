@@ -3,7 +3,9 @@ import { realpath, stat } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 import { CACHE_CLIENTE_CON_HASH, CACHE_CLIENTE_REVALIDAR, DIRECTORIO_CLIENTE } from "../config";
 
-/** @returns Respuesta 404 sin sustituir un archivo ausente por el HTML inicial. */
+/**
+ * @returns Respuesta 404 sin sustituir un archivo ausente por el HTML inicial.
+ */
 function noEncontrado(): Response {
   return new Response("No encontrado", { status: 404 });
 }

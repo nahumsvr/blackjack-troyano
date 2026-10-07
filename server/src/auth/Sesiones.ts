@@ -20,6 +20,7 @@ export interface Sesion {
 /** Gestiona contraseñas Argon2id y tokens persistentes con vencimiento de siete días. */
 export class Sesiones {
   /**
+   * Crea el servicio de autenticación sobre un pool administrado externamente.
    * @param conexion - Pool PostgreSQL administrado por el proceso servidor.
    * @returns Servicio sin conexión global ni estado de mesas.
    */
@@ -30,7 +31,8 @@ export class Sesiones {
    * @param usuario - Nombre que cumple el contrato compartido.
    * @param contrasena - Contraseña validada; solo se persiste su hash Argon2id.
    * @returns Sesión confirmada con los saldos y artículos de bienvenida.
-   * @throws ErrorJuego MENSAJE_INVALIDO | USUARIO_EXISTE | ERROR_INTERNO; propaga fallos SQL.
+   * @throws ErrorJuego MENSAJE_INVALIDO | USUARIO_EXISTE | SESION_INVALIDA | ERROR_INTERNO.
+   * @throws Error Propaga fallos de SQL o del hash; un fallo transaccional revierte el registro.
    */
   async registrar(usuario: string, contrasena: string): Promise<Sesion> {
     this.validarCredenciales(usuario, contrasena);
@@ -70,7 +72,8 @@ export class Sesiones {
    * @param usuario - Nombre registrado.
    * @param contrasena - Contraseña sin persistir ni incluir en respuestas.
    * @returns Nueva sesión persistente del mismo usuario.
-   * @throws ErrorJuego MENSAJE_INVALIDO | CREDENCIALES_INVALIDAS | ERROR_INTERNO.
+   * @throws ErrorJuego MENSAJE_INVALIDO | CREDENCIALES_INVALIDAS | SESION_INVALIDA | ERROR_INTERNO.
+   * @throws Error Propaga fallos de SQL o de la verificación del hash.
    */
   async login(usuario: string, contrasena: string): Promise<Sesion> {
     this.validarCredenciales(usuario, contrasena);
@@ -86,6 +89,7 @@ export class Sesiones {
    * @param token - Token hexadecimal de 32 bytes.
    * @returns Identidad, billetera y artículos equipados actuales.
    * @throws ErrorJuego SESION_INVALIDA | ERROR_INTERNO.
+   * @throws Error Propaga fallos de SQL al recuperar la sesión y su billetera.
    */
   async validar(token: string): Promise<Sesion> {
     if (!TokenSchema.safeParse(token).success) throw new ErrorJuego("SESION_INVALIDA");

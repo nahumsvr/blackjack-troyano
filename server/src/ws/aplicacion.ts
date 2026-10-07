@@ -16,6 +16,8 @@ import { HistorialSQL } from "../db/HistorialSQL";
 
 /**
  * Compone sesiones persistentes, economía y juego sobre el transporte compartido.
+ * El stop del servidor devuelve una promesa: esperar su fin antes de cerrar SQL
+ * permite completar pagos e historial; un fallo persistente rechaza esa promesa.
  * @param conexion - Pool SQL persistente que el llamador debe cerrar al apagar.
  * @param puerto - Puerto público; cero asigna uno libre para las pruebas.
  * @param crearMesa - Fábrica interna de pruebas; producción usa el zapato criptográfico.
