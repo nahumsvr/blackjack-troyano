@@ -51,7 +51,10 @@ export const PAGO_BLACKJACK_DENOMINADOR = 2;
 export const TIEMPO_APUESTAS_MS = 15_000;
 export const TIEMPO_TURNO_MS = 20_000;
 export const TIEMPO_RESULTADOS_MS = 5_000;
-/** Reintento interno sin abrir otra ronda ni repetir pagos confirmados. */
+/** Reintento de un paso de reloj que falló (p. ej. el reparto). */
+export const TIEMPO_REINTENTO_MS = 1_000;
+export const MAX_REINTENTOS_RELOJ = 3;
+/** Reintento interno de liquidación sin abrir otra ronda ni repetir pagos confirmados. */
 export const REINTENTO_PAGOS_MS = 1_000;
 /** Intentos de liquidación antes de registrar la ronda para conciliación manual y liberar la mesa. */
 export const REINTENTOS_PAGOS_MAX = 30;

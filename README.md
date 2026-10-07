@@ -47,6 +47,8 @@ El [manual de instalación](docs/manual-instalacion.md) detalla los requisitos, 
 
 `bun run dev` inicia el servidor en `0.0.0.0:3000` y el cliente en `http://localhost:5173`. Vite redirige `/ws` al servidor y también acepta conexiones desde otra laptop por la IP de la máquina. Para detener ambos procesos, usa `Ctrl+C`.
 
+Para iniciar solo el servidor, ejecuta `cd server` y `bun run dev`. El comando carga explícitamente el `.env` de la raíz del repositorio, donde se configura `DATABASE_URL`.
+
 Para recorrer la interfaz sin backend, abre `http://localhost:5173/?mock=1`. La barra morada de arriba permite:
 - recorrer las 6 fases de la mesa;
 - forzar cada resultado de la ronda;
@@ -68,6 +70,8 @@ Las pruebas del transporte cubren conexiones, validación y respuestas correlaci
 El entorno objetivo se verificó el 4 de octubre: Compose levanta PostgreSQL 16.15. Con Bun 1.3.13 en un clon limpio, `db:reset` crea siete tablas y 14 artículos, `typecheck` pasa y la suite completa (70 pruebas, incluida la economía) termina sin fallos. Las restricciones de saldo e inventario se comprobaron directamente en SQL.
 
 La corrida histórica del 5 oct, basada en `main` (`831dcd2`) más cambios locales del empaquetador, pasó instalación con lockfile fijo, typecheck, 203 pruebas con PostgreSQL 16.15 y build con Bun 1.4.2. Durante la revisión del PR #23 se repitieron esas comprobaciones en la misma copia extraída con **Bun 1.3.13**: 203 pruebas / 3,402 aserciones, cero fallos u omisiones, typecheck/build correctos. La rama documental, después de incorporar Carta/Baraja de PR #25, pasó 208 pruebas con esa misma versión objetivo. [Evidencia histórica](documentation/Revision-PR-23.md). La integración actual tiene [su propia evidencia](documentation/Entrega-Hector-2026-10-06.md); ninguna de estas corridas acredita instalación independiente ni el ZIP final.
+
+La auditoría del 6 oct sobre `main` en `04802be` pasó typecheck, **236 pruebas / 3,540 aserciones**, cero fallos/omisiones, y build del cliente con Bun 1.3.13/PostgreSQL 16.15. T-11 ya tiene [evidencia de reconexión con la misma sesión](docs/evidencia/t11/README.md) desde PR #34. Después se fusionaron #35, #28 y #22 (con #21 y #24); el [seguimiento y plan de integración](documentation/Avance-M-06.md) documenta los siguientes pasos.
 
 ## Organización
 

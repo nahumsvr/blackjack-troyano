@@ -16,7 +16,7 @@ export class GestorMesas {
   /**
    * Construye el motor de las tres mesas y mantiene sus índices de ocupación.
    * @param publicar - Transporte pub/sub; recibe mensajes del contrato sin reqId.
-   * @param alReemplazar - Retira la suscripción y avisa a la conexión anterior.
+   * @param alReemplazar - Avisa a la conexión anterior, que queda como espectadora.
    * @param servicios - Billetera y publicaciones privadas inyectadas en el motor.
    * @param crearMesa - Construcción del motor; nunca se expone por WebSocket.
    * @returns Gestor con las tres mesas y publicaciones nativas, sin importar store/.
@@ -92,7 +92,7 @@ export class GestorMesas {
     const snapshot = mesa.unirse(usuario, equipado);
     this.ubicaciones.set(usuario.id, mesaId);
     const anterior = this.propietarios.get(usuario.id);
-    // El gestor decide la transferencia; el transporte retira la conexión anterior.
+    // El gestor transfiere la propiedad; el transporte avisa a la anterior, que queda como espectadora.
     this.propietarios.set(usuario.id, conexionId);
     if (anterior !== undefined && anterior !== conexionId) this.alReemplazar(anterior);
     return snapshot;
@@ -109,6 +109,8 @@ export class GestorMesas {
     const mesa = this.mesaDelPropietario(usuarioId, conexionId);
     mesa.salir(usuarioId);
     this.propietarios.delete(usuarioId);
+    // Salida voluntaria: la apuesta sigue hasta PAGOS, pero reanudar ya no vuelve a sentarlo.
+    this.ubicaciones.delete(usuarioId);
     return mesa.id;
   }
 
@@ -120,7 +122,10 @@ export class GestorMesas {
    */
   desconectar(usuarioId: number, conexionId: string): void {
     const mesaId = this.mesaDeUsuario(usuarioId);
-    if (mesaId !== null && this.propietarios.get(usuarioId) === conexionId) this.salir(usuarioId, conexionId);
+    if (mesaId === null || this.propietarios.get(usuarioId) !== conexionId) return;
+    // Caída de red: conserva la ubicación para que reanudar recupere el asiento (PLAN §7.3).
+    this.obtener(mesaId).salir(usuarioId);
+    this.propietarios.delete(usuarioId);
   }
 
   /**

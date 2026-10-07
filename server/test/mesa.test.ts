@@ -9,6 +9,19 @@ import { ClienteWsPrueba } from "./soporteHito1";
 import { TiempoManual } from "./soporteMesa";
 
 type EstadoPublicado = Extract<MensajeServidor, { type: "mesa.estado" }>;
+test("salir con apuesta no se revierte al reanudar; una caída sí conserva el asiento", () => {
+  const gestor = new GestorMesas(() => {});
+  gestor.unirse("mesa-1", { id: 1, usuario: "sale" }, EQUIPADO_INICIAL, "a");
+  gestor.unirse("mesa-1", { id: 2, usuario: "cae" }, EQUIPADO_INICIAL, "b");
+  const mesa = gestor.obtener("mesa-1");
+  mesa.registrarApuestaConfirmada(1, 10);
+  mesa.registrarApuestaConfirmada(2, 10);
+  gestor.salir(1, "a");
+  gestor.desconectar(2, "b");
+  expect(gestor.mesaDeUsuario(1)).toBeNull();
+  expect(gestor.mesaDeUsuario(2)).toBe("mesa-1");
+});
+
 const TRES_MANOS: CartaVisible["rango"][] = ["10", "8", "9", "6", "7", "10", "8", "10", "A"];
 
 function zapatoFijo(rangos: readonly CartaVisible["rango"][]): ZapatoMesa {
@@ -219,7 +232,7 @@ test("tres sockets reciben snapshots idénticos de cada transición en menos de 
   const mesa = new Mesa("mesa-1", "Mesa 1", (mensaje) => {
     publicados.push(mensaje);
     servidor.publish("mesa:mesa-1", JSON.stringify(mensaje));
-    }, zapatoFijo(TRES_MANOS), new TiempoManual().reloj);
+  }, zapatoFijo(TRES_MANOS), new TiempoManual().reloj);
   const servidor = Bun.serve<{ espectador: boolean }>({
     hostname: "127.0.0.1", port: 0,
     fetch: (peticion, actual) => actual.upgrade(peticion, { data: { espectador: true } }) ? undefined : new Response("WS", { status: 426 }),
