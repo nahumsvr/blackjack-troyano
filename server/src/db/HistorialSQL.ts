@@ -17,8 +17,10 @@ export class HistorialSQL {
    */
   async guardar(ronda: RondaTerminada): Promise<void> {
     await enTransaccion(this.conexion, async (sql) => {
-      // Bun 1.3.8 serializa un arreglo como JSON y 1.3.13 como arreglo de Postgres; con JSON.stringify
-      // y el cast explícito a text, Postgres siempre recibe texto y lo convierte en un arreglo jsonb.
+      // Bun serializa los parámetros según el modo de conexión (comprobado en 1.3.13 y 1.4.2): con
+      // `prepare: false` un arreglo directo llega como "[object Object]", y con sentencias preparadas
+      // JSON.stringify(...)::jsonb guarda un string. Con ::text::jsonb, Postgres siempre recibe texto
+      // y lo convierte en un arreglo jsonb; historialSQL.test.ts lo prueba en los dos modos.
       const [insertada] = await sql<{ id: string }[]>`
         INSERT INTO rondas (id, mesa_id, iniciada_en, terminada_en, cartas_dealer, total_dealer)
         VALUES (${ronda.id}, ${ronda.mesaId}, ${ronda.iniciadaEn}, ${ronda.terminadaEn},
