@@ -1,6 +1,6 @@
 # Arquitectura de Blackjack Troyano
 
-Documento de implementación, actualizado el 6 de octubre de 2026 CDMX. Describe `main` en `6ffa424`, que ya incluye el motor de partidas (T-18 a T-21, PR #29–#32). Los bots (T-26, PR #33) y la recuperación de asiento (T-36, PR #37) siguen abiertos. El diseño original está en [PLAN.md](../documentation/PLAN.md) y los criterios de aceptación en [TAREAS.md](../documentation/TAREAS.md).
+Documento de implementación, actualizado el 6 de octubre de 2026 CDMX. Describe `main` en `a68c62c`, que ya incluye el motor de partidas (T-18 a T-21, PR #29–#32). Los bots (T-26, PR #33) siguen abiertos; la recuperación de asiento (T-36, PR #37) se fusionó en la rama de los bots y llegará a `main` con el PR #33. El diseño original está en [PLAN.md](../documentation/PLAN.md) y los criterios de aceptación en [TAREAS.md](../documentation/TAREAS.md).
 
 ## Módulos
 
@@ -13,7 +13,7 @@ Documento de implementación, actualizado el 6 de octubre de 2026 CDMX. Describe
 | `server/src/store/` | `BilleteraSQL`, `Tienda`, consultas de saldo e historial y handlers de economía. |
 | `server/src/db/` | Pool PostgreSQL de Bun, `enTransaccion` y `HistorialSQL` (rondas terminadas). |
 | `server/db/` | `schema.sql` (7 tablas) y `seed.sql` (14 artículos). |
-| `scripts/` | `db-reset.ts`, `dev.ts`, `empaquetar.ts` y `bots.ts` (jugadores automáticos). |
+| `scripts/` | `db-reset.ts`, `dev.ts`, `empaquetar.ts` y `verificar-mesa.ts` (verificación manual de la mesa). `bots.ts` (jugadores automáticos) llega con el PR #33. |
 | `client/` | React + Vite + Tailwind: capa de red con reconexión, estado, pantallas, componentes de mesa y servidor falso (`?mock=1`). |
 
 ## Dependencias implementadas
@@ -156,7 +156,7 @@ classDiagram
     +unirse(mesaId, usuario, equipado, conexionId) MesaEstado
     +salir(usuarioId, conexionId) string
     +desconectar(usuarioId, conexionId) void
-    +mesaDeUsuario(usuarioId) string
+    +mesaDeUsuario(usuarioId) string?
     +obtener(mesaId) Mesa
   }
   class HistorialSQL {
@@ -186,7 +186,7 @@ classDiagram
 
 La interfaz `Billetera` vive en `game/Billetera.ts`, y `store/Billetera.ts` solo la reexporta. Así el motor define lo que necesita y `store/` lo implementa, sin que `game/` importe `store/`. `resolver(mano, manoDealer, apuesta)` en `game/reglas.ts` es una función pura que devuelve `{resultado, pago}`; el pago incluye la apuesta (blackjack 10 → 25, gana 10 → 20, empate 10 → 10, pierde → 0).
 
-`GestorMesas` garantiza un solo asiento por usuario y una sola conexión dueña del asiento. Si el mismo usuario abre la mesa en otra pestaña, la nueva toma el asiento y la anterior recibe `NO_ESTAS_EN_MESA` y vuelve al lobby (PLAN §7.5). Un cierre tardío de la pestaña vieja no afecta al nuevo dueño, porque cada operación lleva el `conexionId`. Al reanudar sesión, si el usuario todavía tiene asiento, el servidor lo vuelve a suscribir a su mesa y le envía el snapshot.
+`GestorMesas` garantiza un solo asiento por usuario y una sola conexión dueña del asiento. Si el mismo usuario abre la mesa en otra pestaña, la nueva toma el asiento y la anterior recibe un aviso `NO_ESTAS_EN_MESA` sin `reqId` y queda como espectadora (PLAN §7.5): conserva su suscripción y sigue recibiendo snapshots, pero sus acciones se rechazan con `NO_ESTAS_EN_MESA`. Puede enviar `mesa.salir` para desuscribirse sin liberar el asiento ajeno. Un cierre tardío de la pestaña vieja no afecta al nuevo dueño, porque cada operación lleva el `conexionId`. Al reanudar sesión, si el usuario todavía tiene asiento, el servidor lo vuelve a suscribir a su mesa y le envía el snapshot.
 
 `Mesa` serializa todas sus operaciones con una cola de promesas (`encolar`): las acciones de jugadores, los vencimientos del reloj y la liquidación nunca se ejecutan intercalados. Cada vencimiento comprueba que la fase, la ronda y el turno sigan siendo los mismos que cuando se programó; un reloj viejo no puede mover una ronda nueva.
 
@@ -311,7 +311,7 @@ Toda operación monetaria bloquea `usuarios` con `SELECT ... FOR UPDATE`, valida
 
 `debitarApuesta` escribe un delta negativo. `acreditarPago` recibe el total devuelto incluida la apuesta: victoria con apuesta 10 → 20, blackjack → 25, empate → 10, derrota → 0. Un pago de cero no actualiza saldos ni inserta movimiento: la pérdida ya quedó registrada por el débito de la apuesta. La mano y su resultado sí deben guardarse en `rondas_jugadores`, aunque su pago sea cero. Las compras de artículos gratuitos tampoco crean movimientos vacíos.
 
-La billetera no valida el turno, la fase, una sola apuesta ni una sola liquidación por ronda. Esas garantías pertenecen a `Mesa`; deben cumplirse antes de invocar los métodos. `comprarFichas` sí incorpora idempotencia: una clave ya confirmada devuelve el saldo actual sin cobrar otra vez. El navegador conserva la misma clave al reintentar una intención y genera una nueva para una compra nueva.
+La billetera no valida el turno, la fase ni una sola apuesta por ronda. Esas garantías pertenecen a `Mesa`; deben cumplirse antes de invocar los métodos. `debitarApuesta` no es idempotente: cada llamada inserta un movimiento `apuesta`, así que `Mesa` la invoca una sola vez por jugador y ronda. `acreditarPago` sí es idempotente: usa la clave `pago:<rondaId>` en `movimientos`; repetir el mismo pago devuelve el saldo sin acreditar otra vez, y repetirlo con otra cantidad lanza `ERROR_INTERNO`. `comprarFichas` sí incorpora idempotencia: una clave ya confirmada devuelve el saldo actual sin cobrar otra vez. El navegador conserva la misma clave al reintentar una intención y genera una nueva para una compra nueva.
 
 El día natural se calcula en PostgreSQL usando `America/Mexico_City`. El servicio toma el reloj después de adquirir el bloqueo y reutiliza ese instante para validar el límite, fechar el movimiento y construir la respuesta; una transacción que espera cruzando medianoche cuenta en el día correcto. `disponibleHoy = max(0, limiteDiario - compradoHoy)`; `reinicioEn` es la próxima medianoche local expresada como ISO con zona.
 
@@ -321,11 +321,11 @@ Saldos y deltas SQL `bigint` se leen como texto y solo se convierten a números 
 
 Al terminar el dealer, `Mesa` congela la ronda en un objeto `RondaTerminada` (UUID, mesa, tiempos, mano del dealer y, por jugador, asiento, cartas, total, apuesta, resultado y pago) y la liquida en este orden:
 
-1. `acreditarPago` para cada jugador. Un conjunto en memoria recuerda a quién ya se pagó, así que un reintento no paga dos veces; un pago cero no crea movimiento.
+1. `acreditarPago` para cada jugador. La garantía contra pagos dobles está en SQL: la clave `pago:<rondaId>` hace que un reintento no acredite dos veces, aunque el commit anterior se haya confirmado y su respuesta se haya perdido. Además, un conjunto en memoria evita repetir la llamada para quien ya cobró. Un pago cero no crea movimiento.
 2. `HistorialSQL.guardar`: inserta `rondas` y todas sus filas de `rondas_jugadores` en una sola transacción. Es idempotente por el UUID de la ronda: si la ronda ya existe con los mismos datos no hace nada; si existe con datos distintos lanza `ERROR_INTERNO`.
 3. Publica `ronda.resultado` en `mesa:<id>` y programa 5 s de resultados antes de abrir la siguiente ronda.
 
-Si falla el paso 1 o el 2, la mesa se queda en `PAGOS` y reintenta cada `REINTENTO_PAGOS_MS` (1 s). Tras `REINTENTOS_PAGOS_MAX` (30) intentos fallidos, abandona la liquidación para no bloquear la mesa: conserva los pagos ya confirmados, registra en el log del servidor el UUID de la ronda, los usuarios sin pago confirmado y si el historial se guardó (para conciliarlo a mano), y abre la siguiente ronda. Al apagar el servidor, una liquidación pendiente se completa antes de cerrar.
+Si falla el paso 1 o el 2, la mesa se queda en `PAGOS` y reintenta cada `REINTENTO_PAGOS_MS` (1 s). Tras `REINTENTOS_PAGOS_MAX` (30) intentos fallidos, abandona la liquidación para no bloquear la mesa: conserva los pagos ya confirmados, registra en el log del servidor el UUID de la ronda, los usuarios sin pago confirmado y si el historial se guardó (para conciliarlo a mano), y abre la siguiente ronda. Al apagar el servidor, `Mesa.cerrar` drena la cola y hace un último intento de la liquidación pendiente; si ese intento falla, propaga el error para que quede registrado.
 
 Las operaciones de dinero del juego pasan por la misma cola por usuario que las compras (`serializarUsuario`), así que una compra de fichas durante una mano no se intercala con el débito de la apuesta ni con el pago.
 
@@ -384,10 +384,10 @@ stateDiagram-v2
   APUESTAS --> ESPERANDO : se van todos
   APUESTAS --> REPARTO : apostaron todos los conectados, o vence el reloj con al menos una apuesta
   REPARTO --> TURNOS : 2 cartas por jugador y dealer
-  REPARTO --> DEALER : el dealer tiene blackjack
+  REPARTO --> DEALER : el dealer tiene blackjack, o ningún jugador puede jugar (todos con natural o desconectados)
   TURNOS --> TURNOS : pedir, plantarse o vencen 20 s (se planta solo)
   TURNOS --> DEALER : no queda nadie por jugar
-  DEALER --> PAGOS : el dealer pide hasta 17 y se planta
+  DEALER --> PAGOS : el dealer pide hasta 17 y se planta (no pide si todos se pasaron o tienen natural)
   PAGOS --> PAGOS : falla un pago o el historial (reintento cada 1 s, máximo 30)
   PAGOS --> APUESTAS : liquidación confirmada y pasan 5 s (o 30 fallos), si quedan jugadores
   PAGOS --> ESPERANDO : liquidación confirmada y pasan 5 s (o 30 fallos), sin jugadores
@@ -415,10 +415,10 @@ Pruebas en `server/test/` (las SQL necesitan `TEST_DATABASE_URL`, ver el manual)
 | `mesas.test.ts`, `mesa.test.ts`, `relojesMesa.test.ts` | Asientos, segunda pestaña, máquina de estados, carta oculta, relojes y auto-plantar |
 | `accionesMesa.test.ts`, `accionesWs.test.ts` | Validaciones de `apostar`/`pedir`/`plantarse` (turno, fase, cantidad, doble apuesta) por WebSocket |
 | `liquidacionMesa.test.ts`, `liquidacionSQL.test.ts`, `integracionJuegoEconomia.test.ts` | Pagos idempotentes, reintentos, historial en `rondas`/`rondas_jugadores` y saldos contra `movimientos` |
-| `bots.test.ts`, `produccion.test.ts` | Bots jugando rondas completas y cliente servido en el mismo puerto |
+| `produccion.test.ts` | Cliente servido en el mismo puerto |
 
-Evidencia del motor (6 oct, punta de la cadena `573171b` antes de integrarse, en PostgreSQL 16.15): typecheck correcto, 335 de 336 pruebas en verde (la que falla, `servidor.test.ts` «un fallo de limpieza…», pasa al correrla sola). `bun run bots 4 --mesa mesa-1 --rondas 10` jugó 10 rondas sin errores; quedaron 10 filas en `rondas`, 40 en `rondas_jugadores` y 0 usuarios con saldo distinto de la suma de sus `movimientos`.
+Evidencia del motor (6 oct, punta de la cadena `573171b` en la rama de los bots del PR #33, antes de integrarse a `main`, en PostgreSQL 16.15): typecheck correcto, 335 de 336 pruebas en verde (la que falla, `servidor.test.ts` «un fallo de limpieza…», pasa al correrla sola). `bun run bots 4 --mesa mesa-1 --rondas 10` jugó 10 rondas sin errores; quedaron 10 filas en `rondas`, 40 en `rondas_jugadores` y 0 usuarios con saldo distinto de la suma de sus `movimientos`.
 
 Las firmas públicas de `Mesa`, `GestorMesas`, `Jugador` y `aplicacion.ts` en `main` coinciden con las de esa punta; la integración solo agregó el tope de reintentos de la liquidación.
 
-Pendiente para cerrar T-32/T-50: ver los diagramas renderizados en GitHub y la confirmación de Hector de que coinciden con el código. La recuperación del asiento en 60 s (T-36) está en el PR #37 y se documentará al fusionarse; el límite de 20 mensajes/s (T-37) todavía no existe.
+Pendiente para cerrar T-32/T-50: ver los diagramas renderizados en GitHub y la confirmación de Hector de que coinciden con el código. La recuperación del asiento en 60 s (T-36, PR #37) ya está en la rama de los bots y se documentará cuando el PR #33 llegue a `main`; el límite de 20 mensajes/s (T-37) todavía no existe.
