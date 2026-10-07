@@ -607,7 +607,7 @@ Si vamos tarde, se sacrifica **en este orden** (lo primero se corta primero):
 1. **Extras** (ya fuera de alcance): doblar, split, seguro, chat, ranking.
 2. **Temas de mesa** (el tema queda fijo en verde).
 3. **Cosméticos visibles para otros** (avatar y reverso solo se ven localmente).
-4. **Tienda completa** (se oculta la tienda; el historial de movimientos se conserva).
+4. **Compra y equipamiento de artículos** (se excluyen sus controles y el inventario editable; puede conservarse el catálogo de solo lectura. El historial de movimientos y el backend existente se conservan).
 
 **Nunca se cortan:** registro/login, lobby, ronda completa con 3+ jugadores, validaciones del servidor, desconexión, guardado de rondas, compra de fichas con límite diario, historial de movimientos y documentación.
 

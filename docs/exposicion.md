@@ -27,7 +27,7 @@
 
 Antes de empezar: servidor y BD arriba, las 3 laptops con la app abierta en la pantalla de acceso y DevTools → pestaña **Red** (WS) lista en la laptop A.
 
-**Alcance confirmado (PLAN §10, PR #47):** la tienda mostrada es solo un catálogo. Explicar que compra/equipamiento de artículos y edición del inventario quedaron fuera de esta entrega (T-35/T-39/T-40); no intentar esas acciones ni presentarlas como disponibles. La compra de fichas y el historial se conservan.
+**Alcance de la demo:** seguir la [decisión de entrega de PLAN §10](../documentation/PLAN.md#10-criterio-de-corte); explicar sus limitaciones y demostrar solo las funciones conservadas.
 
 | # | Paso | Quién hace / quién narra | Dura | Si falta tiempo |
 |---|---|---|---|---|

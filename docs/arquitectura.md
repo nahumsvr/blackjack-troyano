@@ -125,6 +125,7 @@ classDiagram
     +mano Mano
     +apuesta number
     +conectado boolean
+    +desconectadoDesde number?
     +salidaPendiente boolean
     +estado EstadoJugador
     +reiniciarRonda() void
@@ -145,6 +146,8 @@ classDiagram
     +avanzarTurno() void
     +finalizarPagos() void
     +snapshot() MesaEstado
+    +contiene(usuarioId) boolean
+    +detener() void
     +marcarDesconectado(usuarioId) void
     +esperarOperaciones() Promise~void~
     +cerrar() Promise~void~
@@ -201,7 +204,7 @@ La interfaz `Billetera` vive en `game/Billetera.ts`, y `store/Billetera.ts` solo
 
 `Mesa` serializa todas sus operaciones con una cola de promesas (`encolar`): las acciones de jugadores, los vencimientos del reloj y la liquidación nunca se ejecutan intercalados. Cada vencimiento comprueba que la fase, la ronda y el turno sigan siendo los mismos que cuando se programó; un reloj viejo no puede mover una ronda nueva.
 
-`equipar` no está implementado. Hector confirma el corte de T-35/T-39/T-40 para esta entrega (PLAN §10); se conservan compra de fichas, historial y cosméticos básicos del registro.
+`equipar` no está implementado. El alcance de entrega se define en [PLAN §10](../documentation/PLAN.md#10-criterio-de-corte).
 
 ## Persistencia
 
@@ -431,9 +434,14 @@ Pruebas en `server/test/` (las SQL necesitan `TEST_DATABASE_URL`, ver el manual)
 | `accionesMesa.test.ts`, `accionesWs.test.ts` | Validaciones de `apostar`/`pedir`/`plantarse` (turno, fase, cantidad, doble apuesta) por WebSocket |
 | `liquidacionMesa.test.ts`, `liquidacionSQL.test.ts`, `integracionJuegoEconomia.test.ts` | Pagos idempotentes, reintentos, historial en `rondas`/`rondas_jugadores` y saldos contra `movimientos` |
 | `produccion.test.ts` | Cliente servido en el mismo puerto |
+| `desconexion.test.ts` | Reserva de asiento, auto-plantado, recuperación y transferencia de propiedad con sockets y PostgreSQL |
+| `bots.test.ts` | CLI en subproceso, diez rondas de cuatro bots con baraja controlada, conciliación, carreras y cancelación |
+| `economiaWs.test.ts`, `revisionEconomiaWs.test.ts` | Compras por WebSocket, autorización, publicaciones, caducidad, concurrencia y revocación |
+| `clienteHito1.test.ts` | Cliente real, lobby, segunda pestaña espectadora y recuperación de sesión |
+| `empaquetar.test.ts` | ZIP, exclusión de secretos, rutas y rechazo de enlaces fuera del paquete |
 
 Evidencia del motor (6 oct, punta de la cadena `573171b` en la rama de los bots del PR #33, antes de integrarse a `main`, en PostgreSQL 16.15): typecheck correcto, 335 de 336 pruebas en verde (la que falla, `servidor.test.ts` «un fallo de limpieza…», pasa al correrla sola). `bun run bots 4 --mesa mesa-1 --rondas 10` jugó 10 rondas sin errores; quedaron 10 filas en `rondas`, 40 en `rondas_jugadores` y 0 usuarios con saldo distinto de la suma de sus `movimientos`.
 
 La evidencia anterior es histórica. La revisión actual contrasta main 8bfe554 e incorpora las firmas y reservas de T-36; el tope de liquidación permanece en 30 intentos.
 
-Hector revisó el contenido frente a main 8bfe554. Pendiente para cerrar T-32/T-50: comprobar los diagramas renderizados en GitHub y exportarlos como imágenes/PDF para el ZIP. El navegador de esta sesión falló al aplicar permisos del sandbox, por lo que no se acredita esa comprobación. T-37 (#45) y la corrección HTTP LAN de T-38 (#46) están publicadas, pendientes de revisión/fusión; este documento no las presenta como parte de main.
+Estado de revisión y pendientes documentales: [T-32](../documentation/TAREAS.md#t-32-revision-de-arquitectura). T-37 (#45) y la corrección HTTP LAN de T-38 (#46) están publicadas, pendientes de revisión/fusión; este documento no las presenta como parte de main.

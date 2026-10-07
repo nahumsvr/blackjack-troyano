@@ -1,7 +1,7 @@
 /**
  * Catálogo de la tienda (solo lectura) dentro del menú lateral: avatares, reversos y temas
  * con su precio en fichas y cuáles ya posee el usuario. Se recarga al montarse (al abrir la
- * pestaña), igual que el historial. La compra y el equipamiento llegan con T-39/T-40.
+ * pestaña), igual que el historial. El alcance de entrega está en documentation/PLAN.md §10.
  */
 import type { ArticuloCatalogo } from "@blackjack/shared";
 import { useEffect, type ReactNode } from "react";

@@ -4,8 +4,8 @@
  * - Con mesa (el servidor nos sentó) → mesa.
  * - Si no → lobby.
  * La billetera, el historial y la tienda (solo lectura) viven en un menú lateral común, que se
- * abre desde el botón de fichas de cualquier pantalla con sesión; T-39/T-40 agregarán la compra
- * y el inventario.
+ * abre desde el botón de fichas de cualquier pantalla con sesión. El alcance de entrega
+ * está definido en documentation/PLAN.md §10.
  */
 import { useCallback, useState, type ReactNode } from "react";
 import { Avisos } from "./components/Avisos";

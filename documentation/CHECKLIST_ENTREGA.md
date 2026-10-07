@@ -3,7 +3,7 @@
 Se revisa completa el **lunes 5 oct** (T-44) y otra vez el **martes 6 oct** con el `.zip` final. Último repaso documental: 6 oct; las casillas de aceptación de la demo siguen pendientes de ejecución y firma.
 Cada casilla la marca **alguien distinto de quien construyó esa parte**. Anotar quién probó y cuándo.
 
-**Alcance de entrega — corte confirmado por Hector, 6 oct 2026 (PLAN §10, PR #47):** T-35/T-39/T-40 quedan fuera. `[CORTE]` identifica un requisito excluido de la aceptación interna: su casilla sigue abierta y no equivale a una prueba aprobada ni a cumplir la rúbrica original. T-44 revisa las casillas conservadas; estas requieren evidencia o issue con dueño y fecha. El backend de compras T-34 se conserva y se comprueba por WebSocket, sin exigir la UI cortada. El recorte y sus limitaciones se explican en el manual y la exposición.
+**Alcance de entrega:** ver [PLAN §10](PLAN.md#10-criterio-de-corte). `[CORTE]` identifica un requisito excluido: su casilla sigue abierta y no acredita la rúbrica original. Las casillas conservadas requieren evidencia o issue con dueño y fecha.
 
 ---
 
@@ -66,6 +66,8 @@ Cada casilla la marca **alguien distinto de quien construyó esa parte**. Anotar
 ### 1.6 Tienda e inventario
 - [ ] Backend T-34 por WebSocket: comprar un artículo descuenta fichas y aparece en `inventario.listar`; compra desde la UI excluida por T-39
 - [ ] Backend T-34 por WebSocket: dos compras simultáneas del mismo artículo → una compra, un error y un solo cobro; comprobar dos conexiones del mismo usuario
+- [ ] Backend T-34 por WebSocket: comprar secuencialmente un artículo ya poseído → `YA_POSEIDO`, sin nuevo cobro ni cambios de inventario
+- [ ] Backend T-34 por WebSocket: doble envío rápido de compra del mismo artículo en una conexión → una compra, `YA_POSEIDO` y un solo cobro
 - [ ] Backend T-34 por WebSocket: comprar sin fichas suficientes → error sin cambiar saldo ni inventario
 - [ ] [CORTE T-35/T-40] Equipar avatar/reverso: los otros jugadores de la mesa lo ven
 - [ ] [CORTE T-35] Equipar durante reparto/turnos/dealer/pagos → "no puedes cambiarlo en medio de una mano"
