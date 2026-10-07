@@ -13,4 +13,4 @@ bun run verificar:produccion http://192.168.100.6:3000 docs/evidencia/t38/produc
 
 El usuario confirmó que la página abre desde dos dispositivos. Reportó que el registro fallaba con el aviso de error inesperado. La regresión `client/test/lanHttpReal.test.ts` reproduce un cliente sin `crypto.randomUUID`: falló antes de la corrección y ahora registra, compra dos veces y lista mesas contra PostgreSQL real. El cliente genera UUID v4 mediante `crypto.getRandomValues`, disponible por HTTP en LAN.
 
-Pendiente de confirmación humana: recargar el cliente compilado desde el otro dispositivo, registrarse, entrar a una mesa, apostar y completar una ronda. `otraLaptopVerificada: false` conserva esta distinción en la evidencia automática.
+Aceptación humana: después de solicitar recarga, registro y ronda, el usuario confirmó que funcionó desde dos dispositivos distintos y autorizó el PR. `otraLaptopVerificada: false` en el JSON corresponde únicamente a la ejecución automática; esta confirmación posterior se registra aquí.

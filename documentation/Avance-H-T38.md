@@ -16,6 +16,6 @@
 - Verificación por `http://192.168.100.6:3000`: HTML y assets correctos; tres bots completan la misma ronda.
 - Code review: UUID conserva versión/variante y aleatoriedad criptográfica; reqId y claves cumplen Zod; dos compras generan dos movimientos distintos; no quedan llamadas a `randomUUID` en el cliente. Sin hallazgos pendientes en los cambios revisados. La carpeta `client/` requiere revisión de Nahum en el PR.
 
-## Aceptación pendiente
+## Aceptación
 
-El usuario confirmó acceso a la página desde dos dispositivos y reportó el fallo de registro que motivó esta corrección. Falta confirmar registro y ronda desde el otro dispositivo después de recargar. T-38 mantiene su casilla abierta hasta aceptación y fusión del PR.
+Después de la corrección, el usuario confirmó que la prueba solicitada funcionó desde dos dispositivos distintos y autorizó enviar el PR. Code review final del diff realizado sin hallazgos pendientes. T-38 mantiene su casilla abierta hasta la fusión del PR.
