@@ -1,11 +1,13 @@
 /** Jugadores T-26: intenciones WS y snapshots compartidos, sin acceso al motor ni a SQL. */
-import { ErrorJuego, MensajeClienteSchema, MensajeServidorSchema, MesaIdSchema,
+import { ErrorJuego, MensajeClienteSchema, MensajeServidorSchema, MesaIdSchema, type CodigoError,
   type EntradaMensajeCliente, type MesaEstado, type MensajeServidor } from "@blackjack/shared";
-import { APUESTA_MIN, BOTS_PLANTARSE_EN, BOTS_RESPUESTA_MS, BOTS_RONDAS,
+import { APUESTA_MIN, BOTS_MARGEN_APUESTA_MS, BOTS_PLANTARSE_EN, BOTS_RESPUESTA_MS, BOTS_RONDAS,
   BOTS_SIN_RONDA_MS, CAPACIDAD_MESA, MESAS, PUERTO, RUTA_WS } from "../server/src/config";
 
 type OpcionesBots = { cantidad: number; mesaId: string; rondas: number; url: string };
-type ResultadoBot = { usuario: string; usuarioId: number; rondas: string[] };
+type ResultadoBot = { usuario: string; usuarioId: number; rondas: string[]; retirado: boolean };
+/** Rechazos por llegar tarde al plazo o al turno: el servidor ya avanzó y llegará otro snapshot. */
+const CARRERAS: ReadonlySet<CodigoError> = new Set(["FASE_INCORRECTA", "NO_ES_TU_TURNO", "YA_APOSTASTE"]);
 const uso = "Uso: bun run bots N [--mesa mesa-1] [--rondas 10|0] [--url ws://127.0.0.1:3000/ws]";
 
 function validar(opciones: OpcionesBots): OpcionesBots {
@@ -48,6 +50,9 @@ class Bot {
   private mesa: MesaEstado | undefined;
   private activo = false;
   private ocupado = false;
+  private retirado = false;
+  /** Snapshot cuya intención el servidor ya rechazó por carrera; no se repite sobre él. */
+  private rechazada: MesaEstado | undefined;
   private fallo: Error | undefined;
   private readonly rondas = new Set<string>();
   private relojRonda: ReturnType<typeof setTimeout> | undefined;
@@ -74,7 +79,10 @@ class Bot {
     this.socket.addEventListener("message", (evento) => {
       try {
         const mensaje = MensajeServidorSchema.parse(JSON.parse(String(evento.data)));
-        if (mensaje.type === "error") throw new ErrorJuego(mensaje.codigo);
+        const pendiente = this.pendiente && mensaje.reqId === this.pendiente.reqId ? this.pendiente : undefined;
+        // Un rechazo a la intención en vuelo lo decide quien la envió (p. ej. una carrera
+        // con el reloj); un error que no responde a nada es un fallo del protocolo.
+        if (mensaje.type === "error" && !pendiente) throw new ErrorJuego(mensaje.codigo);
         if (mensaje.type === "mesa.estado" && mensaje.id === opciones.mesaId) this.mesa = mensaje;
         if (mensaje.type === "ronda.resultado" && mensaje.resultados.some((fila) => fila.usuarioId === this.usuarioId)
           && !this.rondas.has(mensaje.rondaId)) {
@@ -84,11 +92,11 @@ class Bot {
           this.vigilarRonda();
           if (this.completo()) this.finalizar?.();
         }
-        if (this.pendiente && mensaje.reqId === this.pendiente.reqId) {
-          const pendiente = this.pendiente!;
+        if (pendiente) {
           this.pendiente = undefined;
           clearTimeout(pendiente.reloj);
-          pendiente.resolver(mensaje);
+          if (mensaje.type === "error") pendiente.rechazar(new ErrorJuego(mensaje.codigo));
+          else pendiente.resolver(mensaje);
         }
         this.actuar();
       } catch (error) { this.fallar(error); }
@@ -118,11 +126,13 @@ class Bot {
       else if (this.socket.readyState === WebSocket.OPEN) abrir();
       else if (this.socket.readyState === WebSocket.CLOSED) cerrar();
     });
-    const sesion = await this.enviar({ type: "registro", usuario: this.usuario, contrasena: crypto.randomUUID() });
-    if (sesion.type !== "sesion") throw new Error("Se esperaba una sesión");
-    this.usuarioId = sesion.usuario.id;
-    const mesa = await this.enviar({ type: "mesa.unirse", mesaId: this.opciones.mesaId });
-    if (mesa.type !== "mesa.estado" || mesa.id !== this.opciones.mesaId) throw new Error("Se esperaba el estado de la mesa");
+    try {
+      const sesion = await this.enviar({ type: "registro", usuario: this.usuario, contrasena: crypto.randomUUID() });
+      if (sesion.type !== "sesion") throw new Error("Se esperaba una sesión");
+      this.usuarioId = sesion.usuario.id;
+      const mesa = await this.enviar({ type: "mesa.unirse", mesaId: this.opciones.mesaId });
+      if (mesa.type !== "mesa.estado" || mesa.id !== this.opciones.mesaId) throw new Error("Se esperaba el estado de la mesa");
+    } catch (error) { this.fallar(error); throw this.fallo ?? error; }
     this.vigilarRonda();
   }
 
@@ -134,7 +144,7 @@ class Bot {
       if (this.fallo) { rechazar(this.fallo); return; }
       this.activo = true;
       this.actuar();
-    }).then(() => ({ usuario: this.usuario, usuarioId: this.usuarioId, rondas: [...this.rondas] }));
+    }).then(() => ({ usuario: this.usuario, usuarioId: this.usuarioId, rondas: [...this.rondas], retirado: this.retirado }));
   }
 
   /** @returns Libera observadores y relojes y solicita cerrar el socket. */
@@ -154,11 +164,11 @@ class Bot {
 
   private vigilarRonda(): void {
     clearTimeout(this.relojRonda);
-    if (!this.completo()) this.relojRonda = setTimeout(() => this.fallar(new Error("La mesa no termina rondas")), BOTS_SIN_RONDA_MS);
+    if (!this.completo() && !this.retirado) this.relojRonda = setTimeout(() => this.fallar(new Error("La mesa no termina rondas")), BOTS_SIN_RONDA_MS);
   }
 
   private fallar(error: unknown): void {
-    if (this.fallo || this.completo()) return;
+    if (this.fallo || this.retirado || this.completo()) return;
     this.fallo = new Error(`[${this.usuario}] ${error instanceof Error ? error.message : String(error)}`);
     clearTimeout(this.relojRonda);
     if (this.pendiente) {
@@ -181,11 +191,15 @@ class Bot {
   }
 
   private actuar(): void {
-    if (!this.activo || this.ocupado || this.fallo || this.completo() || !this.mesa) return;
-    const asiento = this.mesa.asientos.find((jugador) => jugador?.usuarioId === this.usuarioId);
+    if (!this.activo || this.ocupado || this.fallo || this.completo() || !this.mesa || this.mesa === this.rechazada) return;
+    const vista = this.mesa;
+    const asiento = vista.asientos.find((jugador) => jugador?.usuarioId === this.usuarioId);
+    // Con menos del margen, la apuesta esperaría tras los débitos SQL de otros y vencería:
+    // mejor sentarse fuera esta ronda que provocar FASE_INCORRECTA.
+    const aTiempo = vista.finEn === null || vista.finEn - Date.now() >= BOTS_MARGEN_APUESTA_MS;
     let accion: EntradaMensajeCliente | undefined;
-    if (this.mesa.fase === "APUESTAS" && asiento?.estado === "SIN_APUESTA") accion = { type: "apostar", cantidad: APUESTA_MIN };
-    if (this.mesa.fase === "TURNOS" && this.mesa.turnoDe === this.usuarioId && asiento?.estado === "JUGANDO") {
+    if (vista.fase === "APUESTAS" && asiento?.estado === "SIN_APUESTA" && aTiempo) accion = { type: "apostar", cantidad: APUESTA_MIN };
+    if (vista.fase === "TURNOS" && vista.turnoDe === this.usuarioId && asiento?.estado === "JUGANDO") {
       accion = { type: asiento.total < BOTS_PLANTARSE_EN ? "pedir" : "plantarse" };
     }
     if (!accion) return;
@@ -198,7 +212,29 @@ class Bot {
       }
       this.ocupado = false;
       this.actuar();
-    }, (error: unknown) => this.fallar(error));
+    }, (error: unknown) => {
+      if (error instanceof ErrorJuego && CARRERAS.has(error.codigo)) {
+        // Perder la carrera contra el reloj o el turno es normal con personas en la mesa:
+        // se espera el siguiente snapshot en lugar de detener a todo el grupo.
+        this.rechazada = vista;
+        this.ocupado = false;
+        this.actuar();
+      } else if (error instanceof ErrorJuego && error.codigo === "FICHAS_INSUFICIENTES") void this.retirarse();
+      else this.fallar(error);
+    });
+  }
+
+  /** Sin fichas, solo este bot deja la mesa; el resto del grupo sigue jugando. */
+  private async retirarse(): Promise<void> {
+    try {
+      const respuesta = await this.enviar({ type: "mesa.salir" });
+      if (respuesta.type !== "ok") throw new Error("Se esperaba confirmar la salida");
+    } catch (error) { this.fallar(error); return; }
+    this.retirado = true;
+    this.activo = false;
+    clearTimeout(this.relojRonda);
+    this.registrar(`[${this.usuario}] sin fichas tras ${this.rondas.size} rondas; deja la mesa.`);
+    this.finalizar?.();
   }
 }
 
@@ -207,8 +243,9 @@ class Bot {
  * @param opciones - Número de bots, mesa, rondas (cero = continuo) y endpoint WS.
  * @param registrar - Salida de progreso; nunca escribe tokens ni contraseñas.
  * @param senal - Cancelación opcional para terminar también durante registro o espera.
- * @returns Usuarios y UUID de las rondas en las que participaron; cierra los sockets.
- * @throws Error Si el protocolo falla, el servidor rechaza una intención o deja de responder.
+ * @returns Usuarios, UUID de las rondas en las que participaron y si dejaron la mesa sin fichas; cierra los sockets.
+ * @throws Error Si el protocolo falla, el servidor rechaza una intención (salvo carreras con
+ *   el reloj o el turno, que se esperan, y FICHAS_INSUFICIENTES, que retira solo a ese bot) o deja de responder.
  */
 export async function ejecutarBots(opciones: OpcionesBots, registrar: (texto: string) => void = console.info,
   senal?: AbortSignal): Promise<ResultadoBot[]> {
@@ -224,7 +261,9 @@ export async function ejecutarBots(opciones: OpcionesBots, registrar: (texto: st
     for (const bot of bots) await bot.preparar();
     registrar(`${bots.length} bots sentados en ${opciones.mesaId}; apuesta ${APUESTA_MIN}, objetivo ${BOTS_PLANTARSE_EN}.`);
     const resultado = await Promise.all(bots.map((bot) => bot.jugar()));
-    registrar(`Completadas ${opciones.rondas} rondas por bot, sin errores.`);
+    const retirados = resultado.filter((bot) => bot.retirado).length;
+    registrar(retirados ? `${retirados} bots sin fichas dejaron la mesa; el resto completó ${opciones.rondas} rondas.`
+      : `Completadas ${opciones.rondas} rondas por bot, sin errores.`);
     return resultado;
   } catch (error) { cancelar.abort(error); throw error; }
   finally { for (const bot of bots) bot.cerrar(); }

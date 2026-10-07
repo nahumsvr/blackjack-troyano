@@ -57,6 +57,8 @@ export const REINTENTO_PAGOS_MS = 1_000;
 export const BOTS_RONDAS = 10;
 export const BOTS_PLANTARSE_EN = 17;
 export const BOTS_RESPUESTA_MS = 8_000;
+/** Plazo mínimo restante para apostar; debajo, el débito SQL en cola puede llegar tarde. */
+export const BOTS_MARGEN_APUESTA_MS = 1_000;
 /** Incluye turnos humanos y margen SQL para detectar una mesa sin resultados. */
 export const BOTS_SIN_RONDA_MS = 2 * (TIEMPO_APUESTAS_MS + CAPACIDAD_MESA * TIEMPO_TURNO_MS + TIEMPO_RESULTADOS_MS + BOTS_RESPUESTA_MS);
 /*
