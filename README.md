@@ -2,6 +2,32 @@
 
 Proyecto de blackjack multijugador en desarrollo. La meta es que varias personas jueguen en mesas compartidas desde el navegador, con un servidor que controle las partidas y una economía de fichas simuladas. El alcance previsto incluye registro, lobby, rondas de blackjack, billetera, tienda e inventario.
 
+## Instrucciones para el profesor
+
+Solo se necesita **Docker con Compose v2** ([Docker Desktop](https://www.docker.com/products/docker-desktop/) en Windows/macOS; en Linux, Docker Engine con el plugin `compose`). No hace falta instalar Bun, Node ni PostgreSQL.
+
+1. Descomprime `blackjack-equipo.zip` y abre una terminal en la carpeta resultante (donde están `docker-compose.yml` y `Dockerfile`).
+2. Comprueba que Docker esté corriendo: `docker compose version`.
+3. Levanta la base de datos y el juego:
+
+   ```bash
+   docker compose up --build
+   ```
+
+   La primera vez descarga imágenes y compila el cliente (requiere internet, tarda unos minutos). Está listo cuando el registro muestra `Servidor escuchando`.
+4. Abre `http://localhost:3000` en el navegador, crea una cuenta en **Registrarse** (empieza con 500 fichas) y entra a una mesa del lobby.
+5. Para jugar con varias personas, abre más jugadores en otra ventana de incógnito u otro navegador (cada uno con su propia cuenta), o desde otra laptop en la misma red con `http://<IP-de-este-equipo>:3000`. Si las otras laptops no conectan, permite el puerto TCP 3000 en el firewall (ver [manual](docs/manual-instalacion.md#conexión-desde-otra-laptop)).
+6. Opcional: para sentar tres jugadores automáticos en `mesa-1`, en otra terminal desde la misma carpeta:
+
+   ```bash
+   docker compose exec app bun run bots 3 --mesa mesa-1 --rondas 0
+   ```
+
+   Se detienen con `Ctrl+C`.
+7. Para apagar: `Ctrl+C` en la terminal del paso 3 y después `docker compose down`. Los datos se conservan; `docker compose down -v` los borra por completo.
+
+Si el puerto 3000 ya está ocupado, cierra el programa que lo usa y repite el paso 3. Más detalles y problemas habituales en el [manual de instalación](docs/manual-instalacion.md).
+
 ## Estado actual
 
 Monorepo con **Bun workspaces** (`server`, `client` y `shared`). El servidor Bun atiende HTTP y WebSocket (`/ws`) en el puerto 3000. Ya funcionan registro, login, reanudar, logout, lobby con tres mesas, compra de fichas con límite diario, tienda, historial de movimientos y rondas completas en mesa (apuestas, turnos con reloj del servidor, dealer, pagos e historial de rondas). Después de compilar, Bun sirve el cliente desde `client/dist` en ese mismo puerto. Los bots de prueba (PR #33) siguen en revisión; el avance está en [`ESTADO.md`](documentation/ESTADO.md).
