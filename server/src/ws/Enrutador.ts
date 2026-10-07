@@ -15,6 +15,7 @@ export interface DatosConexion {
   usuario?: UsuarioVista;
   equipado?: Equipado;
 }
+/** Socket nativo con identidad y suscripciones administradas exclusivamente por el servidor. */
 export type SocketConexion = ServerWebSocket<DatosConexion>;
 type TipoManejado = Exclude<MensajeCliente["type"], "ping">;
 /** Cada handler recibe solo su intención validada y devuelve la respuesta directa. */
@@ -23,8 +24,16 @@ type ManejadoresIntenciones = Partial<{
     socket: SocketConexion, mensaje: Extract<MensajeCliente, { type: Tipo }>,
   ) => MensajeServidor | Promise<MensajeServidor>;
 }>;
+/** Intenciones opcionales y exclusión compartida para componer los servicios del servidor. */
 export type ManejadoresEnrutador = ManejadoresIntenciones & {
-  /** Mantiene una exclusión compartida hasta enviar la respuesta directa. */
+  /**
+   * Mantiene una exclusión compartida hasta enviar la respuesta directa.
+   * @param socket - Conexión con identidad validada.
+   * @param mensaje - Intención validada con el contrato compartido.
+   * @param responder - Ejecuta el handler y envía su respuesta dentro de la exclusión.
+   * @returns Confirmación de que terminó la operación y se liberó la exclusión.
+   * @throws Error Propaga fallos del handler al try/catch del enrutador.
+   */
   serializar?: (socket: SocketConexion, mensaje: MensajeCliente, responder: () => Promise<void>) => Promise<void>;
 };
 
@@ -32,6 +41,7 @@ export type ManejadoresEnrutador = ManejadoresIntenciones & {
 export class Enrutador {
   private readonly pendientes = new WeakMap<SocketConexion, Promise<void>>();
   /**
+   * Compone handlers y callbacks de sesión sin acoplar el transporte a SQL.
    * @param manejadores - Intenciones implementadas por las tareas siguientes.
    * @param registrarError - Registra excepciones inesperadas solo en el servidor.
    * @param validarSesion - Comprueba vigencia/revocación antes de ejecutar intenciones protegidas.
@@ -49,14 +59,17 @@ export class Enrutador {
    * Libera los recursos inyectados sin guardar closures en los datos de cada socket.
    * @param socket - Conexión cerrada; su identidad sigue disponible para el callback.
    * @returns Nada.
+   * @throws Error Propaga fallos del callback de limpieza; el transporte los captura al cerrar.
    */
   cerrar(socket: SocketConexion): void { this.limpiarConexion?.(socket); }
 
   /**
    * Valida tamaño, JSON y esquema; conserva reqId y convierte fallos en error público.
+   * Los fallos del envío y del registrador se aíslan; no rechaza por esos callbacks.
    * @param socket - Conexión que originó la intención.
    * @param datos - Frame textual o binario recibido por Bun.
-   * @returns Finalización de la respuesta; los errores de dominio no se propagan.
+   * @returns Finalización de la respuesta, o sin envío si el socket ya cerró;
+   * los errores de dominio se convierten en mensajes públicos.
    */
   manejar(socket: SocketConexion, datos: string | Buffer): Promise<void> {
     // Auth y logout de un mismo socket conservan el orden aunque hagan consultas async.
@@ -106,9 +119,15 @@ export class Enrutador {
       else await responder();
     } catch (error) {
       const codigo = error instanceof ErrorJuego ? error.codigo : "ERROR_INTERNO";
-      if (!(error instanceof ErrorJuego)) this.registrarError(error);
-      this.enviar(socket, { type: "error", codigo, mensaje: MENSAJES_ERROR[codigo], reqId });
+      if (!(error instanceof ErrorJuego)) this.registrarFallo(error);
+      try { this.enviar(socket, { type: "error", codigo, mensaje: MENSAJES_ERROR[codigo], reqId }); }
+      catch (errorEnvio) { this.registrarFallo(errorEnvio); }
     }
+  }
+
+  private registrarFallo(error: unknown): void {
+    try { this.registrarError(error); }
+    catch { /* El destino de logs no puede convertir un error aislado en un rechazo del transporte. */ }
   }
 
   private despachar(socket: SocketConexion, mensaje: MensajeCliente): MensajeServidor | Promise<MensajeServidor> {

@@ -25,10 +25,16 @@ export class Jugador {
     this.equipado = { ...equipado };
   }
 
-  /** @returns Identidad estable para ordenar turnos y localizar el asiento. */
+  /**
+   * Consulta la identidad autenticada del dueño del asiento.
+   * @returns Identidad estable para ordenar turnos y localizar el asiento.
+   */
   get usuarioId(): number { return this.usuario.id; }
 
-  /** Limpia la mano y apuesta al abrir la siguiente ronda. @returns Sin valor. */
+  /**
+   * Limpia la mano y apuesta al abrir la siguiente ronda.
+   * @returns Sin valor.
+   */
   reiniciarRonda(): void {
     this.mano = new Mano();
     this.apuesta = 0;
@@ -46,7 +52,10 @@ export class Jugador {
     return cambiado;
   }
 
-  /** @returns Vista nueva; nunca entrega Mano ni arreglos internos al transporte. */
+  /**
+   * Construye la vista del asiento con cartas y estado del servidor.
+   * @returns Vista nueva; nunca entrega Mano ni arreglos internos al transporte.
+   */
   snapshot(): Asiento {
     return {
       indice: this.indice, usuarioId: this.usuario.id, usuario: this.usuario.usuario,

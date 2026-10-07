@@ -36,6 +36,39 @@ const destino = process.env.TEST_DATABASE_URL;
   afterEach(async () => { await Promise.all(clientes.splice(0).map((cliente) => cliente.cerrar())); });
   afterAll(async () => { servidor?.stop(true); if (base) await base.cerrar(); });
 
+  test("un fallo al autenticar revierte la identidad y permite reanudar de nuevo", async () => {
+    const sesion = await sesiones.registrar(nombre(), "secreto08");
+    let fallar = true;
+    const local = iniciarServidor(0, crearEnrutadorAutenticado(sesiones, {}, {
+      alAutenticar: () => { if (fallar) throw new Error("Fallo inyectado de vinculacion"); },
+    }));
+    const cliente = await ClienteWsPrueba.conectar(`ws://127.0.0.1:${local.port}/ws`);
+    try {
+      expect(await cliente.enviar({ type: "reanudar", token: sesion.token })).toMatchObject({ codigo: "ERROR_INTERNO" });
+      fallar = false;
+      expect(await cliente.enviar({ type: "reanudar", token: sesion.token })).toMatchObject({ type: "sesion", token: sesion.token });
+    } finally { await cliente.cerrar(); await local.stop(true); }
+  });
+
+  test("logout limpia todas las pestañas aunque falle el callback de una mesa", async () => {
+    const sesion = await sesiones.registrar(nombre(), "secreto08");
+    let limpiezas = 0;
+    const local = iniciarServidor(0, crearEnrutadorAutenticado(sesiones, {}, {
+      alCerrar: () => { if (++limpiezas === 1) throw new Error("Fallo inyectado de mesa"); },
+    }));
+    const primera = await ClienteWsPrueba.conectar(`ws://127.0.0.1:${local.port}/ws`);
+    const segunda = await ClienteWsPrueba.conectar(`ws://127.0.0.1:${local.port}/ws`);
+    try {
+      await primera.enviar({ type: "reanudar", token: sesion.token });
+      await segunda.enviar({ type: "reanudar", token: sesion.token });
+      expect(await primera.enviar({ type: "logout" })).toMatchObject({ type: "ok" });
+      await segunda.esperar((mensaje) => mensaje.type === "error" && mensaje.codigo === "SESION_INVALIDA");
+      expect(limpiezas).toBe(2);
+      expect(await primera.enviar({ type: "logout" })).toMatchObject({ codigo: "NO_AUTENTICADO" });
+      expect(await segunda.enviar({ type: "logout" })).toMatchObject({ codigo: "NO_AUTENTICADO" });
+    } finally { await primera.cerrar(); await segunda.cerrar(); await local.stop(true); }
+  });
+
   test("registro entrega $10000, 500 fichas, los tres gratuitos y un token de siete días", async () => {
     const cliente = await conectar();
     const respuesta = await cliente.enviar({ type: "registro", usuario: nombre(), contrasena: "secreto08" });

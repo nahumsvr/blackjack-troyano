@@ -5,9 +5,14 @@ import type { ManejadoresEnrutador, SocketConexion } from "./Enrutador";
 
 /**
  * Conecta las intenciones con el motor y revalida la propiedad tras esperar su cola.
+ * Al ejecutar los handlers, el enrutador convierte los rechazos en mensajes error:
+ * NO_AUTENTICADO, NO_ESTAS_EN_MESA, FASE_INCORRECTA, NO_ES_TU_TURNO, YA_APOSTASTE,
+ * CANTIDAD_INVALIDA, FICHAS_INSUFICIENTES, MENSAJE_INVALIDO o ERROR_INTERNO.
  * @param gestor - Mesas con billetera inyectada; el cliente no elige identidad ni turno.
  * @returns Handlers con snapshots directos, además de las publicaciones del motor.
- * @throws ErrorJuego NO_AUTENTICADO | NO_ESTAS_EN_MESA | FASE_INCORRECTA | NO_ES_TU_TURNO | YA_APOSTASTE | CANTIDAD_INVALIDA | FICHAS_INSUFICIENTES | ERROR_INTERNO.
+ * @throws ErrorJuego NO_AUTENTICADO | NO_ESTAS_EN_MESA | FASE_INCORRECTA | NO_ES_TU_TURNO |
+ * YA_APOSTASTE | CANTIDAD_INVALIDA | FICHAS_INSUFICIENTES | MENSAJE_INVALIDO | ERROR_INTERNO
+ * al ejecutar los handlers devueltos; el enrutador convierte estos errores en respuestas.
  */
 export function crearManejadoresJuego(gestor: GestorMesas): ManejadoresEnrutador {
   function propietario(socket: SocketConexion) {
