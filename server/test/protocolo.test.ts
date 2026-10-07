@@ -2,13 +2,25 @@
 import { describe, expect, test } from "bun:test";
 import {
   CartaVistaSchema, CodigoErrorSchema, ErrorJuego, MENSAJES_ERROR,
-  MensajeClienteSchema, MensajeServidorSchema, MesaEstadoSchema, crearErrorValidacion, crearMensajeClienteSchema,
+  MensajeClienteSchema, MensajeServidorSchema, MesaEstadoSchema, crearErrorValidacion, crearMensajeClienteSchema, extraerReqId,
   type EntradaMensajeCliente, type MensajeServidor, type MesaEstado,
 } from "@blackjack/shared";
 import { LIMITES_CANTIDAD } from "@blackjack/shared";
 import { APUESTA_MAX, APUESTA_MIN, COMPRA_FICHAS_MAX, COMPRA_FICHAS_MIN, MULTIPLO_FICHAS } from "../src/config";
 
 const uuid = "9e712309-50ac-4bca-a123-8239dc54ce87";
+test("correlación compartida acepta solo reqId válido incluso en entradas malformadas", () => {
+  for (const entrada of [null, undefined, 1, "texto", [], {}, { reqId: null }, { reqId: 7 }, { reqId: "x".repeat(37) }]) {
+    expect(extraerReqId(entrada)).toBeUndefined();
+  }
+  for (const reqId of ["", "peticion", "x".repeat(36)]) {
+    const entrada = { type: "inventado", reqId };
+    expect(extraerReqId(entrada)).toBe(reqId);
+    const validado = MensajeClienteSchema.safeParse(entrada);
+    if (validado.success) throw new Error("La entrada debe rechazarse");
+    expect(crearErrorValidacion(entrada, validado.error).reqId).toBe(reqId);
+  }
+});
 const token = "a".repeat(64);
 const equipado = { avatar: "avatar_basico", reverso: "reverso_clasico", tema: "tema_verde" };
 const billetera = {

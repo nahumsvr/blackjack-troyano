@@ -27,12 +27,14 @@ export interface RelojSesion {
  * @param adicionales - Handlers de otras tareas, sin sustituir los de autenticación.
  * @param integracion - Vinculación y limpieza de recursos de la aplicación.
  * @param opcionesReloj - Sustituye reloj/timers solo para pruebas de caducidad.
+ * @param ahoraEnrutador - Reloj monótono del límite de tráfico; inyectable para integración determinista.
  * @returns Enrutador con validación de sesiones persistentes para intenciones protegidas.
  * @throws ErrorJuego Los handlers convierten SESION_INVALIDA y errores de dominio en respuestas públicas.
  */
 export function crearEnrutadorAutenticado(
   sesiones: Sesiones, adicionales: ManejadoresEnrutador = {}, integracion: IntegracionSesion = {},
   opcionesReloj: Partial<RelojSesion> = {},
+  ahoraEnrutador?: () => number,
 ): Enrutador {
   const reloj: RelojSesion = {
     ahora: Date.now, programar: (accion, demoraMs) => setTimeout(accion, demoraMs),
@@ -133,5 +135,5 @@ export function crearEnrutadorAutenticado(
       }
       throw error;
     }
-  }, (socket) => limpiarSesion(socket, "desconexion"));
+  }, (socket) => limpiarSesion(socket, "desconexion"), ahoraEnrutador);
 }

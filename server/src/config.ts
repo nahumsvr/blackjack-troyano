@@ -38,6 +38,22 @@ export const MESAS = [
 ] as const;
 /** Límite del protocolo medido en bytes UTF-8, antes de decodificar JSON. */
 export const MENSAJE_MAX_BYTES = 16 * 1024;
+/** Ventana móvil de admisión por conexión, incluidos frames inválidos y ping. */
+export const MENSAJES_POR_SEGUNDO = 20;
+/** Duración de la ventana móvil; no depende de los segundos del reloj de pared. */
+export const VENTANA_MENSAJES_MS = 1_000;
+/** Tope independiente de cola: admite una ráfaga normal, aunque SQL tarde más de una ventana. */
+export const MENSAJES_PENDIENTES_MAX = 20;
+/** Cierra al acumular esta cantidad de rechazos consecutivos, acotando parseo y respuestas. */
+export const RECHAZOS_CONSECUTIVOS_MAX = 40;
+/** Cierra una conexión sin progreso; no cancela ni vuelve a ejecutar su transacción en vuelo. */
+export const CONEXION_SIN_PROGRESO_MS = 15_000;
+/** Presupuesto global de hash/verify por ventana; abrir más sockets no lo multiplica. */
+export const ACCESOS_POR_SEGUNDO = 20;
+/** Como máximo cuatro hashes/verificaciones simultáneos; no encola exceso de autenticación. */
+export const ACCESOS_SIMULTANEOS_MAX = 4;
+/** Intervalo para comprobar cierre HTTP/WS cuando Bun conserva un contador de sockets obsoleto. */
+export const COMPROBAR_CIERRE_MS = 10;
 /** Zapato de cuatro mazos; reposición entre rondas por debajo del 25 %. */
 export const NUM_MAZOS = 4;
 export const UMBRAL_REBARAJAR = 0.25;

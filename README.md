@@ -92,4 +92,6 @@ bun run start
 
 Abre `http://localhost:3000` o `http://<IP-del-servidor>:3000` desde otra laptop. HTTP y `/ws` usan el mismo puerto; no hace falta Vite. El ZIP omite `dist`, así que hay que compilar después de descomprimir. Si no hay build, `/` devuelve 404 con la indicación de compilar; las rutas ajenas al build también devuelven 404.
 
+En la máquina servidor, desde la misma copia del proyecto donde se ejecutó `bun run build` (requiere `client/dist` local) y con producción arrancada, `bun run verificar:produccion http://<IP-del-servidor>:3000` comprueba HTML, assets y una ronda por `/ws`. Registra tres cuentas de bots y requiere tres asientos disponibles en `mesa-1`; conserva sus movimientos e historial. La aceptación desde otra laptop se realiza aparte: abrir la URL sin `?mock=1`, registrarse y terminar una ronda. Ver [evidencia de T-38](docs/evidencia/t38/README.md).
+
 El diseño previsto y las tareas pendientes están en [`PLAN.md`](documentation/PLAN.md) y [`TAREAS.md`](documentation/TAREAS.md). [`ESTADO.md`](documentation/ESTADO.md) registra el avance del equipo.

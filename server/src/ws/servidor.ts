@@ -1,6 +1,6 @@
 /** Transporte WebSocket y conteo del lobby (T-06); sirve el cliente compilado (T-38). */
 import { type Server } from "bun";
-import { DIRECTORIO_CLIENTE, HOST, PUERTO, RUTA_WS, TOPIC_LOBBY } from "../config";
+import { COMPROBAR_CIERRE_MS, DIRECTORIO_CLIENTE, HOST, PUERTO, RUTA_WS, TOPIC_LOBBY } from "../config";
 import { servirCliente } from "./clienteEstatico";
 import { Enrutador, type DatosConexion, type SocketConexion } from "./Enrutador";
 
@@ -18,6 +18,7 @@ export function iniciarServidor(
   directorioCliente = DIRECTORIO_CLIENTE,
 ): Server<DatosConexion> {
   let conectados = 0;
+  const conexiones = new Set<SocketConexion>();
   const servidor = Bun.serve<DatosConexion>({
     hostname: HOST,
     port: puerto,
@@ -30,6 +31,7 @@ export function iniciarServidor(
     },
     websocket: {
       open(socket) {
+        conexiones.add(socket);
         conectados += 1;
         socket.subscribe(TOPIC_LOBBY);
         // server.publish incluye al socket nuevo; ws.publish lo excluiría.
@@ -48,6 +50,7 @@ export function iniciarServidor(
           } finally {
             // Ambos hooks deben ejecutarse: un fallo de mesa no conserva una sesión
             // privada ni impide descontar la conexión que ya cerró el transporte.
+            conexiones.delete(socket);
             socket.unsubscribe(TOPIC_LOBBY);
             conectados -= 1;
             servidor.publish(TOPIC_LOBBY, JSON.stringify({ type: "bienvenida", conectados }));
@@ -59,5 +62,22 @@ export function iniciarServidor(
       },
     },
   });
+  const detenerNativo = servidor.stop.bind(servidor);
+  servidor.stop = async (cerrarConexiones) => {
+    let temporizador: ReturnType<typeof setTimeout> | undefined;
+    const detenido = detenerNativo(cerrarConexiones);
+    // Bun 1.3.13 conserva pendingWebSockets tras un cierre iniciado por el servidor,
+    // aunque close ya haya limpiado sesión y mesa. No esperar ese contador obsoleto;
+    // sí esperar todos los hooks reales y las respuestas HTTP todavía activas.
+    const cerrado = new Promise<void>((resolver) => {
+      const comprobar = () => {
+        if (conexiones.size === 0 && servidor.pendingRequests === 0) resolver();
+        else temporizador = setTimeout(comprobar, COMPROBAR_CIERRE_MS);
+      };
+      comprobar();
+    });
+    try { await Promise.race([detenido.then(() => cerrado), cerrado]); }
+    finally { if (temporizador !== undefined) clearTimeout(temporizador); }
+  };
   return servidor;
 }
