@@ -8,8 +8,11 @@ import {
   ResultadoJugadorSchema, UsuarioNombreSchema, UsuarioVistaSchema,
 } from "./tipos";
 
+/** Id de petición elegido por el cliente; el servidor lo devuelve para correlacionar respuestas. */
 export const ReqIdSchema = z.string().max(36);
+/** Token de sesión: 32 bytes aleatorios en hexadecimal. */
 export const TokenSchema = z.string().regex(/^[a-fA-F0-9]{64}$/);
+/** UUID: `clave` de idempotencia en compras de fichas e id de ronda. */
 export const UuidSchema = z.uuid();
 /** Forma y coherencia de un conjunto de límites de cantidad. */
 export const LimitesCantidadSchema = z.strictObject({
@@ -26,8 +29,10 @@ export type LimitesCantidad = z.infer<typeof LimitesCantidadSchema>;
 export const LIMITES_CANTIDAD = {
   apuestaMin: 10, apuestaMax: 500, compraMin: 10, compraMax: 5000, multiplo: 10,
 } as const satisfies LimitesCantidad;
+/** Apuesta válida: entero múltiplo de 10 dentro de los límites compartidos. */
 export const CantidadApuestaSchema = z.number().int().min(LIMITES_CANTIDAD.apuestaMin)
   .max(LIMITES_CANTIDAD.apuestaMax).multipleOf(LIMITES_CANTIDAD.multiplo);
+/** Compra de fichas válida: entero múltiplo de 10 dentro de los límites compartidos. */
 export const CantidadCompraSchema = z.number().int().min(LIMITES_CANTIDAD.compraMin)
   .max(LIMITES_CANTIDAD.compraMax).multipleOf(LIMITES_CANTIDAD.multiplo);
 const peticion = { reqId: ReqIdSchema.optional() };
@@ -66,11 +71,14 @@ export function crearMensajeClienteSchema(limites: LimitesCantidad = LIMITES_CAN
   z.strictObject({ type: z.literal("ping"), ...peticion }),
   ]);
 }
+/** Unión discriminada por `type` de todas las intenciones que acepta el servidor. */
 export const MensajeClienteSchema = crearMensajeClienteSchema();
 
+/** Respuesta de error con `codigo` de `errores.ts`, mensaje en español y `reqId` si lo hubo. */
 export const ErrorMensajeSchema = z.strictObject({
   type: z.literal("error"), ...peticion, codigo: CodigoErrorSchema, mensaje: z.string().min(1),
 });
+/** Unión discriminada por `type` de todo lo que el servidor envía al cliente. */
 export const MensajeServidorSchema = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("bienvenida"), ...peticion, conectados: EnteroNoNegativoSchema }),
   z.strictObject({ type: z.literal("sesion"), ...peticion, token: TokenSchema,
@@ -90,6 +98,7 @@ export const MensajeServidorSchema = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("pong"), ...peticion, t: EnteroNoNegativoSchema }),
 ]);
 
+/** Tipos TypeScript inferidos de los esquemas anteriores; no se declaran a mano. */
 export type MensajeCliente = z.infer<typeof MensajeClienteSchema>;
 /** Entrada antes de aplicar el valor por defecto de movimientos.listar.limite. */
 export type EntradaMensajeCliente = z.input<typeof MensajeClienteSchema>;

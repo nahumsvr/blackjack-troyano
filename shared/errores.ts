@@ -1,6 +1,7 @@
 /** Códigos estables y textos públicos para errores de dominio y del protocolo. */
 import { z } from "zod";
 
+/** Códigos de error de dominio que viajan en los mensajes `error`. */
 export const CodigoErrorSchema = z.enum([
   "MENSAJE_INVALIDO", "DEMASIADAS_SOLICITUDES", "NO_AUTENTICADO", "YA_AUTENTICADO",
   "USUARIO_EXISTE", "CREDENCIALES_INVALIDAS", "SESION_INVALIDA", "MESA_NO_EXISTE",
@@ -10,6 +11,7 @@ export const CodigoErrorSchema = z.enum([
   "NO_POSEIDO", "BLOQUEADO_EN_MANO", "ERROR_INTERNO",
 ]);
 export type CodigoError = z.infer<typeof CodigoErrorSchema>;
+/** Mensaje en español para cada código; viaja en `error.mensaje` y el cliente lo muestra tal cual. */
 export const MENSAJES_ERROR = {
   MENSAJE_INVALIDO: "El mensaje no es válido",
   DEMASIADAS_SOLICITUDES: "Enviaste demasiadas solicitudes; espera un momento",

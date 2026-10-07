@@ -109,6 +109,8 @@ export class GestorMesas {
     const mesa = this.mesaDelPropietario(usuarioId, conexionId);
     mesa.salir(usuarioId);
     this.propietarios.delete(usuarioId);
+    // Salida voluntaria: la apuesta sigue hasta PAGOS, pero reanudar ya no vuelve a sentarlo.
+    this.ubicaciones.delete(usuarioId);
     return mesa.id;
   }
 

@@ -82,10 +82,19 @@ describe("T-54: ZIP y selección de requisitos", () => {
     },
   );
 
-  test("un enlace dentro de fuentes se rechaza antes de producir el ZIP", async () => {
+  // Windows exige privilegios para symlinks de archivo; el caso se conserva en Unix.
+  test.skipIf(process.platform === "win32")("un enlace a archivo se rechaza antes de producir el ZIP", async () => {
     const { raiz } = await fixture();
     // Windows puede crear junctions sin habilitar privilegios globales para symlinks.
     // Ambos casos deben rechazarse: el empaquetador no debe seguir enlaces a directorios.
+    await symlink(join(raiz, "docs/guias"), join(raiz, "docs/enlace"), process.platform === "win32" ? "junction" : "dir");
+    await expect(empaquetarProyecto(raiz)).rejects.toThrow("archivos regulares");
+    expect(await Bun.file(join(raiz, "blackjack-equipo.zip")).exists()).toBe(false);
+  });
+
+  test("un enlace a directorio se rechaza antes de producir el ZIP", async () => {
+    const { raiz } = await fixture();
+    // Windows puede crear junctions sin habilitar privilegios globales para symlinks.
     await symlink(join(raiz, "docs/guias"), join(raiz, "docs/enlace"), process.platform === "win32" ? "junction" : "dir");
     await expect(empaquetarProyecto(raiz)).rejects.toThrow("archivos regulares");
     expect(await Bun.file(join(raiz, "blackjack-equipo.zip")).exists()).toBe(false);

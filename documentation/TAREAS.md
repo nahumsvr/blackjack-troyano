@@ -73,6 +73,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
 - [ ] T-14 · README con requisitos (Bun, Docker) y los 4 comandos para arrancar (borrador del manual de instalación) · Massimo · depende de: T-05
   - **Preparación local (2026-10-04):** README y docs/manual-instalacion.md actualizados con los comandos existentes y límites actuales. Pendiente que Nahum arranque independientemente siguiendo el README. Incluido en PR #4 (abierto).
   - **Hecho cuando:** Nahum levanta el proyecto en su máquina solo con el README, sin preguntar.
+  - **Listo para la prueba de Nahum (2026-10-06) — PR #39:** README sin enlaces rotos ni estado de ramas viejas; los 4 comandos verificados desde el ZIP de `main` `3e185d1` (ver T-48).
 
 ---
 
@@ -90,9 +91,11 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Revisión atendida — PR #28 (2026-10-06):** rama reconstruida sobre main, sin duplicar Carta/Baraja/Mano/Dealer de #25/#27. Las pruebas comparan copias independientes y recorren los límites de shared para garantizar pagos naturales enteros. Se conservan las pruebas de rechazo de enlaces a archivo y directorio del ZIP; resuelto el conflicto de ESTADO con #35. Pendiente aprobación/fusión.
   - **Hecho cuando:** tests: blackjack con apuesta 10 → pago 25; gana con 10 → 20; empate → 10; pierde → 0; blackjack vs blackjack del dealer → empate; jugador pasado pierde aunque el dealer también se pase.
 - [ ] T-18 · 🔓 `Mesa`: máquina de estados de `PLAN.md` §6, asientos, `snapshot()` que **nunca** incluye la carta oculta, publicación en `mesa:<id>` · Hector · depende de: T-09, T-16
+  - **Revisión atendida — PR #29 (2026-10-06):** reconstruida sobre main `3e185d1` con los siete archivos de T-18 y su evidencia histórica; conserva el modo espectador. Salir voluntariamente elimina la ubicación de reconexión; una caída con apuesta conserva el asiento hasta PAGOS. La regresión reproduce el fallo anterior y pasa con la corrección. Typecheck correcto; PostgreSQL 16.15/Bun 1.3.13: 311 pruebas correctas, cero fallos y una omitida por enlaces a archivo en Windows. Pendiente aprobación/fusión; reserva de 60 s en T-36.
   - **Hecho cuando:** con 3 pestañas, las 3 reciben el mismo `mesa.estado` en < 1 s en cada transición y, en la pestaña de red del navegador, la carta oculta del dealer aparece como `{oculta:true}`. *Desbloquea a Nahum (T-28).*
-- [ ] T-19 · Relojes: 15 s apuestas (cierra antes si todos apostaron), 20 s por turno (auto-plantar), 5 s de resultados; un solo `setTimeout` por mesa · Hector · depende de: T-18
+- [x] T-19 · Relojes: 15 s apuestas (cierra antes si todos apostaron), 20 s por turno (auto-plantar), 5 s de resultados; un solo `setTimeout` por mesa · Hector · depende de: T-18 · PR #30
   - **Hecho cuando:** un jugador que no actúa en 20 s queda `PLANTADO` y el turno pasa al siguiente; la mesa encadena 5 rondas sin intervención y sin quedarse atorada.
+  - **Revisión atendida — PR #30 (2026-10-07):** rebasada sobre main (#29 ya fusionada) conservando el modo espectador de #22. La salida sin apuesta reevalúa el cierre anticipado; detener impide recrear timers al cerrar sockets. Si el reparto falla en el reloj se reintenta (máx. 3, 1 s) en vez de dejar la mesa sin timeout; el cierre anticipado se revierte al plazo original si entra otro jugador; PAGOS espera la liquidación inyectada (`alLiquidar`) antes de abrir la siguiente ronda. Regresiones con reloj manual; aprobada para fusión.
 - [ ] T-20 · Acciones `apostar`, `pedir`, `plantarse` con todas las validaciones (fase, turno, rango, múltiplo de 10, saldo vía interfaz `Billetera`; con billetera falsa si T-23 no está) · Hector · depende de: T-18, T-22
   - **Hecho cuando:** `pedir` fuera de turno → `NO_ES_TU_TURNO`; apostar en `TURNOS` → `FASE_INCORRECTA`; apostar 15, 0, -10, 10.5, "abc" o 600 → `CANTIDAD_INVALIDA`; apostar dos veces → `YA_APOSTASTE`.
 - [ ] T-21 · Liquidación en `PAGOS`: `acreditarPago` por jugador, `INSERT` en `rondas` y `rondas_jugadores` y mensaje `ronda.resultado` · Hector · depende de: T-17, T-23
@@ -143,6 +146,7 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Avance — PR #23 fusionado (2026-10-06):** arquitectura describe auth/router, Carta/Baraja, Mano/Dealer y las 45 columnas SQL. Preparar los diagramas de Mesa/Gestor desde los PR publicados, identificando su base; cierre cuando estén integrados y renderizados/verificados.
   - **Preparación local (2026-10-04):** Borrador docs/arquitectura.md con módulos/clases existentes, ER y máquina de estados prevista. T-18 y revisión/renderizado de GitHub pendientes; no se considera terminada. Incluido en PR #4 (abierto).
   - **Hecho cuando:** los diagramas se ven renderizados en GitHub y coinciden con los nombres de las clases reales.
+  - **Motor documentado (2026-10-06) — PR #41:** `docs/arquitectura.md` incluye `Jugador`, `Mesa`, `RelojMesa`, `GestorMesas`, `HistorialSQL` y `resolver` con sus firmas reales de `main` (PR #29–#32 integrados), incluida la liquidación con tope de 30 reintentos; la máquina de estados ya es la implementada. Falta verlo renderizado en GitHub y la confirmación de Hector.
 
 ---
 
@@ -208,14 +212,17 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **Trabajo disponible (2026-10-06):** se puede preparar auditoría JSDoc de shared/db/store y de los handlers nuevos de #21. No sustituye congelamiento ni revisión final de Hector.
   - **Preparación local (2026-10-04):** Los nuevos archivos shared/db/store incluyen comentarios de propósito y documentación de APIs. Revisión final de Hector y gate T-43 pendientes. Incluido en PR #4 (abierto).
   - **Hecho cuando:** ninguna función exportada queda sin JSDoc (revisado por Hector).
+  - **Lista para revisión de Hector (2026-10-06) — PR #40:** todas las clases, métodos públicos y funciones exportadas de `store/`, `db/` y `shared/` ya tenían JSDoc; se agregó JSDoc de una línea a los 31 esquemas y constantes exportados de `shared/` (significado de cada contrato, no repetición del código) y a `Saldos`. Los tipos `z.infer` llevan un comentario de grupo. Escaneo de exportaciones sin JSDoc: 0. Typecheck y 129 pruebas de shared/cliente sin fallos.
 - [ ] T-48 · `docs/manual-instalacion.md`: requisitos con versiones, clonar/descomprimir, `.env`, Docker, `db:reset`, `build`, `start`, cómo conectarse desde otra laptop, problemas comunes (puerto ocupado, firewall) · Massimo · depende de: T-38
   - **Avance — PR #23 fusionado (2026-10-06):** documentación corregida y entorno Bun 1.3.13/PostgreSQL 16 comprobado. Producción de #24 ya está en `main` (con #22); la instalación desde cero por Nahum siguiendo únicamente el manual continúa pendiente.
   - **Preparación local (2026-10-04):** Borrador docs/manual-instalacion.md disponible; build/start, PostgreSQL 16 y prueba independiente de Nahum pendientes. Incluido en PR #4 (abierto).
   - **Hecho cuando:** Nahum instala desde cero en su laptop siguiendo solo el manual.
+  - **Listo para la prueba de Nahum (2026-10-06) — PR #39:** ruta rápida de 6 comandos, sección de conexión desde otra laptop (IP, hotspot, reglas de firewall para Windows/Linux/macOS), puerto ocupado y «Cliente no compilado» en problemas habituales; historial de evidencias retirado del manual. Verificado desde el ZIP de `main` `3e185d1` en carpeta limpia: `bun install --frozen-lockfile` (5 s), `db:reset`, `build`, `start`; `GET /` → 200 por `localhost` y por la IP de LAN, y por WebSocket registro → `sesion`, `lobby.listar` → `lobby`, `mesa.unirse` → `mesa.estado`. Falta que Nahum lo siga solo en su laptop.
 - [ ] T-50 · `docs/arquitectura.md` final: descripción de cada tabla + `schema.sql`/`seed.sql` referenciados, diagrama de clases, diagrama de dependencias, protocolo, máquina de estados, decisiones de diseño · Massimo · depende de: T-32, T-45
   - **Avance — PR #23 fusionado (2026-10-06):** diccionario de siete tablas/45 columnas y diagramas de módulos/clases disponibles en main. Falta incorporar motor/gestor al fusionarse, exportar diagramas para el ZIP y revisión de Hector.
   - **Preparación local (2026-10-04):** Borrador de arquitectura referencia schema/seed y distingue implementación de diseño pendiente. Motor/auth/router/cliente y revisión de Hector pendientes.
   - **Hecho cuando:** cubre los 3 puntos de la rúbrica (BD con scripts, clases, dependencias) y Hector confirma que coincide con el código.
+  - **Avance (2026-10-06) — PR #41:** módulos, dependencias (con la inyección de `Billetera`/`HistorialSQL` desde `aplicacion.ts`), clases del motor, liquidación de rondas, handlers y topics, máquina de estados y tabla de pruebas actualizados en `docs/arquitectura.md`. Mismos pendientes que T-32.
 
 ---
 

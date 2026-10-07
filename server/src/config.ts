@@ -51,10 +51,15 @@ export const PAGO_BLACKJACK_DENOMINADOR = 2;
 export const TIEMPO_APUESTAS_MS = 15_000;
 export const TIEMPO_TURNO_MS = 20_000;
 export const TIEMPO_RESULTADOS_MS = 5_000;
+/** Reintento de un paso de reloj que falló (p. ej. el reparto). */
+export const TIEMPO_REINTENTO_MS = 1_000;
+export const MAX_REINTENTOS_RELOJ = 3;
 /** Reserva de asiento ante pérdida del transporte; nunca descarta apuestas sin liquidar. */
 export const RESERVA_ASIENTO_MS = 60_000;
-/** Reintento interno sin abrir otra ronda ni repetir pagos confirmados. */
+/** Reintento interno de liquidación sin abrir otra ronda ni repetir pagos confirmados. */
 export const REINTENTO_PAGOS_MS = 1_000;
+/** Intentos de liquidación antes de registrar la ronda para conciliación manual y liberar la mesa. */
+export const REINTENTOS_PAGOS_MAX = 30;
 /** Bots T-26: diez rondas por defecto; cero en la CLI permite una demo continua. */
 export const BOTS_RONDAS = 10;
 export const BOTS_PLANTARSE_EN = 17;

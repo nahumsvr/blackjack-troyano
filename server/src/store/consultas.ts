@@ -3,6 +3,7 @@ import { ErrorJuego, type BilleteraEstado } from "@blackjack/shared";
 import type { SQL } from "bun";
 import { LIMITE_DIARIO, ZONA_HORARIA } from "../config";
 
+/** Dinero y fichas de un usuario leídos de `usuarios`. */
 export type Saldos = { dinero: number; fichas: number };
 
 /**

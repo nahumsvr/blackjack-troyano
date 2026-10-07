@@ -1,8 +1,8 @@
 /** T-19: plazos, cierre anticipado, callbacks obsoletos y cinco rondas automáticas. */
-import { expect, test } from "bun:test";
-import { EQUIPADO_INICIAL, TIEMPO_APUESTAS_MS, TIEMPO_TURNO_MS, TIEMPO_RESULTADOS_MS } from "../src/config";
+import { expect, spyOn, test } from "bun:test";
+import { EQUIPADO_INICIAL, TIEMPO_APUESTAS_MS, TIEMPO_TURNO_MS, TIEMPO_RESULTADOS_MS, TIEMPO_REINTENTO_MS } from "../src/config";
 import { Mesa } from "../src/game/Mesa";
-import { crearZapatoFijo, TiempoManual } from "./soporteMesa";
+import { BilleteraMemoria, crearZapatoFijo, TiempoManual } from "./soporteMesa";
 
 function preparar() {
   const tiempo = new TiempoManual();
@@ -109,4 +109,58 @@ test("cerrar al jugador de turno después de detener no vuelve a programar reloj
   mesa.salir(1);
   expect(tiempo.pendientes.size).toBe(0);
   expect(mesa.snapshot().finEn).toBeNull();
+});
+
+test("si el reparto falla en el reloj, la mesa reintenta y no queda sin timeout", () => {
+  const tiempo = new TiempoManual();
+  let fallos = 1;
+  const zapato = crearZapatoFijo(["10", "9", "10", "7", "8", "7"]);
+  const sacar = zapato.sacar;
+  zapato.sacar = () => { if (fallos-- > 0) throw new Error("zapato roto"); return sacar(); };
+  const mesa = new Mesa("mesa-1", "Mesa 1", () => {}, zapato, tiempo.reloj);
+  const registro = spyOn(console, "error").mockImplementation(() => {});
+  try {
+    mesa.unirse({ id: 1, usuario: "uno" }, EQUIPADO_INICIAL);
+    mesa.registrarApuestaConfirmada(1, 10);
+    tiempo.avanzar(0);
+    expect(mesa.fase).toBe("APUESTAS");
+    expect(mesa.snapshot().finEn).toBe(tiempo.ahora() + TIEMPO_REINTENTO_MS);
+    tiempo.avanzar(TIEMPO_REINTENTO_MS);
+    expect(mesa.fase).toBe("TURNOS");
+  } finally { registro.mockRestore(); }
+});
+
+test("PAGOS no avanza hasta que la liquidación se resuelve", async () => {
+  const tiempo = new TiempoManual();
+  let guardar!: () => void;
+  let iniciar!: () => void;
+  const iniciada = new Promise<void>((resolver) => { iniciar = resolver; });
+  const mesa = new Mesa("mesa-1", "Mesa 1", () => {}, crearZapatoFijo(["10", "9", "10", "7", "8", "7"]), tiempo.reloj, {
+    billetera: new BilleteraMemoria(),
+    guardarRonda: () => new Promise<void>((resolver) => { guardar = resolver; iniciar(); }),
+  });
+  mesa.unirse({ id: 1, usuario: "uno" }, EQUIPADO_INICIAL);
+  mesa.registrarApuestaConfirmada(1, 10);
+  tiempo.avanzar(0); await mesa.esperarOperaciones();
+  await mesa.plantarse(1);
+  await iniciada;
+  tiempo.avanzar(TIEMPO_RESULTADOS_MS);
+  expect(mesa.snapshot()).toMatchObject({ fase: "PAGOS", finEn: null });
+  guardar(); await mesa.esperarOperaciones();
+  tiempo.avanzar(TIEMPO_RESULTADOS_MS); await mesa.esperarOperaciones();
+  expect(mesa.fase).toBe("APUESTAS");
+});
+
+test("quien se sienta tras un cierre anticipado recupera el plazo original de apuestas", () => {
+  const { mesa, tiempo } = preparar();
+  mesa.registrarApuestaConfirmada(1, 10);
+  mesa.registrarApuestaConfirmada(2, 10);
+  expect(mesa.snapshot().finEn).toBe(tiempo.ahora());
+  mesa.unirse({ id: 3, usuario: "tres" }, EQUIPADO_INICIAL);
+  expect(mesa.snapshot().finEn).toBe(tiempo.ahora() + TIEMPO_APUESTAS_MS);
+  tiempo.avanzar(0);
+  expect(mesa.fase).toBe("APUESTAS");
+  mesa.registrarApuestaConfirmada(3, 10);
+  tiempo.avanzar(0);
+  expect(mesa.fase).toBe("TURNOS");
 });
