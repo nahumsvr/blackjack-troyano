@@ -124,7 +124,8 @@ Resumen: **57 tareas** · Hector 19 · Nahum 17 · Massimo 19 · Equipo 2.
   - **v1 en PR #17, pendiente aprobación del grupo (2026-10-06):** `docs/exposicion.md` con bloques y tiempos (9:00), guion de la demo alineado con CHECKLIST §2, plan B, preguntas probables y checklist previo. Hector y Massimo ajustan sus bloques en el PR. Se marca al aprobarlo los 3; desbloquea T-51.
 
 ### Massimo
-- [ ] T-22 · 🔓 `server/src/db` (conexión `sql` de Bun, helper `enTransaccion`) + **interfaz `Billetera`** con JSDoc y firmas definitivas · Massimo · depende de: T-05
+- [x] T-22 · 🔓 `server/src/db` (conexión `sql` de Bun, helper `enTransaccion`) + **interfaz `Billetera`** con JSDoc y firmas definitivas · Massimo · depende de: T-05 · PR #4 (interfaz) + PR #29–#32 (uso)
+  - **Hecha (2026-10-06 CDMX):** criterio verificado en `main` `a68c62c`: `Mesa` importa `Billetera` (`server/src/game/Mesa.ts`), `server/test/soporteMesa.ts` la implementa en memoria con `BilleteraMemoria`, y `BilleteraSQL` implementa la misma interfaz (`store/Billetera.ts` la reexporta desde `game/`). `db/conexion.ts` con `enTransaccion` está en `main` desde PR #4.
   - **Avance comprobado (2026-10-06):** db e interfaz fusionadas desde PR #4. PR #31 ya usa el contrato y `BilleteraMemoria` en `server/test/soporteMesa.ts`; su interfaz de game coincide con la de main y store la re-exporta. Pendiente revisar/verificar la integración resultante; esta evidencia desbloquea la coordinación con Hector, sin cerrar aún T-22.
   - **Preparación local (2026-10-04):** crearConexion, enTransaccion e interfaz Billetera con firmas async implementados y verificados. Pendiente PR/fusión e importación por Hector en T-20. Incluido en PR #4 (abierto).
   - **Hecho cuando:** la interfaz está fusionada en `main` y Hector la importa para T-20 con una implementación falsa en memoria. *Desbloquea a Hector.*
