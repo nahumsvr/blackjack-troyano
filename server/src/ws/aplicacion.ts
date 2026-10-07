@@ -19,10 +19,11 @@ import { HistorialSQL } from "../db/HistorialSQL";
  * @param conexion - Pool SQL persistente que el llamador debe cerrar al apagar.
  * @param puerto - Puerto público; cero asigna uno libre para las pruebas.
  * @param crearMesa - Fábrica interna de pruebas; producción usa el zapato criptográfico.
+ * @param ahoraEnrutador - Reloj interno de tráfico para pruebas; producción usa performance.now.
  * @returns Servidor de partidas con publicaciones nativas Bun y cierre ordenado.
  * @throws Error Si el puerto no está disponible; los errores de dominio se responden por WS.
  */
-export function iniciarAplicacion(conexion: SQL, puerto = PUERTO, crearMesa?: FabricaMesa): Server<DatosConexion> {
+export function iniciarAplicacion(conexion: SQL, puerto = PUERTO, crearMesa?: FabricaMesa, ahoraEnrutador?: () => number): Server<DatosConexion> {
   let servidor: Server<DatosConexion>;
   let cerrando = false;
   const conexiones = new Map<string, SocketConexion>();
@@ -105,7 +106,7 @@ export function iniciarAplicacion(conexion: SQL, puerto = PUERTO, crearMesa?: Fa
       socket.send(JSON.stringify({ type: "mesa.estado", ...snapshot }));
     },
     alCerrar: limpiarMesa,
-  });
+  }, {}, ahoraEnrutador);
   servidor = iniciarServidor(puerto, enrutador, (socket) => limpiarMesa(socket, "desconexion"));
   const detenerTransporte = servidor.stop.bind(servidor);
   servidor.stop = async (cerrarConexiones) => {

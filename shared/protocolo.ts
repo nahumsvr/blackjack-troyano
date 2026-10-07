@@ -118,7 +118,18 @@ export function crearErrorValidacion(entrada: unknown, error: z.ZodError): Mensa
   const esCantidad = "type" in objeto && (objeto.type === "apostar" || objeto.type === "fichas.comprar") &&
     "cantidad" in objeto && error.issues.every((problema) => problema.path[0] === "cantidad");
   const codigo = esCantidad ? "CANTIDAD_INVALIDA" : "MENSAJE_INVALIDO";
-  const reqId = "reqId" in objeto ? ReqIdSchema.safeParse(objeto.reqId) : null;
+  const reqId = extraerReqId(entrada);
   return { type: "error", codigo, mensaje: MENSAJES_ERROR[codigo],
-    ...(reqId?.success ? { reqId: reqId.data } : {}) };
+    ...(reqId !== undefined ? { reqId } : {}) };
+}
+
+/**
+ * Recupera únicamente una correlación válida de una entrada no confiable.
+ * @param entrada - Valor JSON decodificado, válido o inválido para el contrato.
+ * @returns reqId conforme al esquema compartido, o undefined si falta o es inválido.
+ */
+export function extraerReqId(entrada: unknown): string | undefined {
+  if (typeof entrada !== "object" || entrada === null || !("reqId" in entrada)) return;
+  const resultado = ReqIdSchema.safeParse(entrada.reqId);
+  return resultado.success ? resultado.data : undefined;
 }
