@@ -2,11 +2,26 @@
 
 Cómo instalar y ejecutar Blackjack Troyano desde el repositorio o desde `blackjack-equipo.zip`, y cómo conectarse desde otras laptops de la misma red.
 
-## Ruta rápida (demo en red local)
+## Ruta rápida con Docker (un solo comando)
+
+Solo requiere Docker con Compose v2; no hace falta instalar Bun ni crear `.env`.
+
+```bash
+docker compose up --build
+```
+
+Compose levanta PostgreSQL 16, aplica `server/db/schema.sql` y `seed.sql` la primera vez (volumen vacío), compila el cliente y arranca el servidor. Cuando el registro muestre `Servidor escuchando`, abre `http://localhost:3000` (o `http://<IP-del-servidor>:3000` desde otra laptop). La primera ejecución necesita internet.
+
+- Detener conservando datos: `docker compose down`. Reiniciar desde cero (esquema y catálogo nuevos): `docker compose down -v`.
+- Tras modificar el código: `docker compose up --build`.
+- PostgreSQL se publica solo en `127.0.0.1:5433` (cambia el puerto con la variable `POSTGRES_PORT`); la aplicación lo alcanza por la red interna de Compose, así que un PostgreSQL local no interfiere.
+- Si el puerto 3000 está ocupado, libéralo: es el único puerto que usa la aplicación.
+
+## Ruta rápida con Bun (demo en red local)
 
 ```bash
 cp .env.example .env
-docker compose up -d --wait
+docker compose up -d postgres --wait
 bun install
 bun run db:reset --confirm blackjack
 bun run build
@@ -28,7 +43,7 @@ Abre una terminal en la raíz del clon o del archivo descomprimido: allí deben 
 ## Configuración y arranque
 
 1. Copia la configuración: `cp .env.example .env` (en `cmd` de Windows: `copy .env.example .env`). Conserva los valores locales o cambia usuario, contraseña, base y puerto. Si los cambias, ajusta también `DATABASE_URL`; codifica los caracteres especiales de la contraseña para una URL.
-2. Inicia PostgreSQL: `docker compose up -d --wait`.
+2. Inicia solo PostgreSQL: `docker compose up -d postgres --wait` (sin `postgres`, Compose también construiría y arrancaría la aplicación en el puerto 3000).
 3. Instala los workspaces: `bun install`.
 4. Crea las tablas y carga el catálogo: `bun run db:reset`. Escribe el nombre de la base mostrado para confirmar (`blackjack` por defecto).
 5. Inicia desarrollo: `bun run dev`.

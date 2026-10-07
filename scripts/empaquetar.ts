@@ -4,7 +4,7 @@ import { dirname, join, posix, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ARCHIVOS_OBLIGATORIOS = [
-  "README.md", ".env.example", "package.json", "bunfig.toml",
+  "README.md", ".env.example", "package.json", "bunfig.toml", "Dockerfile", ".dockerignore",
   "docs/manual-instalacion.md", "server/db/schema.sql", "server/db/seed.sql",
 ];
 const ALTERNATIVAS_OBLIGATORIAS = [

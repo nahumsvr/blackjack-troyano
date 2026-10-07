@@ -14,7 +14,7 @@ async function fixture(lock = "bun.lock", compose = "docker-compose.yml") {
   for (const carpeta of ["server", "client", "shared", "scripts", "docs", "documentation"]) {
     await mkdir(join(raiz, carpeta));
   }
-  const archivos = ["README.md", ".env.example", "package.json", "bunfig.toml", lock, compose,
+  const archivos = ["README.md", ".env.example", "package.json", "bunfig.toml", "Dockerfile", ".dockerignore", lock, compose,
     "docs/manual-instalacion.md", "server/db/schema.sql", "server/db/seed.sql",
     "client/src/pantallas/menu.ts", "docs/guias/instalacion local.md"];
   for (const ruta of archivos) {
@@ -70,7 +70,7 @@ describe("T-54: ZIP y selección de requisitos", () => {
     expect(contenido).toContain(`blackjack-equipo/${compose}`);
   });
 
-  test.each(["server/db/schema.sql", "docs/manual-instalacion.md", "bun.lock", "docker-compose.yml"])(
+  test.each(["server/db/schema.sql", "docs/manual-instalacion.md", "bun.lock", "docker-compose.yml", "Dockerfile", ".dockerignore"])(
     "sin %s falla antes de reemplazar el ZIP anterior", async (faltante) => {
       const { raiz } = await fixture();
       const anterior = await empaquetarProyecto(raiz);
