@@ -7,6 +7,7 @@ import type { Server } from "bun";
 import type { DatosConexion } from "../src/ws/Enrutador";
 import { iniciarServidor } from "../src/ws/servidor";
 import { ClienteWsPrueba } from "./soporteHito1";
+import { verificarBuildHttp } from "../../scripts/verificar-produccion";
 
 describe("T-38: cliente y WebSocket en un puerto", () => {
   let temporal: string;
@@ -40,6 +41,29 @@ describe("T-38: cliente y WebSocket en un puerto", () => {
     servidor?.stop(true);
     sinBuild?.stop(true);
     if (temporal) await rm(temporal, { recursive: true, force: true });
+  });
+
+  test("el verificador recorre todos los assets, incluso el SVG no referenciado en HTML", async () => {
+    const evidencia = await verificarBuildHttp(url, join(temporal, "dist"));
+    expect(evidencia.assets).toHaveLength(5);
+    expect(evidencia.assets.map((asset) => asset.ruta)).toContain("/assets/logo-final.svg");
+  });
+
+  test("el verificador rechaza un asset remoto alterado aunque JS y CSS coincidan", async () => {
+    const alterado = Bun.serve({ port: 0, async fetch(peticion) {
+      const ruta = new URL(peticion.url).pathname;
+      const original = await fetch(`${url}${ruta}`);
+      if (ruta !== "/assets/logo-final.svg") return original;
+      return new Response("<svg>alterado</svg>", { headers: original.headers });
+    } });
+    try {
+      await expect(verificarBuildHttp(`http://127.0.0.1:${alterado.port}`, join(temporal, "dist")))
+        .rejects.toThrow("Asset incorrecto o distinto del build: /assets/logo-final.svg");
+    } finally { await alterado.stop(true); }
+  });
+
+  test("sin build local explica que debe ejecutarse en la máquina servidor", async () => {
+    await expect(verificarBuildHttp(url, join(temporal, "ausente"))).rejects.toThrow("máquina servidor");
   });
 
   test("revalida HTML y nombres estables; solo assets con hash son inmutables", async () => {

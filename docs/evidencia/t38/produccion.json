@@ -1,0 +1,56 @@
+{
+  "verificadoEn": "2026-10-07T03:54:15.085Z",
+  "origen": "http://192.168.100.6:3000",
+  "websocket": "ws://192.168.100.6:3000/ws",
+  "html": {
+    "estado": 200,
+    "mime": "text/html;charset=utf-8",
+    "cache": "no-cache"
+  },
+  "assets": [
+    {
+      "ruta": "/assets/index-BLieM9lE.js",
+      "estado": 200,
+      "mime": "text/javascript;charset=utf-8",
+      "cache": "public, max-age=31536000, immutable",
+      "bytes": 351539,
+      "sha256": "493453176d4bc586b8a8f9bff6d84a797faa43019db3e8557ffba9e6042e37b0"
+    },
+    {
+      "ruta": "/assets/index-uCg8-5Y5.css",
+      "estado": 200,
+      "mime": "text/css;charset=utf-8",
+      "cache": "public, max-age=31536000, immutable",
+      "bytes": 51464,
+      "sha256": "fc9337919da798ef10f09da6e03ed6df2d9ba295b82f25655b9dce0153e19eb7"
+    }
+  ],
+  "jugadores": [
+    {
+      "usuario": "bot_94db9d21354c_1",
+      "usuarioId": 11,
+      "rondas": [
+        "e76ffbca-1818-4f7f-b5a0-c376dda6eca5"
+      ],
+      "retirado": false
+    },
+    {
+      "usuario": "bot_94db9d21354c_2",
+      "usuarioId": 12,
+      "rondas": [
+        "e76ffbca-1818-4f7f-b5a0-c376dda6eca5"
+      ],
+      "retirado": false
+    },
+    {
+      "usuario": "bot_94db9d21354c_3",
+      "usuarioId": 13,
+      "rondas": [
+        "e76ffbca-1818-4f7f-b5a0-c376dda6eca5"
+      ],
+      "retirado": false
+    }
+  ],
+  "rondaId": "e76ffbca-1818-4f7f-b5a0-c376dda6eca5",
+  "otraLaptopVerificada": false
+}

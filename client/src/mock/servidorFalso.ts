@@ -20,6 +20,7 @@ import {
   type Resultado,
 } from "@blackjack/shared";
 import { ErrorPeticion, errorLocal } from "../net/erroresLocales";
+import { generarUuid } from "../net/identificadores";
 import type { EstadoConexion, EventoTransporte, Intencion, OyenteTransporte, Transporte } from "../net/transporte";
 import {
   CONTRASENA_INCORRECTA,
@@ -114,7 +115,7 @@ export class ServidorFalso implements Transporte {
     if (!this.sentado) return;
     this.emitir({ type: "mesa.estado", ...this.mesa });
     if (fase !== "PAGOS") return;
-    const ronda = resultadoDemo(this.resultadoElegido, crypto.randomUUID());
+    const ronda = resultadoDemo(this.resultadoElegido, generarUuid());
     this.emitir({ type: "ronda.resultado", ...ronda });
     const pago = ronda.resultados.find((fila) => fila.usuarioId === ID_DEMO)?.pago ?? 0;
     if (pago > 0) {
