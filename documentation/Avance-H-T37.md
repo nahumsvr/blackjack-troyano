@@ -2,7 +2,7 @@
 
 6 de octubre de 2026, CDMX · Hector · Rama `t-37-endurecimiento-websocket`.
 
-Implementación sobre T-36 (PR #37). PR de T-37 abierto para revisión por otro integrante; pendiente aprobación y fusión. El avance aceptado de `main` permanece igual hasta fusionar este PR.
+Implementación sobre T-36 (PR #37). PR #45 de T-37 abierto contra `main`, con solicitud de revisión a Nahum; pendiente aprobación y fusión. El avance aceptado de `main` permanece igual hasta fusionar este PR.
 
 ## Comportamiento
 
